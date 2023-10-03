@@ -1,6 +1,6 @@
 import { CssBaseline, ThemeProvider, createTheme, Tabs, Tab, Grid, Box } from "@mui/material";
 import SafetyDisclaimer from "./SafetyDisclaimer";
-import React, { useEffect } from "react";
+import React from "react";
 import { CameraAlt, SportsEsports, Build } from "@mui/icons-material";
 
 const darkTheme = createTheme({
@@ -22,17 +22,17 @@ function App() {
       </Tabs>
       <br/>
       {tabIndex === 0 && (
-        <Box>
-          <Grid container spacing={2} style={{transform: `translateX(${(window.innerWidth - 1776)/2}px)`}}>
-            <Grid item xs margin="0">
-              <Box bgcolor="#ff0000" width="1280px" height="720px"><h1>Camera #1</h1></Box>
-            </Grid>
-            <Grid item xs margin="0">
-              <Box bgcolor="#00ff00" width="480px" height="352px"><h1>Camera #2</h1></Box>
-              <Box bgcolor="#0000ff" width="480px" height="352px" marginTop={"-6px"}><h1>Camera #3</h1></Box>
-            </Grid>
+        <Grid container spacing={2}>
+          <Grid item xs={1/9} />
+          <Grid item xs={8} margin="0">
+            <Box bgcolor="#ff0000" height="720px"><h1>Camera #1</h1></Box>
           </Grid>
-        </Box>
+          <Grid item xs margin="0">
+            <Box bgcolor="#00ff00" height="320px"><h1>Camera #2</h1></Box>
+            <Box bgcolor="#0000ff" height="320px"><h1>Camera #3</h1></Box>
+          </Grid>
+          <Grid item xs={1/9} />
+        </Grid>
       )}
       {tabIndex === 1 && (
         <h1>CONTROLLER WINDOW</h1>
