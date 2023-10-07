@@ -1,5 +1,6 @@
 import { CssBaseline, ThemeProvider, createTheme, Tabs, Tab, Grid, Box } from "@mui/material";
 import SafetyDisclaimer from "./SafetyDisclaimer";
+import Controller from "./Controller";
 import React from "react";
 import { CameraAlt, SportsEsports, Build } from "@mui/icons-material";
 
@@ -35,7 +36,9 @@ function App() {
         </Grid>
       )}
       {tabIndex === 1 && (
-        <h1>CONTROLLER WINDOW</h1>
+        <Box>
+          <Controller />
+        </Box>
       )}
       {tabIndex === 2 && (
         <h1>SETTINGS WINDOW</h1>
