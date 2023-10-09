@@ -1,0 +1,13 @@
+[Unit]
+Description=Eastern Edge Robotics Camera Module
+After=syslog.target
+AFter=network.target
+
+[Service]
+ExecStart=/usr/local/bin/mjpg_streamer -i "input_uvc.so -r 640x480 -d /dev/video0 -f 24 -q 80" -o "output_http.so -p 80>User=pi
+Type=simple
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
