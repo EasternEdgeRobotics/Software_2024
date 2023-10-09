@@ -26,11 +26,11 @@ function App() {
         <Grid container spacing={2}>
           <Grid item xs={1/9} />
           <Grid item xs={8} margin="0">
-            <Box bgcolor="#ff0000" height="720px"><h1>Camera #1</h1></Box>
+            <Box bgcolor="#ff0000" height="720px" sx={{backgroundImage: "url(http://192.168.2.135:8080/?action=stream)", backgroundSize: "100% 100%"}}><h3>Camera #1</h3></Box>
           </Grid>
           <Grid item xs margin="0">
-            <Box bgcolor="#00ff00" height="320px"><h1>Camera #2</h1></Box>
-            <Box bgcolor="#0000ff" height="320px"><h1>Camera #3</h1></Box>
+            <Box bgcolor="#00ff00" height="320px" sx={{backgroundImage: "url(http://192.168.2.135:8080/?action=stream)", backgroundSize: "100% 100%"}}><h3>Camera #2</h3></Box>
+            <Box bgcolor="#0000ff" height="320px" sx={{backgroundImage: "url(http://192.168.2.135:8080/?action=stream)", backgroundSize: "100% 100%"}}><h3>Camera #3</h3></Box>
           </Grid>
           <Grid item xs={1/9} />
         </Grid>
