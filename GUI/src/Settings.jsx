@@ -1,6 +1,7 @@
 import { Box, Divider, Grid, TextField, Button } from "@mui/material";
 import { useAtom } from "jotai";
 import { Camera1IP, Camera2IP, Camera3IP } from "./Atoms";
+import { saveConfig } from "./ROS";
 
 var settings = {}
 
@@ -13,7 +14,7 @@ function Settings() {
         settings.Camera1IP = camera1IP;
         settings.Camera2IP = camera2IP;
         settings.Camera3IP = camera3IP;
-        fetch("/writeConfig", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(settings)});
+        saveConfig(JSON.stringify(settings));
     }
 
     return (
@@ -24,6 +25,7 @@ function Settings() {
             <Divider>Cameras</Divider>
             <br/>
             <Grid container>
+                {/* 3 text fields for camera ips */}
                 <Grid item xs={1/2} />
                 <Grid item xs={10/3}>
                     <TextField id="camera-1-url" label="Camera 1 URL" variant="outlined" sx={{width: "100%"}} value={camera1IP} onChange={(e) => {setCamera1IP(e.target.value);}}/>
