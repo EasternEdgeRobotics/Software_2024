@@ -1,10 +1,9 @@
 import { Box, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 import { useAtom } from 'jotai';
-import React from 'react';
-import { CurrentControllerAtom } from './Atoms';
+import { currentControllerAtom } from '../atoms/CurrentController';
 
-function Controller() {
-    const [currentController, setCurrentController] = useAtom(CurrentControllerAtom);
+function ControllerTab() {
+    const [currentController, setCurrentController] = useAtom(currentControllerAtom)
 
     return(
         <Box>
@@ -24,4 +23,4 @@ function Controller() {
     )
 }
 
-export default Controller;
+export default ControllerTab;

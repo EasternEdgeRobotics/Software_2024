@@ -18,6 +18,7 @@ const receiver = new ROSLIB.Topic({
 receiver.subscribe((message) => {
     switch(message.state) {
         case 0:
+            if (!fs.existsSync("config/config.json")) return;
             console.log("Config requested...");
             receiver.publish({state: 3, data: fs.readFileSync("config/config.json").toString()}); //send config with 'config return' response
             break;
