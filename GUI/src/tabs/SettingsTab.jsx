@@ -2,9 +2,13 @@ import { Box, Divider, Grid, TextField, Button } from "@mui/material";
 import { useAtom } from "jotai";
 import { ipAtom } from "../atoms/CameraIP";
 import { saveConfig } from "../ROS";
+import { useState } from "react";
+import { useCookies } from "react-cookie";
 
 function SettingsTab() {
     const [IPs, setIPs] = useAtom(ipAtom);
+    const [cookies, setCookies,] = useCookies("easternedge");
+    const [ROSIP, setROSIP] = useState(cookies.rosip);
 
     const setCameraIP = (camera, ip) => {
         setIPs(IPs.map((item, index) => index === camera ? ip : item)); //i hate this is there is a better way to do this please change it
@@ -14,6 +18,7 @@ function SettingsTab() {
         let settings = {};
         settings.cameraIPs = IPs;
         saveConfig(settings);
+        setCookies("rosip", ROSIP);
     }
 
     return (
@@ -21,7 +26,12 @@ function SettingsTab() {
             <Box left="10%" bottom="16px" position="fixed" width="80%">
                 <Button variant="contained" sx={{width: "100%"}} onClick={() => saveSettings()}>Save Settings</Button>
             </Box>
-            {/* maybe add a textbox to set ros ip rather than an env file? */}
+            <Divider>ROS</Divider>
+            <br/>
+            <Box display="flex" justifyContent="center" alignItems="center">
+                <TextField id="ros-ip" label="ROS Bridge IP (Must Refresh After Changing)" variant="outlined" sx={{width: "40%"}} value={ROSIP} onChange={(e) => setROSIP(e.target.value)} />
+            </Box>
+            <br/>
             <Divider>Cameras</Divider>
             <br/>
             <Grid container>

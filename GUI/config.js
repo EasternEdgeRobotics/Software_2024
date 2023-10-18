@@ -1,13 +1,19 @@
 const ROSLIB = require("roslib");
-require("dotenv").config();
 const fs = require("fs");
+const WebSocket = require('ws');
 
 const ros = new ROSLIB.Ros();
 
-ros.connect(`ws://${process.env.REACT_APP_ROS_IP}:9090`);
+const wss = new WebSocket.Server({port: 5001});
+wss.on('connection', function connection(ws) {
+    ws.on('message', function message(data) {
+        if (!ros.isConnected) ros.connect(`ws://${data}:9090`);
+    });
+});
 
 ros.on('connection', () => {console.log('ROS Connected!');});
 ros.on('close', () => {console.log('ROS Disconnected!');});
+ros.on('error', () => {console.log('A ROS error has occurred!');});
 
 const receiver = new ROSLIB.Topic({
     ros: ros,
