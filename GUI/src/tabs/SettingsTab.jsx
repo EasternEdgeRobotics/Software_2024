@@ -2,14 +2,13 @@ import { Box, Divider, Grid, TextField, Button } from "@mui/material";
 import { useAtom } from "jotai";
 import { ipAtom } from "../atoms/CameraIP";
 import { saveConfig } from "../ROS";
-import { useState } from "react";
-import { useCookies } from "react-cookie";
+import { ROSIPAtom } from "../atoms/LocalStorage";
+import { useEffect } from "react";
 
 function SettingsTab() {
     const [IPs, setIPs] = useAtom(ipAtom);
-    const [cookies, setCookies,] = useCookies("easternedge");
-    const [ROSIP, setROSIP] = useState(cookies.rosip);
-
+    const [ROSIP, setROSIP] = useAtom(ROSIPAtom);
+    
     const setCameraIP = (camera, ip) => {
         setIPs(IPs.map((item, index) => index === camera ? ip : item)); //i hate this is there is a better way to do this please change it
     }
@@ -18,7 +17,7 @@ function SettingsTab() {
         let settings = {};
         settings.cameraIPs = IPs;
         saveConfig(settings);
-        setCookies("rosip", ROSIP);
+        localStorage.setItem("ROS_IP", ROSIP);
     }
 
     return (
