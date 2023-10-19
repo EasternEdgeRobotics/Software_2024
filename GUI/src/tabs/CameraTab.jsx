@@ -21,7 +21,7 @@ function CameraTab () {
     //possibly the WORST solution i couldve possible come up with :100:
     useEffect(() => {
         setCamera3Width(camera2.current ? camera2.current.offsetWidth : 0);
-    }, [camera2.current]);
+    }, [camera2]);
 
     return (
         <Grid container spacing={2}>
