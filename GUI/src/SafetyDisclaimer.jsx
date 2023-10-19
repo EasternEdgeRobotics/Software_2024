@@ -2,6 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogContentText, Dialog
 import { useState } from "react";
 
 function SafetyDisclaimer() {
+    //open the message by default
     const [open, setOpen] = useState(true);
 
     return (

@@ -11,7 +11,7 @@ root.render(
   <React.StrictMode>
     <ThemeProvider theme={createTheme({palette: {mode: "dark"}})}> {/* Dark theme */}
       <CssBaseline />
-      <InitROS />
+      <InitROS /> {/* Initialize ROSBridge */}
       <SafetyDisclaimer /> {/* Open the safety disclaimer */}
       <App /> {/* Start the app */}
     </ThemeProvider>

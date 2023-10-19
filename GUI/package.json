@@ -22,7 +22,7 @@
     "ws": "^8.14.2"
   },
   "scripts": {
-    "start": "concurrently \"react-scripts start\" \"nodemon config\"",
+    "start": "concurrently \"react-scripts start\" \"nodemon config.js --ignore ./config/\"",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

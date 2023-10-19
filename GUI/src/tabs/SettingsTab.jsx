@@ -3,7 +3,6 @@ import { useAtom } from "jotai";
 import { ipAtom } from "../atoms/CameraIP";
 import { saveConfig } from "../ROS";
 import { ROSIPAtom } from "../atoms/LocalStorage";
-import { useEffect } from "react";
 
 function SettingsTab() {
     const [IPs, setIPs] = useAtom(ipAtom);
@@ -14,9 +13,14 @@ function SettingsTab() {
     }
 
     const saveSettings = () => {
+        //initialize object for settings to go into
         let settings = {};
+        //add http:// to ips before saving, then set them
+        setIPs(IPs.map(ip => !ip.startsWith("http://") && !ip.startsWith("https://") ? "http://" + ip : ip));
         settings.cameraIPs = IPs;
+        //send config to ros and config server to save the config
         saveConfig(settings);
+        //save ros ip locally
         localStorage.setItem("ROS_IP", ROSIP);
     }
 

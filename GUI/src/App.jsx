@@ -1,4 +1,4 @@
-import { Build, CameraAlt, SportsEsports } from "@mui/icons-material";
+import { Build, CameraAlt, Psychology, SportsEsports } from "@mui/icons-material";
 import { Box, Tab, Tabs } from "@mui/material";
 import { useEffect, useReducer, useState } from "react";
 import CameraTab from "./tabs/CameraTab";
@@ -7,6 +7,7 @@ import SettingsTab from "./tabs/SettingsTab";
 import { loadConfig } from "./ROS";
 import { useAtom } from "jotai";
 import { currentControllerAtom } from "./atoms/CurrentController";
+import TaskTab from "./tabs/TaskTab";
 
 /* This is mainly for the tabs of the GUI (camera, controller settings, general settings) */
 
@@ -18,9 +19,10 @@ function App() {
 
     function renderTab() {
         switch(tabIndex) {
-            case 0: return <CameraTab />;
-            case 1: return <ControllerTab />;
-            case 2: return <SettingsTab />;
+            case 0: return <CameraTab />; //if tab is 0 render cameras
+            case 1: return <ControllerTab />; //if tab is 1 render controller settings
+            case 2: return <SettingsTab />; //if tab is 2 render general settings
+            case 3: return <TaskTab />; //if tab is 3 render task menu
             default: return;
         }
     }
@@ -56,6 +58,7 @@ function App() {
                 <Tab label={<CameraAlt />} />
                 <Tab label={<SportsEsports />} />
                 <Tab label={<Build />} />
+                <Tab label={<Psychology />} />
             </Tabs>
             <br/>
             {renderTab()} {/* Render the tab depending on which tab is selected */}
