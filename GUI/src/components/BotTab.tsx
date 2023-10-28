@@ -1,6 +1,7 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { isRosConnected } from "../api/ROS";
 import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import { useAtom } from "jotai";
+import { IsROSConnected } from "../api/Atoms";
 
 
 
@@ -10,12 +11,13 @@ export function StatusIndicator(props: {statement: any}) {
 }
 
 export function BotTab() {
+    const [isRosConnected] = useAtom(IsROSConnected);
     const status = [
-        {"name": "ROS", "status": isRosConnected()},
+        {"name": "ROS", "status": isRosConnected},
         {"name": "False", "status": false},
         {"name": "True", "status": true}
     ]
-
+    
     return(
         <Grid container spacing={2}>
             <Grid item xs={1/9} />

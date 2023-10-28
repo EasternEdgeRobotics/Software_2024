@@ -4,3 +4,4 @@ import { atom } from "jotai";
 export const CameraIPs = atom<string[]>(["", "", ""]);
 export const CurrentController = atom<number>(-1);
 export const ROSIP = atom<string>(localStorage.getItem("ROS_IP") || window.location.hostname);
+export const IsROSConnected = atom<boolean>(false);
