@@ -1,15 +1,14 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
-import { useState } from "react";
+import React from "react";
 
-function SafetyDisclaimer() {
-    //open the message by default
-    const [open, setOpen] = useState(true);
+export default function SafetyDisclaimer() {
+    const [open, setOpen] = React.useState<boolean>(true);
 
-    return (
+    return(
         <Dialog open={open}>
             <DialogTitle>Eastern Edge Safety Disclaimer</DialogTitle>
             <DialogContent>
-                <DialogContentText>
+                <DialogContentText component='span'>
                     Prior to using the Eastern Edge ROV control interface, please ensure the following:<br/>
                     <ul> {/* CHANGE THESE */}
                         <li>You will not throw the ROV.</li>
@@ -23,10 +22,8 @@ function SafetyDisclaimer() {
                 </DialogContentText>
             </DialogContent>
             <DialogActions>
-                <Button onClick={() => {setOpen(false)}}>I Agree</Button>
+                <Button onClick={() => setOpen(false)}>I Agree</Button>
             </DialogActions>
         </Dialog>
     )
 }
-
-export default SafetyDisclaimer;
