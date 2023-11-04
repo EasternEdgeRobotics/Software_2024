@@ -34,6 +34,7 @@ export default function App() {
             setCameraIPs(data.CameraIPs || ["", "", ""]);
         });
     }, [setCameraIPs]);
+    
 
     return(
         <Box>
