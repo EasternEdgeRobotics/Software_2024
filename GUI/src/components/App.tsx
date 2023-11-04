@@ -30,9 +30,9 @@ export default function App() {
     const [, setCameraIPs] = useAtom(CameraIPs);
 
     React.useEffect(() => {
-        fetch('/config').then(response => response.json()).then(data => {
+        /**fetch('/config').then(response => response.json()).then(data => {
             setCameraIPs(data.CameraIPs || ["", "", ""]);
-        });
+        });**/
     }, [setCameraIPs]);
 
     return(
