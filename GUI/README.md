@@ -13,7 +13,7 @@ Set IP in .env to the device running the ROSBridge server
 
 Run it
 ```
-yarn start
+yarn dev
 ```
 Win
 ## TODO
