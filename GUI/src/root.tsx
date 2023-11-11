@@ -11,16 +11,9 @@ import InitControllers from "./components/Controller";
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
 import { RosProvider } from "./components/ROS";
 
-export const pages = routes[0]
-  .children!.filter((child) => {
-    return child.path != "*" && child.path != undefined;
-  })
-  .map((child) => {
-    return child.path!;
-  });
-console.log(pages);
+const pages = ["bots", "cameras", "controllers", "settings"];
 
-export function Root() {
+function Root() {
   return (
     <RosProvider rosURL={"ws://localhost:9090"}>
       <Box>
@@ -38,7 +31,6 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <Root />,
-    children: routes,
   },
 ]);
 

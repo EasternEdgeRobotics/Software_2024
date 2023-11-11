@@ -12,9 +12,9 @@ import {
 import { useAtom } from "jotai";
 import { IsROSConnected } from "../components/Atoms";
 
-export function StatusIndicator(props: { statement: any }) {
+function StatusIndicator(props: { statement: any }) {
   if (props.statement) return <CheckCircle2 color="lime" />;
-  else return <AlertCircle color="red" />;
+  return <AlertCircle color="red" />;
 }
 
 export function BotTab() {
