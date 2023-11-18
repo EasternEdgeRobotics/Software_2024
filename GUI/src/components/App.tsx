@@ -29,11 +29,11 @@ export default function App() {
     const [tabIndex, setTabIndex] = useState<number>(0);
     const [, setCameraIPs] = useAtom(CameraIPs);
 
-    React.useEffect(() => {
+    /**React.useEffect(() => {
         fetch('/config').then(response => response.json()).then(data => {
             setCameraIPs(data.CameraIPs || ["", "", ""]);
         });
-    }, [setCameraIPs]);
+    }, [setCameraIPs]);**/
 
     return(
         <Box>
