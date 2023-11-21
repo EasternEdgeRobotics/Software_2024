@@ -6,11 +6,11 @@ import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { useNavigate } from "react-router-dom";
 
-export function ResponsiveAppBar(props: { pages: string[] }) {
+export default function ResponsiveAppBar(props: { pages: string[] }) {
   const navigate = useNavigate();
 
   return (
-    <AppBar position="fixed">
+    <AppBar position="sticky">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <Typography
@@ -47,4 +47,3 @@ export function ResponsiveAppBar(props: { pages: string[] }) {
     </AppBar>
   );
 }
-export default ResponsiveAppBar;

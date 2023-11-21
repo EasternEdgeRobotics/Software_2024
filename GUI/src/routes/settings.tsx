@@ -3,7 +3,7 @@ import { CameraIPs, ROSIP } from "../components/Atoms";
 import { Box } from "@mui/system";
 import { Button, Divider, Grid, TextField } from "@mui/material";
 
-export default function SettingsTab() {
+export function Component() {
   const [IPs, setIPs] = useAtom(CameraIPs);
   const [RosIP, setRosIP] = useAtom(ROSIP);
 

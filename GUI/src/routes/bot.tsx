@@ -9,21 +9,16 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import { useAtom } from "jotai";
-import { IsROSConnected } from "../components/Atoms";
+import { useRos } from "../components/ROS";
 
 function StatusIndicator(props: { statement: any }) {
   if (props.statement) return <CheckCircle2 color="lime" />;
   return <AlertCircle color="red" />;
 }
 
-export function BotTab() {
-  const [isRosConnected] = useAtom(IsROSConnected);
-  const status = [
-    { name: "ROS", status: isRosConnected },
-    { name: "False", status: false },
-    { name: "True", status: true },
-  ];
+export function Component() {
+  const { ros } = useRos();
+  const status = [{ name: "ROS", status: ros.isConnected }];
 
   return (
     <Grid container spacing={2}>

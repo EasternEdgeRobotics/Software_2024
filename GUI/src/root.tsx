@@ -10,29 +10,31 @@ import {
 import InitControllers from "./components/Controller";
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
 import { RosProvider } from "./components/ROS";
+import SafetyDisclaimer from "./components/SafetyDisclaimer";
+import { routes as remixRoutes } from "virtual:routes";
 
-const pages = ["bots", "cameras", "controllers", "settings"];
+const routes = remixRoutes;
+routes[0].lazy = async () => await import("./root");
 
-function Root() {
+export function Component() {
+  const pages = routes[0]
+    .children!.map((route) => route.path!)
+    .filter((path) => path !== undefined);
+
   return (
     <RosProvider rosURL={"ws://localhost:9090"}>
       <Box>
         <ResponsiveAppBar pages={pages} />
         <Outlet />
       </Box>
-      {/*<SafetyDisclaimer /> {/* Display the safety disclaimer */}
+      <SafetyDisclaimer /> {/* Display the safety disclaimer */}
       <InitControllers /> {/* Initialize controller listeners */}
       <ScrollRestoration />
     </RosProvider>
   );
 }
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Root />,
-  },
-]);
+const router = createBrowserRouter(routes);
 
 const root = createRoot(document.getElementById("root")!);
 root.render(

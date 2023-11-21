@@ -1,5 +1,11 @@
 import ROSLIB from "roslib";
-import { createContext, useContext, useEffect, PropsWithChildren } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  PropsWithChildren,
+  useState,
+} from "react";
 
 const RosContext = createContext<ROSLIB.Ros | undefined>(undefined);
 
@@ -8,7 +14,7 @@ type RosProviderProps = {
 };
 
 export function RosProvider(props: PropsWithChildren<RosProviderProps>) {
-  const ros = new ROSLIB.Ros({});
+  const [ros] = useState(new ROSLIB.Ros({}));
 
   useEffect(() => {
     const onConnection = () => {
@@ -34,7 +40,7 @@ export function RosProvider(props: PropsWithChildren<RosProviderProps>) {
       ros.off("error", onError);
       ros.close();
     };
-  }, [props.rosURL]);
+  }, []);
 
   return (
     <RosContext.Provider value={ros}>{props.children}</RosContext.Provider>

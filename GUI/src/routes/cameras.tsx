@@ -32,7 +32,7 @@ export function AltCamera(props: { ip: string; width: number }) {
   );
 }
 
-export default function CameraTab() {
+export function Component() {
   const [width, setWidth] = useState<number>(window.innerWidth);
   const [IPs] = useAtom<string[]>(CameraIPs);
   const [currentController] = useAtom<number>(CurrentController);

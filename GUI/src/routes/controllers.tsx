@@ -2,7 +2,7 @@ import { useAtom } from "jotai";
 import { CurrentController } from "../components/Atoms";
 import { Box, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 
-export default function ControllerTab() {
+export function Component() {
   const [currentController, setCurrentController] = useAtom(CurrentController);
 
   return (
