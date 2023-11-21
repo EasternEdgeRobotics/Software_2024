@@ -1,4 +1,4 @@
-import { Box, CssBaseline } from "@mui/material";
+import { Box, CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -8,29 +8,36 @@ import {
   createBrowserRouter,
 } from "react-router-dom";
 import InitControllers from "./components/Controller";
-import ResponsiveAppBar from "./components/ResponsiveAppBar";
+import { NavBar } from "./components/NavBar";
 import { RosProvider } from "./components/ROS";
 import SafetyDisclaimer from "./components/SafetyDisclaimer";
 import { routes as remixRoutes } from "virtual:routes";
+import { Bot, Camera, Gamepad2, Wrench } from "lucide-react";
 
 const routes = remixRoutes;
 routes[0].lazy = async () => await import("./root");
 
 export function Component() {
-  const pages = routes[0]
-    .children!.map((route) => route.path!)
-    .filter((path) => path !== undefined);
+  const pages = [
+    { title: <Bot />, path: "bot" },
+    { title: <Camera />, path: "cameras" },
+    { title: <Gamepad2 />, path: "controllers" },
+    { title: <Wrench />, path: "settings" },
+  ];
 
   return (
-    <RosProvider rosURL={"ws://localhost:9090"}>
-      <Box>
-        <ResponsiveAppBar pages={pages} />
-        <Outlet />
-      </Box>
-      <SafetyDisclaimer /> {/* Display the safety disclaimer */}
-      <InitControllers /> {/* Initialize controller listeners */}
-      <ScrollRestoration />
-    </RosProvider>
+    <ThemeProvider theme={createTheme({ palette: { mode: "dark" } })}>
+      <RosProvider rosURL={"ws://localhost:9090"}>
+        <Box>
+          <NavBar pages={pages} />
+          <Outlet />
+        </Box>
+        <SafetyDisclaimer /> {/* Display the safety disclaimer */}
+        <InitControllers /> {/* Initialize controller listeners */}
+        <CssBaseline />
+        <ScrollRestoration />
+      </RosProvider>
+    </ThemeProvider>
   );
 }
 
@@ -40,6 +47,5 @@ const root = createRoot(document.getElementById("root")!);
 root.render(
   <React.StrictMode>
     <RouterProvider router={router} />
-    <CssBaseline />
   </React.StrictMode>
 );

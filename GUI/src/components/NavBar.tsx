@@ -5,12 +5,15 @@ import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { useNavigate } from "react-router-dom";
+import React from "react";
 
-export default function ResponsiveAppBar(props: { pages: string[] }) {
+export function NavBar(props: {
+  pages: { title: React.ReactNode; path: string }[];
+}) {
   const navigate = useNavigate();
 
   return (
-    <AppBar position="sticky">
+    <AppBar position="static">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <Typography
@@ -30,15 +33,15 @@ export default function ResponsiveAppBar(props: { pages: string[] }) {
             EasternEdge
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
-            {props.pages.map((page) => (
+            {props.pages.map((page, index) => (
               <Button
-                key={page}
+                key={index}
                 onClick={() => {
-                  navigate(page.toLowerCase());
+                  navigate(page.path);
                 }}
                 sx={{ my: 2, color: "white", display: "block" }}
               >
-                {page}
+                {page.title}
               </Button>
             ))}
           </Box>
