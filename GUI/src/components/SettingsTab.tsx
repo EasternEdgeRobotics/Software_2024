@@ -41,6 +41,21 @@ export default function SettingsTab() {
                 </Grid>
                 <Grid item xs={1/2} />
             </Grid>
+            <br/><Divider>Profiles</Divider><br/>
+            <Grid container justifyContent={"space-evenly"}>
+                <Grid item>
+                    <Button variant={"contained"} onClick={()=>{window.open(`/profile-editor`, "", "popout"); 
+                                                                localStorage.setItem("profileEditorSelection","Create")}}>Create Profile</Button>
+                </Grid>
+                <Grid item>
+                    <Button variant={"contained"} onClick={()=>{window.open(`/profile-editor`, "", "popout");
+                                                                localStorage.setItem("profileEditorSelection","Edit")}}>Edit Profile</Button>
+                </Grid>
+                <Grid item>
+                    <Button variant={"contained"} onClick={()=>{window.open(`/profile-editor`, "", "popout");
+                                                                localStorage.setItem("profileEditorSelection","Delete")}}>Delete Profile</Button>
+                </Grid>
+            </Grid>
             <Box position="absolute" bottom="8px" left="10%" width="80%">
                 <Button variant="contained" sx={{width: "100%"}} onClick={() => {save()}}>Save Settings</Button>
             </Box>

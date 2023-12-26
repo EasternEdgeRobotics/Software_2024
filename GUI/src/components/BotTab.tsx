@@ -4,8 +4,7 @@ import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead,
 import { useAtom } from "jotai";
 import { IsROSConnected, PowerMultipliers } from "../api/Atoms";
 import React from "react";
-import { red } from "@mui/material/colors";
-import { NOTINITIALIZED } from "dns";
+import { useState } from "react";
 
 var sliderLabels: {[key: number]: string} = {
     0: "Power",
@@ -52,9 +51,9 @@ export function StatusIndicator(props: {statement: any}) {
 
 export function BotTab() {
     const [isRosConnected] = useAtom(IsROSConnected);
-    const [height, setHeight] = React.useState<number>(window.innerHeight);
+    const [height, setHeight] = useState<number>(window.innerHeight);
     const [powerMultipliers, setPowerMultipliers] = useAtom(PowerMultipliers);
-
+    const [currentProfile, setCurrentProfile] = useState<string>("Pick Profile");
     React.useEffect(() => {window.addEventListener("resize", () => {setHeight(window.innerHeight)});}, []);
 
     const [anchorElement, setAnchorEL] = React.useState(null);
@@ -72,14 +71,8 @@ export function BotTab() {
         }
     }
 
-    const deleteMouseAnchor = () =>{
-        
-    }
-
     const status = [
-        {"name": "ROS", "status": isRosConnected},
-        {"name": "False", "status": false},
-        {"name": "True", "status": true}
+        {"name": "ROS", "status": isRosConnected}
     ]
 
     // Function to handle changing slider value
@@ -90,27 +83,12 @@ export function BotTab() {
     return(
         <Box flexGrow={1}>
             <Grid container justifyContent={"center"} spacing={1}>
-                <Grid item xs={1}>
-                    <VerticalSlider sliderIndex={0} height={(0.8)*height} defaultValue={powerMultipliers[0]} sliderChangedCallback={sliderChanged}/>
-                </Grid>
-                <Grid item xs={1}>
-                    <VerticalSlider sliderIndex={1} height={(0.8)*height} defaultValue={powerMultipliers[1]} sliderChangedCallback={sliderChanged}/>
-                </Grid>
-                <Grid item xs={1}>
-                    <VerticalSlider sliderIndex={2} height={(0.8)*height} defaultValue={powerMultipliers[2]} sliderChangedCallback={sliderChanged}/>
-                </Grid>
-                <Grid item xs={1}>
-                    <VerticalSlider sliderIndex={3} height={(0.8)*height} defaultValue={powerMultipliers[3]} sliderChangedCallback={sliderChanged}/>
-                </Grid>
-                <Grid item xs={1}>
-                    <VerticalSlider sliderIndex={4} height={(0.8)*height} defaultValue={powerMultipliers[4]} sliderChangedCallback={sliderChanged}/>
-                </Grid>
-                <Grid item xs={1}>
-                    <VerticalSlider sliderIndex={5} height={(0.8)*height} defaultValue={powerMultipliers[5]} sliderChangedCallback={sliderChanged}/>
-                </Grid>
-                <Grid item xs={1}>
-                    <VerticalSlider sliderIndex={6} height={(0.8)*height} defaultValue={powerMultipliers[6]} sliderChangedCallback={sliderChanged}/>
-                </Grid>
+                {[0,1,2,3,4,5,6].map((index) => {
+                    return(
+                        <Grid item xs={1}>
+                            <VerticalSlider sliderIndex={index} height={(0.8)*height} defaultValue={powerMultipliers[index]} sliderChangedCallback={sliderChanged}/>
+                        </Grid>)})
+                }
                 <Grid item xs={2}>
                     <TableContainer component={Paper}>
                         <Table>
@@ -136,10 +114,9 @@ export function BotTab() {
             </Grid>
             <Grid container item margin={6} justifyContent={"center"}>
                 <Button aria-controls={"profile-menu"} aria-haspopup={"true"} aria-expanded={mouseAnchored} onClick={(e)=>{setMouseAnchor(e.currentTarget)}}>
-                        Pick Profile      
+                        {currentProfile}      
                         <Menu id={"profile-menu"} open={mouseAnchored} anchorEl={anchorElement} onClick={(e)=>{setMouseAnchor(e.currentTarget)}}>
-                            <MenuItem>Profile 1</MenuItem>
-                            <MenuItem>Profile 2</MenuItem>
+                            <Button onClick={()=>{setCurrentProfile("Profile 1")}}>Profile 1</Button>
                         </Menu>
                 </Button>
             </Grid>
