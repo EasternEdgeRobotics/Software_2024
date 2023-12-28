@@ -1,4 +1,6 @@
 from setuptools import find_packages, setup
+import os
+from glob import glob 
 
 package_name = 'beaumont_pkg'
 
@@ -10,6 +12,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name), glob('launch/*.xml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -21,6 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'thruster_control = beaumont_pkg.thurster_control:main',
+            'profiles_manager = beaumont_pkg.profiles_manager:main',
         ],
     },
 )

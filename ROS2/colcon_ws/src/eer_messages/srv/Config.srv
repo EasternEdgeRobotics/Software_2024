@@ -1,0 +1,6 @@
+uint8 state
+#0 = load
+#1 = config return
+string data
+---
+string result

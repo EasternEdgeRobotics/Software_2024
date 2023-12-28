@@ -35,9 +35,10 @@ To open new terminals in the running container, type:
 ```
 docker exec -it <CONTAINER_ID> bash
 ```
-Navigate to the /home/colcon_ws directory of this container and build the packages.
+Navigate to the /home/colcon_ws directory of this container and build the packages, sourcing the main ROS2 workspace first.
 ```
 cd /home/colcon_ws
+source /opt/ros/humble/setup.bash
 colcon build
 ```
 
