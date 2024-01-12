@@ -15,7 +15,7 @@ export default function ControllerTab() {
                         {navigator.getGamepads().length > 0 &&
                             navigator.getGamepads().map((gamepad) => {
                                 //Add menu item for every controller
-                                if (gamepad != null){
+                                if (gamepad !== null){
                                     return <MenuItem value={gamepad!.index}>{gamepad!.id}</MenuItem>;
                                 }
                             })
