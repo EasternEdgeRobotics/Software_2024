@@ -7,13 +7,13 @@ import React from "react";
 
 export function MainCamera(props: {ip: string, width: number}) {
     return(
-        <Box height={(props.width-8) * (3/8)} sx={{backgroundImage: `url(${props.ip}), url(./nosignal.jpg)`, backgroundSize: "100% 100%", borderRadius: "12px", margin: "0 4px 0 4px"}}/>
+        <Box height={(props.width-8) * (3/8)} sx={{backgroundImage: `url(${props.ip}), url(./nosignal.png)`, backgroundSize: "100% 100%", borderRadius: "12px", margin: "0 4px 0 4px"}}/>
     );
 }
 
 export function AltCamera(props: {ip: string, width: number}) {
     return(
-        <Box height={props.width * (19/108)} sx={{backgroundImage: `url(${props.ip}), url(./nosignal.jpg)`, backgroundSize: "100% 100%", borderRadius: "12px"}}/>
+        <Box height={props.width * (19/108)} sx={{backgroundImage: `url(${props.ip}), url(./nosignal.png)`, backgroundSize: "100% 100%", borderRadius: "12px"}}/>
     )
 }
 

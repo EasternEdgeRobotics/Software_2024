@@ -19,6 +19,6 @@ Win
 ## TODO
  - Actual Controller Support (it just listens for controllers right now)
  - Controller bindings
- - Controller presets that are written to a config
+ - User Profiles and controller presets that are written to a config
  - Send off cameras to whatever for the AI task (when we get AI code done)
  - General cleanup (im bad at react)
