@@ -18,6 +18,7 @@ export default function ControllerTab() {
                                 if (gamepad !== null) {
                                     return <MenuItem value={gamepad!.index}>{gamepad!.id}</MenuItem>;  
                                 }
+                                return null;
                             })
                         }
                         {navigator.getGamepads().length <= 0 &&

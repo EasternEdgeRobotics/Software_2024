@@ -2,18 +2,15 @@
 ## Install
 ### You'll need a ROSBridge server running on port 9090 for this to work!
 Install yarn (it's just better than npm)
-```
-npm install -g yarn
-```
 Install dependencies
 ```
-yarn install
+npm install
 ```
 Set IP in .env to the device running the ROSBridge server  
 
 Run it
 ```
-yarn start
+npm run start
 ```
 Win
 ## TODO
