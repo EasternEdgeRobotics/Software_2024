@@ -6,15 +6,15 @@ import React from "react";
 // Main camera vs alt camera are the exact same without margin and different height
 
 export function MainCamera(props: {ip: string, width: number}) {
-    return(
+    return (
         <Box height={(props.width-8) * (3/8)} sx={{backgroundImage: `url(${props.ip}), url(./nosignal.png)`, backgroundSize: "100% 100%", borderRadius: "12px", margin: "0 4px 0 4px"}}/>
     );
 }
 
 export function AltCamera(props: {ip: string, width: number}) {
-    return(
+    return (
         <Box height={props.width * (19/108)} sx={{backgroundImage: `url(${props.ip}), url(./nosignal.png)`, backgroundSize: "100% 100%", borderRadius: "12px"}}/>
-    )
+    );
 }
 
 export default function CameraTab() {
@@ -23,16 +23,16 @@ export default function CameraTab() {
     const [currentController] = useAtom<number>(CurrentController);
 
     // Create a listener to update width on window resize
-    React.useEffect(() => {window.addEventListener("resize", () => {setWidth(window.innerWidth)});}, []);
+    React.useEffect(() => {window.addEventListener("resize", () => {setWidth(window.innerWidth);});}, []);
 
-    return(
+    return (
         <Grid container spacing={2}>
             <Grid item xs={1/9} />
             <Grid item xs={8}>
                 <Paper elevation={7} sx={{borderRadius: "12px"}}>
                     <h3 style={{textAlign: "center", margin: "0"}}>Camera 1</h3>
                     <MainCamera ip={IPs[0]} width={width}/>
-                    <h3 style={{margin: "0", textAlign: "center"}}>{currentController === -1 ? "No Controller Connected!" : `Current Controller: ${navigator.getGamepads()[currentController]!.id}`}</h3>
+                    <h3 style={{margin: "0", textAlign: "center"}}>{currentController === -1 ? "No Controller Connected!" : `Current Controller: ${navigator.getGamepads()[currentController]?.id}`}</h3>
                 </Paper>
             </Grid>
             <Grid item xs display="flex" flexDirection="column" justifyContent="space-between">
@@ -47,5 +47,5 @@ export default function CameraTab() {
             </Grid>
             <Grid item xs={1/9} />
         </Grid>
-    )
+    );
 }
