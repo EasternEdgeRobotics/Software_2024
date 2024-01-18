@@ -1,13 +1,14 @@
 import { useAtom } from "jotai";
 import { CurrentController } from "../api/Atoms";
-import { Box, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+import { Box, Button, Divider, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 
 export default function ControllerTab() {
     const [currentController, setCurrentController] = useAtom(CurrentController);
 
-    return(
-        <Box display="flex" justifyContent="center">
-                <FormControl sx={{width: "40%"}}>
+    return (
+        <Box>
+            <Box display="flex" justifyContent="center" marginBottom="16px">
+            <FormControl sx={{width: "40%"}}>
                     {/* Currently just basic controller select option, becomes red if there is no controller selected */}
                     {/* This also sends warnings to the browser every time it loads, nothings broken it's becuase the default option is -1 which doesnt exist */}
                     <InputLabel id="controller-select-label">Controller</InputLabel>
@@ -16,7 +17,7 @@ export default function ControllerTab() {
                             navigator.getGamepads().map((gamepad) => {
                                 //Add menu item for every controller
                                 if (gamepad !== null){
-                                    return <MenuItem value={gamepad!.index}>{gamepad!.id}</MenuItem>;
+                                    return <MenuItem value={gamepad?.index}>{gamepad?.id}</MenuItem>;
                                 }
                             })
                         }
@@ -25,6 +26,26 @@ export default function ControllerTab() {
                         }
                     </Select>
                 </FormControl>
+            </Box>
+            <Divider>Profiles</Divider><br/>
+            <Box display="flex" justifyContent="center" marginBottom="16px">
+                <FormControl sx={{width: "33%"}}>
+                    {/* Currently just basic controller select option, becomes red if there is no controller selected */}
+                    {/* This also sends warnings to the browser every time it loads, nothings broken it's becuase the default option is -1 which doesnt exist */}
+                    <InputLabel id="controller-profile-select-label">Select Profile</InputLabel>
+                    <Select labelId="controller-profile-select-label" id="controller-profile-select" value={currentController} label="Select Profile">
+                        {/* get each profile from config */}
+                    </Select>
+                </FormControl>
+                <Button variant="outlined" sx={{marginLeft: "8px", width: "7%"}}>Load Profile</Button>
+            </Box>
+            <Box display="flex" justifyContent="center" marginBottom="16px"> {/* error if profile name exists maybe? */}
+                <TextField label="Profile Name" variant="outlined" sx={{width: "33%"}} />
+                <Button variant="outlined" sx={{marginLeft: "8px", width: "7%"}}>Save Profile</Button>
+            </Box>
+            <Box display="flex" justifyContent="center" marginBottom="16px">
+                <Button sx={{width: "40%", height: "56px"}} variant="outlined">Open Profile Editor</Button>
+            </Box>
         </Box>
-    )
+    );
 }

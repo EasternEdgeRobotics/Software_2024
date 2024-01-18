@@ -1,7 +1,7 @@
-import { useAtom } from 'jotai';
-import ROSLIB from 'roslib';
-import { IsROSConnected, ROSIP, PowerMultipliers, Profiles, ProfilesService } from './Atoms';
-import React from 'react';
+import { useAtom } from "jotai";
+import ROSLIB from "roslib";
+import { IsROSConnected, ROSIP, PowerMultipliers, Profiles, ProfilesService } from "./Atoms";
+import React from "react";
 
 const ros = new ROSLIB.Ros({});
 
@@ -22,8 +22,9 @@ export function InitROS() {
     ros.on("close", () => {
         console.log("ROS Disconnected!");
         setIsRosConnected(false);
-        ros.connect(`ws://${RosIP}:9090`)
+        ros.connect(`ws://${RosIP}:9090`);
     });
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     ros.on("error", () => {}); //to prevent page breaking
     ros.connect(`ws://${RosIP}:9090`);
 
@@ -60,15 +61,15 @@ export function InitROS() {
                         setProfiles(result.result);
                     }
                 }
-            })
+            });
         }
         setProfilesService(2);
         }    
         ,[profilesService]);
     
-    return(null);
+    return (null);
 }
 
 export function isRosConnected() {
-    return(ros.isConnected);
+    return (ros.isConnected);
 }

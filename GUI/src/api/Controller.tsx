@@ -7,7 +7,7 @@ export default function InitControllers() {
     const [currentController, setCurrentController] = useAtom(CurrentController);
 
     /* set controller that was just plugged in as the default controller if none selected */
-    window.addEventListener('gamepadconnected', (e) => {
+    window.addEventListener("gamepadconnected", (e) => {
         if (currentController === -1) {
             setCurrentController(e.gamepad.index);
             forceUpdate();
@@ -15,12 +15,12 @@ export default function InitControllers() {
     });
 
     /* if disconnected, try to set the next found controller, if no controller can be found set the current controller as -1 (none) */
-    window.addEventListener('gamepaddisconnected', (e) => {
+    window.addEventListener("gamepaddisconnected", (e) => {
         if (e.gamepad.index === currentController) {
             if (navigator.getGamepads.length > 1) {
                 for (const controller of navigator.getGamepads()) {
-                    if(controller!.connected && controller !== e.gamepad) {
-                        setCurrentController(controller!.index);
+                    if (controller?.connected && controller !== e.gamepad) {
+                        setCurrentController(controller?.index);
                         break;
                     }
                 }
@@ -29,5 +29,5 @@ export default function InitControllers() {
         forceUpdate();
     });
 
-    return(null);
+    return (null);
 }

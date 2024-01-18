@@ -2,7 +2,7 @@ import { useAtom } from "jotai";
 import { CameraIPs, ROSIP, Profiles, ProfilesService } from "../api/Atoms";
 import { Box } from "@mui/system";
 import { Button, Divider, Grid, TextField, Menu, Typography } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function SettingsTab() {
     const [IPs, setIPs] = useAtom(CameraIPs);
@@ -15,21 +15,21 @@ export default function SettingsTab() {
 
     const setCameraIP = (camera: number, ip: string) => {
         setIPs(IPs.map((item, index) => index === camera ? ip : item));
-    }
+    };
 
     const save = () => {
         setIPs(IPs.map(ip => !ip.startsWith("http://") && !ip.startsWith("https://") ? "http://" + ip : ip));
-        let settings: any = {};
+        const settings: {[id: string] : string[]} = {};
         settings.CameraIPs = IPs.map(ip => !ip.startsWith("http://") && !ip.startsWith("https://") ? "http://" + ip : ip);
-        fetch('/config', {method: "POST", headers: {'Content-Type': 'application/json'}, body: JSON.stringify(settings)});
+        fetch("/config", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(settings)});
         localStorage.setItem("ROS_IP", RosIP);
-    }
+    };
 
     const [anchorElement, setAnchorEL] = useState(null);
 
     const [mouseAnchored, setMouseAnchored] = useState<boolean>(false);
 
-    const setMouseAnchor = (currentTarget:any) =>{
+    const setMouseAnchor = (currentTarget: any) =>{
         if (mouseAnchored){
             setAnchorEL(null);
             setMouseAnchored(false);
@@ -38,7 +38,7 @@ export default function SettingsTab() {
             setAnchorEL(currentTarget);
             setMouseAnchored(true);
         }
-    }
+    };
 
 
     // FUNCTIONS BELOW BELONG TO PROFILE EDITOR
@@ -74,7 +74,7 @@ export default function SettingsTab() {
             newProfilesList.push(newProfile); //Add the new profile
             setProfiles(JSON.stringify(newProfilesList));
         }
-    }
+    };
 
     const deleteProfile = () => {
         const newProfilesList = [];
@@ -83,18 +83,18 @@ export default function SettingsTab() {
             if (currentProfilesList[i]["info"]["name"]==currentProfile){ 
                 continue; //Do not add the profile we want to remove
             }
-            else{
+            else {
                 newProfilesList.push(currentProfilesList[i]);
             }
         }
         setProfiles(JSON.stringify(newProfilesList)); //Turn the JSON object into a string then store it in profiles
         setCurrentProfile("No Profile Selected"); //Reset the current profile selected
         setCreateProfileInputBox(""); //Reset the create profile input box
-    }
+    };
 
 
     if (!profileEditorMode){ //Load the normal settings tab
-    return(
+    return (
         <Box>
             <Divider>ROS</Divider><br/>
             <Box display="flex" justifyContent="center">
@@ -125,18 +125,18 @@ export default function SettingsTab() {
                 </Grid>
             </Grid>
             <Box position="absolute" bottom="8px" left="10%" width="80%">
-                <Button variant="contained" sx={{width: "100%"}} onClick={() => {save()}}>Save Settings</Button>
+                <Button variant="contained" sx={{width: "100%"}} onClick={() => {save();}}>Save Settings</Button>
             </Box>
         </Box>
-    )}
-    else{ //load the profile editor
-        return(
+    );}
+    else { //load the profile editor
+        return (
             <Box>
                 <Grid container columns={1} alignItems={"center"} rowGap={1}>
                     <Grid item xs={1}>
                         <Grid container alignItems={"center"} columnSpacing={1} justifyContent={"space-evenly"}>
                             <Grid item>  
-                                <Button onClick={()=>{setProfileEditorMode(false)}}>Return to Settings</Button>
+                                <Button onClick={()=>{setProfileEditorMode(false);}}>Return to Settings</Button>
                             </Grid>
                             <Grid item xs={1.5}></Grid>
                             <Grid item xs={1.5}>
@@ -145,12 +145,10 @@ export default function SettingsTab() {
                             <Grid item xs={2}>
                                 <Button variant={"outlined"} aria-controls={"multipliers-preset-menu"} aria-haspopup={"true"} aria-expanded={mouseAnchored} onClick={(e)=>{setMouseAnchor(e.currentTarget);}}>   
                                     {currentProfile}
-                                    <Menu id={"multipliers-preset-menu"} open={mouseAnchored} anchorEl={anchorElement} onClick={(e)=>{setMouseAnchor(e.currentTarget)}}>
-                                        {JSON.parse(profiles || '[{"info":{"name":"No Profile Selected"}}]').map((profile: { info: { name: string; }; })=>{ //If profiles is an empty string, replace it by a placeholder dictionary in the JSON.parse() argument
-                                            return(
-                                                <Button onClick={()=>{setCurrentProfile(profile.info.name)}}>{profile.info.name}</Button>
-                                            )
-                                        })}
+                                    <Menu id={"multipliers-preset-menu"} open={mouseAnchored} anchorEl={anchorElement} onClick={(e)=>{setMouseAnchor(e.currentTarget);}}>
+                                        {JSON.parse(profiles || "[{'info':{'name':'No Profile Selected'}}]").map((profile: { info: { name: string; }; }) => (//If profiles is an empty string, replace it by a placeholder dictionary in the JSON.parse() argument
+                                            <Button onClick={()=>{setCurrentProfile(profile.info.name);}}>{profile.info.name}</Button>
+                                        ))}
                                     </Menu>
                                 </Button>
                             </Grid>
@@ -181,6 +179,6 @@ export default function SettingsTab() {
                     </Grid>
                 </Grid>
             </Box>
-        )
+        );
     }
 }
