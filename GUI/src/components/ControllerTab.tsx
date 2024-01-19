@@ -1,6 +1,8 @@
 import { useAtom } from "jotai";
 import { CurrentController } from "../api/Atoms";
 import { Box, Button, Divider, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import { Trash2 } from "lucide-react";
+import ControllerEditor from "./ControllerEditor";
 
 export default function ControllerTab() {
     const [currentController, setCurrentController] = useAtom(CurrentController);
@@ -29,7 +31,7 @@ export default function ControllerTab() {
             </Box>
             <Divider>Profiles</Divider><br/>
             <Box display="flex" justifyContent="center" marginBottom="16px">
-                <FormControl sx={{width: "33%"}}>
+                <FormControl sx={{width: "26%"}}>
                     {/* Currently just basic controller select option, becomes red if there is no controller selected */}
                     {/* This also sends warnings to the browser every time it loads, nothings broken it's becuase the default option is -1 which doesnt exist */}
                     <InputLabel id="controller-profile-select-label">Select Profile</InputLabel>
@@ -37,15 +39,14 @@ export default function ControllerTab() {
                         {/* get each profile from config */}
                     </Select>
                 </FormControl>
-                <Button variant="outlined" sx={{marginLeft: "8px", width: "7%"}}>Load Profile</Button>
+                <Button variant="outlined" sx={{marginLeft: "5.5px", width: "10%"}}>Load Profile</Button>
+                <Button variant="outlined" sx={{marginLeft: "5.5px"}}><Trash2 /></Button>
             </Box>
             <Box display="flex" justifyContent="center" marginBottom="16px"> {/* error if profile name exists maybe? */}
-                <TextField label="Profile Name" variant="outlined" sx={{width: "33%"}} />
-                <Button variant="outlined" sx={{marginLeft: "8px", width: "7%"}}>Save Profile</Button>
+                <TextField label="Profile Name" variant="outlined" sx={{width: "30%"}} />
+                <Button variant="outlined" sx={{marginLeft: "8px", width: "10%"}}>Save Profile</Button>
             </Box>
-            <Box display="flex" justifyContent="center" marginBottom="16px">
-                <Button sx={{width: "40%", height: "56px"}} variant="outlined">Open Profile Editor</Button>
-            </Box>
+            <ControllerEditor />
         </Box>
     );
 }

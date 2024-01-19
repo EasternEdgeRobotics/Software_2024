@@ -22,22 +22,9 @@ export function BotTab() {
                 {["Power", "Surge", "Sway", "Heave", "Pitch", "Roll", "Yaw"].map((label, index) => {
                         return (
                             <Grid item xs={1} display="flex" justifyContent="center" alignItems="center" flexWrap="wrap" height="300px">
-                                <Slider orientation="vertical" valueLabelDisplay="auto" step={5} defaultValue={0} onChange={(_,value) => setPowerMultipliers(powerMultipliers.map((v, i) => {if (i == index) return value as number; else return v;}))} />
+                                <Slider orientation="vertical" valueLabelDisplay="auto" step={5} defaultValue={powerMultipliers[index]} onChange={(_,value) => setPowerMultipliers(powerMultipliers.map((v, i) => {if (i == index) return value as number; else return v;}))} />
                                 <Box flexBasis="100%" height="0" />
-                                <h1>{label}: {powerMultipliers[index]}</h1>
-                                {index == 2 &&
-                                    <Box>
-                                        <Box flexBasis="100%" height="0" />
-                                        <Button variant="outlined">Load Power Preset</Button>
-                                        {/* TODO: make the load/save buttons work */}
-                                    </Box>
-                                }
-                                {index == 4 &&
-                                    <Box>
-                                        <Box flexBasis="100%" height="0" />
-                                        <Button variant="outlined">Save Power Preset</Button>
-                                    </Box>
-                                }
+                                <h2>{label}: {powerMultipliers[index]}</h2>
                             </Grid>
                         );})
                 }
@@ -64,6 +51,8 @@ export function BotTab() {
                                     </TableBody>
                                 </Table>
                             </TableContainer>
+                            <Button variant="contained" sx={{marginY: "8px", width: "100%", height: "3rem"}}>Load Power Preset</Button>
+                            <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Save Power Preset</Button>
                         </Grid>
                     </Grid>
                 </Grid>
