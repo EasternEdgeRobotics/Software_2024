@@ -1,26 +1,26 @@
 import { Box, Grid, Paper } from "@mui/material";
 import { useAtom } from "jotai";
-import { CameraIPs, CurrentController } from "../api/Atoms";
+import { CameraIPs } from "../api/Atoms";
 import React from "react";
 
 // Main camera vs alt camera are the exact same without margin and different height
 
 export function MainCamera(props: {ip: string, width: number}) {
     return (
-        <Box height={(props.width-8) * (3/8)} sx={{backgroundImage: `url(${props.ip}), url(./nosignal.png)`, backgroundSize: "100% 100%", borderRadius: "12px", margin: "0 4px 0 4px"}}/>
+        <Box height={(props.width-8) * (3/8)} sx={{backgroundImage: `url(${props.ip}), url(./nosignal.jpg)`, backgroundSize: "100% 100%", borderRadius: "12px", margin: "0 4px 0 4px"}}/>
     );
 }
 
 export function AltCamera(props: {ip: string, width: number}) {
     return (
-        <Box height={props.width * (19/108)} sx={{backgroundImage: `url(${props.ip}), url(./nosignal.png)`, backgroundSize: "100% 100%", borderRadius: "12px"}}/>
+        <Box height={props.width * (19/108)} sx={{backgroundImage: `url(${props.ip}), url(./nosignal.jpg)`, backgroundSize: "100% 100%", borderRadius: "12px"}}/>
     );
 }
 
 export default function CameraTab() {
     const [width, setWidth] = React.useState<number>(window.innerWidth);
     const [IPs] = useAtom<string[]>(CameraIPs);
-    const [currentController] = useAtom<number>(CurrentController);
+    const [currentController] = React.useState<number>(-1);
 
     // Create a listener to update width on window resize
     React.useEffect(() => {window.addEventListener("resize", () => {setWidth(window.innerWidth);});}, []);

@@ -1,19 +1,35 @@
 import { Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormControlLabel, InputLabel, MenuItem, Select, Tab, Tabs } from "@mui/material";
 import { useState } from "react";
 
-export default function ControllerEditor() {
-	const [open, setOpen] = useState<boolean>(false);
+export default function ProfileEditor(props: {open: boolean; onClose: () => void}) {
 	const [tabIndex, setTabIndex] = useState<number>(0);
 	const [controller1, setController1] = useState<number>(-1);
 	const [controller2, setController2] = useState<number>(-1);
 	const [controller2Enabled, setController2Enabled] = useState<boolean>(false);
 
+    window.addEventListener("gamepadconnected", (e) => {
+        if (controller1 === -1) setController1(e.gamepad.index);
+	});
+
+    window.addEventListener("gamepaddisconnected", (e) => {
+		setTabIndex(0);
+        [{controller: controller1, setController: setController1}, {controller: controller2, setController: setController2}].forEach(c => {
+			if (e.gamepad.index === c.controller) {
+				if (navigator.getGamepads.length > 1) {
+					for (const controller of navigator.getGamepads()) {
+						if (controller?.connected && controller !== e.gamepad) {
+							c.setController(controller?.index);
+							break;
+						}
+					}
+				} else c.setController(-1);
+			}
+		});
+    });
+
 	return (
 		<Box>
-			<Box display="flex" justifyContent="center" marginBottom="16px">
-                <Button sx={{width: "40%", height: "56px"}} variant="outlined" onClick={() => setOpen(true)}>Open Profile Editor</Button>
-            </Box>
-			<Dialog open={open} onClose={() => setOpen(false)} fullWidth={true} maxWidth="lg">
+			<Dialog open={props.open} onClose={props.onClose} fullWidth={true} maxWidth="lg">
 				<DialogTitle>Editing Profile: MAKE THE PROFILE NAME SHOW UP</DialogTitle>
 				<DialogContent sx={{paddingX: "24px", paddingY: "0"}}>
 					<Tabs value={tabIndex} onChange={(_, index) => setTabIndex(index)} sx={{paddingBottom: "16px"}} centered>
@@ -28,15 +44,13 @@ export default function ControllerEditor() {
 									<InputLabel>Controller 1</InputLabel>
 									<Select value={controller1} label="Controller 1" onChange={(e) => setController1(e.target.value as number)} error={(controller1 === -1)} sx={{width: "100%"}}>
 										{navigator.getGamepads().length > 0 &&
-											navigator.getGamepads().map((gamepad) => {
+											navigator.getGamepads().filter((gamepad) => gamepad !== null && gamepad.index !== controller2).map((gamepad) => {
 												//Add menu item for every controller
-												if (gamepad !== null && gamepad.index !== controller2){
-													return <MenuItem value={gamepad?.index}>{gamepad?.id}</MenuItem>;
-												}
+												return <MenuItem value={gamepad?.index}>{gamepad?.id}</MenuItem>;
 											})
 										}
-										{navigator.getGamepads().length <= 0 &&
-											<MenuItem value={-1}>No Controllers Detected!</MenuItem>
+										{navigator.getGamepads().filter((gamepad) => gamepad !== null && gamepad.index !== controller2).length <= 0 &&
+											<MenuItem value={-1} disabled={true}>No Controllers Detected!</MenuItem>
 										}
 									</Select>
 								</FormControl>
@@ -45,25 +59,30 @@ export default function ControllerEditor() {
 									<InputLabel>Controller 2</InputLabel>
 									<Select value={controller2} label="Controller 2" onChange={(e) => setController2(e.target.value as number)} error={(controller2 === -1)} sx={{width: "100%"}} disabled={!controller2Enabled}>
 									{navigator.getGamepads().length > 0 &&
-										navigator.getGamepads().map((gamepad) => {
+										navigator.getGamepads().filter((gamepad) => gamepad !== null && gamepad.index !== controller1).map((gamepad) => {
 											//Add menu item for every controller
-											if (gamepad !== null && gamepad.index !== controller1){
-												return <MenuItem value={gamepad?.index}>{gamepad?.id}</MenuItem>;
-											}
+											return <MenuItem value={gamepad?.index}>{gamepad?.id}</MenuItem>;
 										})
 									}
-									{navigator.getGamepads().length <= 0 &&
-										<MenuItem value={-1}>No Controllers Detected!</MenuItem>
+									{navigator.getGamepads().filter((gamepad) => gamepad !== null && gamepad.index !== controller1).length <= 0 &&
+										<MenuItem value={-1} disabled={true}>No Controllers Detected!</MenuItem>
 									}
 									</Select>
 								</FormControl>
 							</Box>			
 					}
+					{tabIndex == 1 &&
+						<Box sx={{width: "100%"}}>
+							{navigator.getGamepads()[controller1]?.buttons.map((button, index) => (
+								<h1 style={{color: button.pressed ? "green" : "red"}}>Button {index}</h1>
+							))}
+						</Box>
+					}
 					</Box>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={() => setOpen(false)}>Close</Button>
-					<Button onClick={() => setOpen(false)}>Save</Button>
+					<Button onClick={props.onClose}>Close</Button>
+					<Button onClick={() => props.onClose()}>Save</Button>
 				</DialogActions>
 			</Dialog>
 		</Box>

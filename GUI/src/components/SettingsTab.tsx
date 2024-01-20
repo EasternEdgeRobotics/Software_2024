@@ -1,11 +1,15 @@
 import { useAtom } from "jotai";
 import { CameraIPs, ROSIP } from "../api/Atoms";
 import { Box } from "@mui/system";
-import { Button, Divider, Grid, TextField } from "@mui/material";
+import { Button, Divider, FormControl, Grid, InputLabel, Select, TextField } from "@mui/material";
+import { Trash2 } from "lucide-react";
+import ProfileEditor from "./ProfileEditor";
+import { useState } from "react";
 
 export default function SettingsTab() {
     const [IPs, setIPs] = useAtom(CameraIPs);
     const [RosIP, setRosIP] = useAtom(ROSIP);
+    const [editorOpen, setEditorOpen] = useState<boolean>(false);
 
     const setCameraIP = (camera: number, ip: string) => {
         setIPs(IPs.map((item, index) => index === camera ? ip : item));
@@ -44,6 +48,35 @@ export default function SettingsTab() {
             </Grid>
             <Box position="absolute" bottom="8px" left="10%" width="80%">
                 <Button variant="contained" sx={{width: "100%"}} onClick={() => {save();}}>Save Settings</Button>
+            </Box>
+            <br/><Divider>Profiles</Divider><br/>
+            <Box display="flex" justifyContent="center">
+                <Grid container width="50%" spacing={1}>
+                    <Grid item xs={9}>
+                        <FormControl sx={{width: "100%"}}>
+                            <InputLabel>Profile</InputLabel>
+                            <Select label="Profile">
+
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={2}>
+                        <Button variant="contained" sx={{height: "56px", width: "100%"}}>Load Profile</Button>
+                    </Grid>
+                    <Grid item xs={1}>
+                        <Button variant="outlined" sx={{height: "56px", width: "100%"}}><Trash2 /></Button>
+                    </Grid>
+                    <Grid item xs={9}>
+                        <TextField label="Profile Name" variant="outlined" sx={{width: "100%"}} />
+                    </Grid>
+                    <Grid item xs={3}>
+                        <Button variant="contained" sx={{height: "56px", width: "100%"}}>Save Profile</Button>
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => setEditorOpen(true)}>Profile Editor</Button>
+                        <ProfileEditor open={editorOpen} onClose={() => setEditorOpen(false)} />
+                    </Grid>
+                </Grid>
             </Box>
         </Box>
     );

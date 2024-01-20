@@ -51,11 +51,18 @@ export function BotTab() {
                                     </TableBody>
                                 </Table>
                             </TableContainer>
-                            <Button variant="contained" sx={{marginY: "8px", width: "100%", height: "3rem"}}>Load Power Preset</Button>
-                            <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Save Power Preset</Button>
                         </Grid>
                     </Grid>
                 </Grid>
+            </Grid>
+            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
+                <Grid item xs={3.5}>
+                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Load Power Preset</Button>
+                </Grid>
+                <Grid item xs={3.5}>
+                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Save Power Preset</Button>
+                </Grid>
+                <Grid item xs={3} />
             </Grid>
         </Box>
     );
