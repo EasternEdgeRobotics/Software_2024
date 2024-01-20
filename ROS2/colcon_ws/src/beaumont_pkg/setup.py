@@ -25,6 +25,7 @@ setup(
         'console_scripts': [
             'thruster_control = beaumont_pkg.thurster_control:main',
             'profiles_manager = beaumont_pkg.profiles_manager:main',
+            'imu = beaumont_pkg.imu:main',
         ],
     },
 )

@@ -1,6 +1,6 @@
 import { useAtom } from 'jotai';
 import ROSLIB from 'roslib';
-import { IsROSConnected, ROSIP, PowerMultipliers, Profiles, ProfilesService } from './Atoms';
+import { IsROSConnected, ROSIP, PowerMultipliers, Profiles, ProfilesService, ImuData } from './Atoms';
 import React from 'react';
 
 const ros = new ROSLIB.Ros({});
@@ -9,6 +9,7 @@ export function InitROS() {
     const [RosIP] = useAtom(ROSIP);
     const [, setIsRosConnected] = useAtom(IsROSConnected);
     const [powerMultipliers] = useAtom(PowerMultipliers);
+    const [,setImuData] = useAtom(ImuData);
 
     const [profiles, setProfiles] = useAtom(Profiles);
     const [profilesService, setProfilesService] = useAtom(ProfilesService);
@@ -65,6 +66,15 @@ export function InitROS() {
         setProfilesService(2);
         }    
         ,[profilesService]);
+
+
+    const ImuDataListener = new ROSLIB.Topic({ros:ros, 
+        name:"/imu", 
+        messageType: "std_msgs/String"});
+
+    ImuDataListener.subscribe(function(message) {
+        console.log(message);
+    });
     
     return(null);
 }

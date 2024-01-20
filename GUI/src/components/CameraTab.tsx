@@ -1,6 +1,6 @@
 import { Box, Button, Grid, Paper } from "@mui/material";
 import { useAtom } from "jotai";
-import { CameraIPs, CurrentController } from "../api/Atoms";
+import { CameraIPs, CurrentController, ImuData } from "../api/Atoms";
 import React, { useState } from "react";
 
 // Main camera vs alt camera are the exact same without margin and different height

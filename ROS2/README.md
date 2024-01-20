@@ -72,3 +72,40 @@ Rosbridge starts litening on port 9090 by default. Run the GUI in your browser, 
 Check the Trello board for the list of available tasks and don't hesitate to ask for guidance! 
 
 Join the Trello board: https://trello.com/invite/b/aAfHeoZS/ATTI800afd588965f89371ccbbb2fee6b0153732980B/2024 
+
+# IMU Setup for Raspberry Pi
+
+To setup the BNO055 IMU, ensure that you've connected the BNO055 to the raspberry Pi using i2c. For this, search up your specific Pi's pinout (ex. google "Pi 3 model B pinout") and refer to the pin names on the BNO055 itself. To check if the IMU is being detected, run:
+
+download i2c tools before this if not done already:
+```
+sudo apt-get update
+sudo apt-get install i2c-tools
+```
+Then run the following command:
+```
+i2cdetect -y 1
+```
+You should see an address appearing for the BNO055 IMU board.
+
+To read from the board using Python (as is done in this project), download the following dependencies:
+
+Python if not done already:
+```
+sudo apt update
+sudo apt install python3
+```
+Pip package manager
+```
+sudo apt install python3-pip
+```
+BNO055 Adafruit Python Library
+```
+pip3 install adafruit-circuitpython-bno055
+```
+And finally another dependancy that I noticed was needed while running Ubuntu Server on the Raspberry Pi:
+```
+pip3 install RPi.GPIO
+```
+
+Now, along with the installation + compilation of ROS 2 and the workspace in this repository, you should be able to see data from the IMU on the topic "/imu"

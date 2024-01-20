@@ -7,5 +7,6 @@ export const CurrentController = atom<number>(-1);
 export const ROSIP = atom<string>(localStorage.getItem("ROS_IP") || window.location.hostname);
 export const IsROSConnected = atom<boolean>(false);
 export const Profiles = atom<string>(''); //Stores the profiles which contain the controller bindings
-export const ProfilesService = atom<number>(2); //If ProfilesService == 0, tell the ROS client to overwrite it's stored profiles with what is here. If ProfilesService == 1, tell the ROS client to send its stored profiles. 
+export const ProfilesService = atom<number>(2); //If ProfilesService == 0, tell the ROS client to overwrite it's stored profiles with what is here. If ProfilesService == 1, tell the ROS client to send its stored profiles.
+export const ImuData = atom<string>(''); 
 
