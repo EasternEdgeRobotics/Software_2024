@@ -66,12 +66,6 @@ export default function SettingsTab() {
                     <Grid item xs={1}>
                         <Button variant="outlined" sx={{height: "56px", width: "100%"}}><Trash2 /></Button>
                     </Grid>
-                    <Grid item xs={9}>
-                        <TextField label="Profile Name" variant="outlined" sx={{width: "100%"}} />
-                    </Grid>
-                    <Grid item xs={3}>
-                        <Button variant="contained" sx={{height: "56px", width: "100%"}}>Save Profile</Button>
-                    </Grid>
                     <Grid item xs={12}>
                         <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => setEditorOpen(true)}>Profile Editor</Button>
                         <ProfileEditor open={editorOpen} onClose={() => setEditorOpen(false)} />
