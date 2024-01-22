@@ -6,4 +6,4 @@ export const PowerMultipliers = atom<number[]>([0,0,0,0,0,0,0]); //Power:0, Surg
 export const ROSIP = atom<string>(localStorage.getItem("ROS_IP") || window.location.hostname);
 export const IsROSConnected = atom<boolean>(false);
 export const CurrentProfile = atom<string>(""); //Stores the profiles which contain the controller bindings
-export const Mappings = atom<{[controller: number]: {[button: number]: string}}>({0: {}, 1: {}});
+export const Mappings = atom<{[controller: number]: {[type: string]: {[index: number]: string | number}}}>({0: {}, 1: {}});
