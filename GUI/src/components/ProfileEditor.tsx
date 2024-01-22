@@ -18,9 +18,19 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 		});
 		window.addEventListener("gamepaddisconnected", (e) => {
 			setTabIndex(0);
+			if (controller1 == e.gamepad.index) {
+				setController1(-1);
+				const tmp = mappings;
+				tmp[0] = {};
+				setMappings(tmp);
+			}
+			if (controller2 == e.gamepad.index) {
+				setController2(-1);
+				const tmp = mappings;
+				tmp[1] = {};
+				setMappings(tmp);
+			}
 			reloadComponent(Math.random());
-			if (controller1 == e.gamepad.index) setController1(-1);
-			if (controller2 == e.gamepad.index) setController2(-1);
 		});
 	}, []);
 
@@ -47,8 +57,9 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 								}
 								tmp[0] = {"buttons": {}, "axes": {}};
 								tmp[0]["buttons"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.buttons.length ?? 0 }, () => "None")};
-								tmp[0]["axes"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "None")};setMappings(tmp);
-								tmp[0]["deadzones"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => 0)};setMappings(tmp);
+								tmp[0]["axes"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "None")};
+								tmp[0]["deadzones"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "0")};
+								setMappings(tmp);
 							}} sx={{width: "100%"}}>
 								<MenuItem value={-1}>None</MenuItem>
 								{navigator.getGamepads().length > 0 &&
@@ -70,7 +81,7 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 								tmp[1] = {"buttons": {}, "axes": {}};
 								tmp[1]["buttons"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.buttons.length ?? 0 }, () => "None")};
 								tmp[1]["axes"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "None")};
-								tmp[1]["deadzones"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => 0)};setMappings(tmp);
+								tmp[1]["deadzones"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "0")};
 								setMappings(tmp);
 							}} sx={{width: "100%"}}>
 								<MenuItem value={-1}>None</MenuItem>
