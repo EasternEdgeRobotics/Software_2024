@@ -46,7 +46,6 @@ class ProfilesManager(Node):
         self.publisher_ = self.create_publisher(String, "getconfig", 10)
 
     def sendConfig(self, msg):
-        print("AAAAAAAAA")
         output = {"cameras": [], "profiles": [], "mappings": []}
         for row in session.query(Camera).all():
             output["cameras"].append(row.dict())
