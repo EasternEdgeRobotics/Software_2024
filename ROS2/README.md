@@ -68,6 +68,44 @@ ros2 launch rosbridge_server rosbridge_websocket_launch.xml
 ```
 Rosbridge starts litening on port 9090 by default. Run the GUI in your browser, both sides should indicate that they are connected.
 
+# Simulation Environment
+
+Currently, the simulation environment is not set up. However, a model of Caribou from 2023 has been created is the ROS2 directory inside the models folder.
+To interact with the model, ensure that Gazebo Classic is installed along with ROS2 Humble, as well as the Gazebo ROS2 Humble Plugins. There is no need to have
+the colcon_ws setup up because the simulation environment is not set up.
+
+The following commands allow for controlling the BOT via the command line:
+
+Pitch
+```
+ros2 topic pub -1 /demo/world/force_demo_pitch geometry_msgs/Wrench "force: {z: 100.0}"
+```
+Roll
+```
+ros2 topic pub -1 /demo/world/force_demo_roll geometry_msgs/Wrench "force: {z: 100.0}"
+```
+Yaw
+```
+ros2 topic pub -1 /demo/world/force_demo_yaw geometry_msgs/Wrench "force: {x: 100.0}"
+```
+Surge
+```
+ros2 topic pub -1 /demo/world/force_demo_linear geometry_msgs/Wrench "force: {y: 100.0}"
+```
+Sway 
+```
+ros2 topic pub -1 /demo/world/force_demo_linear geometry_msgs/Wrench "force: {x: 100.0}"
+```
+Heave
+```
+ros2 topic pub -1 /demo/world/force_demo_linear geometry_msgs/Wrench "force: {z: 100.0}"
+```
+View the Cameras (currently only front and bottom camera)
+```
+ros2 run rqt_image_view rqt_image_view image_demo_1
+```
+The CAD model was generated through an open source custom Onshape API called [Onshape to Robot](https://onshape-to-robot.readthedocs.io/en/latest/)
+
 ## What next?
 Check the Trello board for the list of available tasks and don't hesitate to ask for guidance! 
 
