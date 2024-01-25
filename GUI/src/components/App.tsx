@@ -29,9 +29,8 @@ export default function App() {
     React.useEffect(() => {
         /**fetch('/config').then(response => response.json()).then(data => {
             setCameraIPs(data.CameraIPs || ["", "", ""]);
-        });**/
+       });**/
     }, [setCameraIPs]);
-    
 
     return (
         <Box>
