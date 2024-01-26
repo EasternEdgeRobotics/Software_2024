@@ -42,21 +42,25 @@ class ProfilesManager(Node):
 
     def __init__(self):
         super().__init__('profiles_manager')
-        self.subscription = self.create_subscription(String, "requestconfig", self.sendConfig, 10)
-        self.publisher_ = self.create_publisher(String, "getconfig", 10)
+        self.srv = self.create_service(Config, "profiles_config", self.profiles_config_callback)
 
-    def sendConfig(self, msg):
-        print("AAAAAAAAA")
-        output = {"cameras": [], "profiles": [], "mappings": []}
-        for row in session.query(Camera).all():
-            output["cameras"].append(row.dict())
-        for row in session.query(Profile).all():
-            output["profiles"].append(row.dict())
-        for row in session.query(Mapping).all():
-            output["mappings"].append(row.dict())
-        msg = String()
-        msg.data = str(output)
-        self.publisher_.publish(msg)
+    def profiles_config_callback(self, request, response):
+        if request.state == 0:
+            print("TODO: Implement a solution to save new configs to database")
+            print("Ideally, only a small string is sent from the frontend containing what should be changed over what is aleady there")
+            print("Maybe make a new ATOM variable to store the changes made")
+            response.result = "Success"
+            return response
+        elif request.state == 1:
+            output = {"cameras": [], "profiles": [], "mappings": []}
+            for row in session.query(Camera).all():
+                output["cameras"].append(row.dict())
+            for row in session.query(Profile).all():
+                output["profiles"].append(row.dict())
+            for row in session.query(Mapping).all():
+                output["mappings"].append(row.dict())
+            response.result = str(output)
+            return response
 
 def main(args=None):
     global session

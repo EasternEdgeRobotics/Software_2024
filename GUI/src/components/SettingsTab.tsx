@@ -1,5 +1,5 @@
 import { useAtom } from "jotai";
-import { CameraIPs, ROSIP } from "../api/Atoms";
+import { CameraIPs, ROSIP, RequestingConfig } from "../api/Atoms";
 import { Box } from "@mui/system";
 import { Button, Divider, FormControl, Grid, InputLabel, Select, TextField } from "@mui/material";
 import { Trash2 } from "lucide-react";
@@ -10,6 +10,7 @@ export default function SettingsTab() {
     const [IPs, setIPs] = useAtom(CameraIPs);
     const [RosIP, setRosIP] = useAtom(ROSIP);
     const [editorOpen, setEditorOpen] = useState<boolean>(false);
+    const [,setRequestingConfig] = useAtom(RequestingConfig);
 
     const setCameraIP = (camera: number, ip: string) => {
         setIPs(IPs.map((item, index) => index === camera ? ip : item));
@@ -68,6 +69,10 @@ export default function SettingsTab() {
                     </Grid>
                     <Grid item xs={12}>
                         <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => setEditorOpen(true)}>Profile Editor</Button>
+                        <ProfileEditor open={editorOpen} onClose={() => setEditorOpen(false)} />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => {setRequestingConfig(1)}}>Temporary Request Profiles Config</Button>
                         <ProfileEditor open={editorOpen} onClose={() => setEditorOpen(false)} />
                     </Grid>
                 </Grid>

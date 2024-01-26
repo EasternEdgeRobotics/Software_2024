@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import ROSLIB from "roslib";
-import { IsROSConnected, ROSIP, PowerMultipliers } from "./Atoms";
+import { IsROSConnected, ROSIP, PowerMultipliers, RequestingConfig, Mappings } from "./Atoms";
 import React from "react";
 
 const ros = new ROSLIB.Ros({});
@@ -9,6 +9,8 @@ export function InitROS() {
     const [RosIP] = useAtom(ROSIP);
     const [, setIsRosConnected] = useAtom(IsROSConnected);
     const [powerMultipliers] = useAtom(PowerMultipliers);    
+    const [requestingConfig, setRequestingConfig] = useAtom(RequestingConfig);
+    const [mappings, setMappings] = useAtom(Mappings);
 
     ros.on("connection", () => {
         console.log("ROS Connected!");
@@ -40,6 +42,27 @@ export function InitROS() {
         thrusterValsTopic.publish(thrusterVals);
         }    
         ,[powerMultipliers]);
+
+    const configClient = new ROSLIB.Service({ros:ros, 
+                                            name:"/profiles_config", 
+                                            serviceType: "eer_messages/Config"});
+
+    React.useEffect(()=>{
+        if (requestingConfig==0 || requestingConfig==1){
+            const request = new ROSLIB.ServiceRequest({
+                state:requestingConfig,
+                data:JSON.stringify(mappings)});
+                configClient.callService(request, function(result){
+                if (requestingConfig==1){ //If Profile service==0, we don't care about the result since we are loading config into database
+                    if (result.result !=""){ //Do not load the result if there are no profiles stored  
+                        setMappings(JSON.parse(result.result));
+                    }
+                }
+            })
+        }
+        setRequestingConfig(2);
+        }    
+        ,[requestingConfig]);
     
     return (null);
 }

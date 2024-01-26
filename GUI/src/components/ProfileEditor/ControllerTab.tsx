@@ -58,7 +58,8 @@ export default function ControllerTab(props: {controller: number; index: number}
                             <Grid item xs={2.75}>
                                 {/* TODO: add deadzone to mapping dict */}
                                 <TextField InputProps={{inputProps: {min: 0, max: 1, step: 0.1}}} label="Deadzone" value={mappings[props.index]["deadzones"][index]} error={
-                                    mappings[props.index]["deadzones"][index].length === 0 || 1 < Number(mappings[props.index]["deadzones"][index]) || 0 > Number(mappings[props.index]["deadzones"][index])} onChange={(e) => {
+                                    mappings[props.index]["deadzones"][index].length === 0 || 1 < Number(mappings[props.index]["deadzones"][index]) || 0 > Number(mappings[props.index]["deadzones"][index])} onChange={(e) => { 
+                                    //abs(Deadzone) should be !=0 and <1
                                     const tmp = mappings;
                                     if (!isNaN(Number(e.target.value)))
                                         tmp[props.index]["deadzones"][index] = e.target.value;
