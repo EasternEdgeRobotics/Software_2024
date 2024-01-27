@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import ROSLIB from "roslib";
-import { IsROSConnected, ROSIP, PowerMultipliers, RequestingConfig, Mappings } from "./Atoms";
+import { IsROSConnected, ROSIP, PowerMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList  } from "./Atoms";
 import React from "react";
 
 const ros = new ROSLIB.Ros({});
@@ -10,7 +10,9 @@ export function InitROS() {
     const [, setIsRosConnected] = useAtom(IsROSConnected);
     const [powerMultipliers] = useAtom(PowerMultipliers);    
     const [requestingConfig, setRequestingConfig] = useAtom(RequestingConfig);
+    const [requestingProfilesList, setRequestingProfilesList] = useAtom(RequestingProfilesList);
     const [mappings, setMappings] = useAtom(Mappings);
+    const [profilesList, setProfilesList] = useAtom(ProfilesList);
 
     ros.on("connection", () => {
         console.log("ROS Connected!");
@@ -55,7 +57,7 @@ export function InitROS() {
                 configClient.callService(request, function(result){
                 if (requestingConfig==1){ //If Profile service==0, we don't care about the result since we are loading config into database
                     if (result.result !=""){ //Do not load the result if there are no profiles stored  
-                        setMappings(JSON.parse(result.result));
+                        setMappings(JSON.parse(result.result.replaceAll("'",'"'))); //Zaid: JSON only likes double quotes
                     }
                 }
             })
@@ -63,6 +65,28 @@ export function InitROS() {
         setRequestingConfig(2);
         }    
         ,[requestingConfig]);
+
+
+    const profilesListClient = new ROSLIB.Service({ros:ros, 
+                                            name:"/profiles_list", 
+                                            serviceType: "eer_messages/Config"});
+
+    React.useEffect(()=>{
+        if (requestingProfilesList==1){
+            const request = new ROSLIB.ServiceRequest({
+                state:requestingProfilesList,
+                data:JSON.stringify(mappings)});
+                profilesListClient.callService(request, function(result){
+                if (requestingConfig==1){ //If Profile service==0, we don't care about the result since we are loading config into database
+                    if (result.result !=""){ //Do not load the result if there are no profiles stored  
+                        setProfilesList(JSON.parse(result.result.replaceAll("'",'"'))); //JSON only likes double quotes
+                    }
+                }
+            })
+        }
+        setRequestingProfilesList(2);
+        }    
+        ,[requestingProfilesList]);
     
     return (null);
 }

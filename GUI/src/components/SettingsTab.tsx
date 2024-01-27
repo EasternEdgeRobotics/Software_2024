@@ -75,6 +75,10 @@ export default function SettingsTab() {
                         <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => {setRequestingConfig(1)}}>Temporary Request Profiles Config</Button>
                         <ProfileEditor open={editorOpen} onClose={() => setEditorOpen(false)} />
                     </Grid>
+                    <Grid item xs={12}>
+                        <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => {setRequestingConfig(0)}}>Temporary Send Profiles Config</Button>
+                        <ProfileEditor open={editorOpen} onClose={() => setEditorOpen(false)} />
+                    </Grid>
                 </Grid>
             </Box>
         </Box>

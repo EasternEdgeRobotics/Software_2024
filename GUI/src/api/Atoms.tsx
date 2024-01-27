@@ -8,3 +8,5 @@ export const IsROSConnected = atom<boolean>(false);
 export const CurrentProfile = atom<string>(""); //Stores the profiles which contain the controller bindings
 export const Mappings = atom<{[controller: number]: {[type: string]: {[index: number]: string}}}>({0: {}, 1: {}});
 export const RequestingConfig = atom<number>(2);
+export const RequestingProfilesList = atom<number>(2);
+export const ProfilesList = atom<string[]>(["None"]);

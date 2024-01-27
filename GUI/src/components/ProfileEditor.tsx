@@ -1,17 +1,20 @@
-import { Box, Button, Dialog, DialogActions, DialogContent, FormControl, InputLabel, MenuItem, Select, Tab, Tabs, TextField } from "@mui/material";
+import { Box, Button, Dialog, DialogActions, DialogContent, FormControl, InputLabel, MenuItem, Select, Tab, Tabs, TextField , Grid} from "@mui/material";
 import { useEffect, useState } from "react";
 import ControllerTab from "./ProfileEditor/ControllerTab";
 import { useAtom } from "jotai";
-import { Mappings } from "../api/Atoms";
+import { Mappings, ProfilesList, RequestingProfilesList } from "../api/Atoms";
 
 export default function ProfileEditor(props: {open: boolean; onClose: () => void}) {
 	const [tabIndex, setTabIndex] = useState<number>(0);
 	const [controller1, setController1] = useState<number>(-1);
 	const [controller2, setController2] = useState<number>(-1);
 	const [profileName, setProfileName] = useState<string>("");
+	const [profilesList, setProfilesList] = useAtom(ProfilesList)
+	const [, setRequestingProfilesList] = useAtom(RequestingProfilesList);
+	const [profileTextField, setProfileTextField] = useState<string>("");
 	const [mappings, setMappings] = useAtom(Mappings);
 
-	const [, reloadComponent] = useState<number>(0);
+	const [component, reloadComponent] = useState<number>(0);
 	useEffect(() => {
 		window.addEventListener("gamepadconnected", () => {
 			reloadComponent(Math.random());
@@ -34,6 +37,19 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 		});
 	}, []);
 
+	useEffect(() => {
+		setRequestingProfilesList(1); //Get profiles from the database
+	}, [component]);
+
+	const profileExists = (profile : string) => {
+		for (let i = 0; i<profilesList.length;i++){
+			if (profilesList[i] == profile){
+				return true;
+			} 
+		}
+		return false;
+	}
+
 	return (
 		<Dialog open={props.open} onClose={props.onClose} fullWidth maxWidth="lg">
 			<DialogContent sx={{paddingX: "24px", paddingY: "0", height: "65vh"}}>
@@ -45,7 +61,19 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 				</Tabs>
 				{tabIndex == 0 &&
 					<Box>
-						<TextField label="Profile Name" variant="outlined" sx={{width: "100%"}} value={profileName} onChange={(e) => setProfileName(e.target.value)} error={profileName.replaceAll(" ", "").length == 0} />
+						<FormControl fullWidth sx={{marginY: "16px"}}>
+							<InputLabel>Profile</InputLabel>
+							<Select value={profileName} label="Profile" onChange={(e) => {
+								setProfileName(e.target.value)
+								return;
+							}} sx={{width: "100%"}}>
+								{profilesList.map((profile) => {
+										//Add menu item for every profile
+										return <MenuItem value={profile}>{profile}</MenuItem>;
+									})
+								}
+							</Select>
+						</FormControl>
 						<FormControl fullWidth sx={{marginY: "16px"}}>
 							<InputLabel>Controller 1</InputLabel>
 							<Select value={controller1} label="Controller 1" onChange={(e) => {
@@ -93,6 +121,23 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 								}
 							</Select>
 						</FormControl>
+						<Grid container alignItems={"center"} spacing={2} marginTop={0.5}>
+							<Grid item xs={10}>
+								<TextField label="Profile Name" variant="outlined" sx={{width: "100%"}} value={profileTextField} 
+								onChange={(e) => setProfileTextField(e.target.value)}/>
+							</Grid>
+							<Grid item xs={2}>
+								<Button variant="contained" onClick={() => {
+									if ((profileTextField.replaceAll(" ","") != "") && !(profileExists(profileTextField))){
+									const temp = profilesList;
+									temp.push(profileTextField);
+									setProfilesList(temp); //This will only be stored locally until the user adds mappings and clicks save
+									reloadComponent(Math.random());
+									console.log(profilesList);
+								}}}>Create Profile</Button>
+							</Grid>
+						</Grid>
+						
 					</Box>
 				}
 				{tabIndex == 1 &&
