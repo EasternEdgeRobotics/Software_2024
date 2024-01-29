@@ -9,4 +9,4 @@ export const CurrentProfile = atom<string>(""); //Stores the profiles which cont
 export const Mappings = atom<{[controller: number]: {[type: string]: {[index: number]: string}}}>({0: {}, 1: {}});
 export const RequestingConfig = atom<{state:number, profileName: string, controller1: string, controller2: string}>({state:2, profileName:"default", controller1: "null", controller2: "null"});
 export const RequestingProfilesList = atom<number>(2);
-export const ProfilesList = atom<string[]>(["Default"]);
+export const ProfilesList = atom<[{id: number, name: string, controller1: string, controller2: string}]>([{id:0, name:"default",controller1:"null",controller2:"null"}]);

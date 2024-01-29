@@ -86,7 +86,8 @@ def mappings_json_to_mappings_list(profile_name, controller_name, mappings_json)
     for i, key in enumerate(list(buttons_dict.keys())):
         query = session.query(Mapping).filter(Mapping.name == profile_name, Mapping.controller == controller_name, Mapping.button == i) 
         if query.count() > 0: #Mapping exists
-            query.action = buttons_dict[str(i)]
+            query.update({"action":buttons_dict[str(i)]})
+            session.commit()
         else:
             new_mapping = Mapping(name = profile_name, controller = controller_name, button = i, action = buttons_dict[str(i)], isAxis = False)
             session.add(new_mapping)
@@ -98,14 +99,17 @@ def mappings_json_to_mappings_list(profile_name, controller_name, mappings_json)
     for i, key in enumerate(list(axes_dict.keys())):
         query = session.query(Mapping).filter(Mapping.name == profile_name, Mapping.controller == controller_name, Mapping.button == i , Mapping.isAxis == True) 
         if query.count() > 0: #Mapping exists
-            query.action = axes_dict[str(i)]
-            if (int(deadzones_dict[str(i)]) != 0):
-                query.deadzone = int(deadzones_dict[str(i)])
+            query.update({"action":axes_dict[str(i)]})
+            if (float(deadzones_dict[str(i)]) != 0):
+                query.update({"deadzone":float(deadzones_dict[str(i)])})
+            else:
+                query.update({"deadzone":None})
+            session.commit()
         else:
-            if (deadzones_dict[str(i)] != 0):
+            if (float(deadzones_dict[str(i)]) == 0):
                 new_mapping = Mapping(name = profile_name, controller = controller_name, button = i, action = axes_dict[str(i)], isAxis = True)
             else:
-                new_mapping = Mapping(name = profile_name, controller = controller_name, button = i, action = axes_dict[str(i)], isAxis = True, deadzone = deadzones_dict[str(i)])
+                new_mapping = Mapping(name = profile_name, controller = controller_name, button = i, action = axes_dict[str(i)], isAxis = True, deadzone = float(deadzones_dict[str(i)]))
             
             session.add(new_mapping)
 
@@ -121,6 +125,7 @@ class ProfilesManager(Node):
         self.srv2 = self.create_service(Config, "profiles_list", self.profiles_list_callback)
 
     def profile_config_callback(self, request, response):
+        print("Request Recieved")
         if request.state == 0:
 
             message = json.loads(request.data)
@@ -140,6 +145,10 @@ class ProfilesManager(Node):
                 mappings_json_to_mappings_list(message["profileName"], message["controller2"], message["associated_mappings"]["1"])
 
             response.result = "Success"
+
+            for i in range(session.query(Mapping).filter(Mapping.name == message["profileName"]).count()):
+                print(f"{session.query(Mapping).filter_by(name = message['profileName']).all()[i].dict()} recieved in ThrusterControl")
+
             return response
 
         elif request.state == 1:
@@ -153,11 +162,12 @@ class ProfilesManager(Node):
             return response
 
     def profiles_list_callback(self, request, response):
+        print("Request Recieved")
         if request.state == 1: #We only want to read the profiles
             output = []
             for row in session.query(Profile).all():
-                output.append(row.profile_name())
-            response.result = str([output])
+                output.append(row.dict())
+            response.result = json.dumps(output)
             return response
         else:
             response.result = "Only loading works for this service"

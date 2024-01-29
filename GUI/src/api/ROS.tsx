@@ -52,6 +52,7 @@ export function InitROS() {
     //setMappings(JSON.parse(result.result.replaceAll("'",'"'))); //Zaid: JSON only likes double quotes
     React.useEffect(()=>{
         if (requestingConfig.state ==0){
+            console.log(requestingConfig.profileName);
             const request = new ROSLIB.ServiceRequest({
                 state:requestingConfig.state,
                 data:JSON.stringify({"profileName": requestingConfig.profileName,"controller1": requestingConfig.controller1,
@@ -83,8 +84,10 @@ export function InitROS() {
                 data:JSON.stringify(mappings)});
                 profilesListClient.callService(request, function(result){
                 if (requestingProfilesList==1){ //If Profile service==0, we don't care about the result since we are loading config into database
-                    if (result.result !=""){ //Do not load the result if there are no profiles stored  
-                        setProfilesList(JSON.parse(result.result.replaceAll("'",'"'))); //JSON only likes double quotes
+                    if (result.result !=""){ //Do not load the result if there are no profiles stored 
+                        //setProfilesList(JSON.parse(result.result.replaceAll("'",'"'))); //The String() function replaces the outer "" with ''
+                        setProfilesList(JSON.parse(result.result)); 
+                        console.log(profilesList)
                     }
                 }
             })

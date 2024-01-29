@@ -2,19 +2,25 @@ import { Box, Button, Dialog, DialogActions, DialogContent, FormControl, InputLa
 import { useEffect, useState } from "react";
 import ControllerTab from "./ProfileEditor/ControllerTab";
 import { useAtom } from "jotai";
-import { Mappings, ProfilesList, RequestingConfig } from "../api/Atoms";
+import { Mappings, ProfilesList, RequestingConfig, RequestingProfilesList } from "../api/Atoms";
 
 export default function ProfileEditor(props: {open: boolean; onClose: () => void; currentProfile: string}) {
 	const [tabIndex, setTabIndex] = useState<number>(0);
 	const [controller1, setController1] = useState<number>(-1);
 	const [controller2, setController2] = useState<number>(-1);
 	const [currentProfile, setCurrentProfile] = useState<string>(props.currentProfile);
-	const [profilesList,] = useAtom(ProfilesList)
+	const [profilesList, ] = useAtom(ProfilesList)
 	const [profileTextField, setProfileTextField] = useState<string>("");
 	const [,setRequestingConfig] = useAtom(RequestingConfig);
+	const [,setRequestingProfilesList] = useAtom(RequestingProfilesList);
 	const [mappings, setMappings] = useAtom(Mappings);
 
 	const [, reloadComponent] = useState<number>(0);
+
+	if (currentProfile != props.currentProfile) { //I don't know why this ended up being necessary but it fixed currentProfile being = "";
+		setCurrentProfile(props.currentProfile);
+	}
+
 	useEffect(() => {
 		window.addEventListener("gamepadconnected", () => {
 			reloadComponent(Math.random());
@@ -39,7 +45,7 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 
 	const profileExists = (profile : string) => {
 		for (let i = 0; i<profilesList.length;i++){
-			if (profilesList[i] == profile){
+			if (profilesList[i].name == profile){
 				return true;
 			} 
 		}
@@ -61,17 +67,27 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 						<FormControl fullWidth sx={{marginY: "16px"}}>
 							<InputLabel>Controller 1</InputLabel>
 							<Select value={controller1} label="Controller 1" onChange={(e) => {
-								setController1(e.target.value as number); 
-								const tmp = mappings; 
-								if (e.target.value as number < 0) {
-									tmp[0] = {}; 
+								if (e.target.value as number < 0) { 
 									return;
 								}
-								tmp[0] = {"buttons": {}, "axes": {}};
-								tmp[0]["buttons"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.buttons.length ?? 0 }, () => "None")};
-								tmp[0]["axes"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "None")};
-								tmp[0]["deadzones"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "0")};
-								setMappings(tmp);
+								setController1(e.target.value as number); 
+								setRequestingConfig({state:1, profileName:currentProfile, controller1:"null", controller2:"null"}); //We just want to update the profiles list
+								for (let i = 0; i<profilesList.length; i++){
+									if (profilesList[i].name == currentProfile){
+										if (profilesList[i].controller1 != navigator.getGamepads()[e.target.value as number]?.id){ //If this controller is not recognized by profile, do not apply the mappings
+											const tmp = mappings;
+											if (e.target.value as number < 0) {
+												tmp[0] = {}; 
+												return;
+											}
+											tmp[0] = {"buttons": {}, "axes": {}};
+											tmp[0]["buttons"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.buttons.length ?? 0 }, () => "None")};
+											tmp[0]["axes"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "None")};
+											tmp[0]["deadzones"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "0")};
+											setMappings(tmp);
+										}
+									}
+								}
 							}} sx={{width: "100%"}}>
 								<MenuItem value={-1}>None</MenuItem>
 								{navigator.getGamepads().length > 0 &&
@@ -85,16 +101,27 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 						<FormControl fullWidth sx={{marginTop: "2px"}}>
 							<InputLabel>Controller 2</InputLabel>
 							<Select value={controller2} label="Controller 2" onChange={(e) => {
-								setController2(e.target.value as number); const tmp = mappings;
-								if (e.target.value as number < 0) {
-									tmp[1] = {}; 
+								if (e.target.value as number < 0) { 
 									return;
 								}
-								tmp[1] = {"buttons": {}, "axes": {}};
-								tmp[1]["buttons"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.buttons.length ?? 0 }, () => "None")};
-								tmp[1]["axes"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "None")};
-								tmp[1]["deadzones"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "0")};
-								setMappings(tmp);
+								setController2(e.target.value as number); 
+								setRequestingConfig({state:1, profileName:currentProfile, controller1:"null", controller2:"null"}); //We just want to update the profiles list
+								for (let i = 0; i<profilesList.length; i++){
+									if (profilesList[i].name == currentProfile){
+										if (profilesList[i].controller2 != navigator.getGamepads()[e.target.value as number]?.id){ //If this controller is not recognized by profile, do not apply the mappings
+											const tmp = mappings;
+											if (e.target.value as number < 0) {
+												tmp[1] = {}; 
+												return;
+											}
+											tmp[1] = {"buttons": {}, "axes": {}};
+											tmp[1]["buttons"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.buttons.length ?? 0 }, () => "None")};
+											tmp[1]["axes"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "None")};
+											tmp[1]["deadzones"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "0")};
+											setMappings(tmp);
+										}
+									}
+								}
 							}} sx={{width: "100%"}}>
 								<MenuItem value={-1}>None</MenuItem>
 								{navigator.getGamepads().length > 0 &&
@@ -130,7 +157,8 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 				}
 			</DialogContent>
 			<DialogActions>
-					<Button onClick={() => {setRequestingConfig({state:1, profileName:props.currentProfile, controller1:"null", controller2:"null"});}}>Temporary</Button>
+					<Button onClick={() => {setRequestingConfig({state:1, profileName:currentProfile, controller1:"null", controller2:"null"});}}>Temporary</Button>
+					<Button onClick={() => {setRequestingProfilesList(1);}}>Temporary2</Button>
 					<Button onClick={props.onClose}>Close</Button>
 					<Button onClick={() => {
 						let controller1Name: any = "null";

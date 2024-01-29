@@ -63,7 +63,7 @@ export default function SettingsTab() {
 							}} sx={{width: "100%"}}>
 								{profilesList.map((profile) => {
 										//Add menu item for every profile
-										return <MenuItem value={profile}>{profile}</MenuItem>;
+										return <MenuItem value={profile.name}>{profile.name}</MenuItem>;
 									})
 								}
 							</Select>
@@ -77,7 +77,7 @@ export default function SettingsTab() {
                     </Grid>
                     <Grid item xs={12}>
                         <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => {
-                            if (profileName.replaceAll(" ","").length != 0){
+                            if (profileName !=""){
                                 setEditorOpen(true);
                                 }}}>Profile Editor</Button>
                         <ProfileEditor open={editorOpen} currentProfile={profileName} onClose={() => setEditorOpen(false)} />
