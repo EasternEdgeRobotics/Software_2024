@@ -1,7 +1,7 @@
 import { useAtom } from "jotai";
-import { CameraIPs, ROSIP, RequestingConfig } from "../api/Atoms";
+import { CameraIPs, ROSIP, RequestingConfig, ProfilesList } from "../api/Atoms";
 import { Box } from "@mui/system";
-import { Button, Divider, FormControl, Grid, InputLabel, Select, TextField } from "@mui/material";
+import { Button, Divider, FormControl, Grid, InputLabel, Select, TextField, MenuItem } from "@mui/material";
 import { Trash2 } from "lucide-react";
 import ProfileEditor from "./ProfileEditor";
 import { useState } from "react";
@@ -10,7 +10,8 @@ export default function SettingsTab() {
     const [IPs, setIPs] = useAtom(CameraIPs);
     const [RosIP, setRosIP] = useAtom(ROSIP);
     const [editorOpen, setEditorOpen] = useState<boolean>(false);
-    const [,setRequestingConfig] = useAtom(RequestingConfig);
+    const [profileName, setProfileName] = useState<string>("");
+    const [profilesList, ] = useAtom(ProfilesList);
 
     const setCameraIP = (camera: number, ip: string) => {
         setIPs(IPs.map((item, index) => index === camera ? ip : item));
@@ -52,14 +53,21 @@ export default function SettingsTab() {
             </Box>
             <br/><Divider>Profiles</Divider><br/>
             <Box display="flex" justifyContent="center">
-                <Grid container width="50%" spacing={1}>
+                <Grid container width="50%" spacing={2}>
                     <Grid item xs={9}>
-                        <FormControl sx={{width: "100%"}}>
-                            <InputLabel>Profile</InputLabel>
-                            <Select label="Profile">
-
-                            </Select>
-                        </FormControl>
+                        <FormControl fullWidth >
+							<InputLabel>Profile</InputLabel>
+							<Select value={profileName} label="Profile" onChange={(e) => {
+								setProfileName(e.target.value)
+								return;
+							}} sx={{width: "100%"}}>
+								{profilesList.map((profile) => {
+										//Add menu item for every profile
+										return <MenuItem value={profile}>{profile}</MenuItem>;
+									})
+								}
+							</Select>
+						</FormControl>
                     </Grid>
                     <Grid item xs={2}>
                         <Button variant="contained" sx={{height: "56px", width: "100%"}}>Load Profile</Button>
@@ -68,16 +76,17 @@ export default function SettingsTab() {
                         <Button variant="outlined" sx={{height: "56px", width: "100%"}}><Trash2 /></Button>
                     </Grid>
                     <Grid item xs={12}>
-                        <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => setEditorOpen(true)}>Profile Editor</Button>
-                        <ProfileEditor open={editorOpen} onClose={() => setEditorOpen(false)} />
+                        <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => {
+                            if (profileName.replaceAll(" ","").length != 0){
+                                setEditorOpen(true);
+                                }}}>Profile Editor</Button>
+                        <ProfileEditor open={editorOpen} currentProfile={profileName} onClose={() => setEditorOpen(false)} />
                     </Grid>
                     <Grid item xs={12}>
-                        <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => {setRequestingConfig(1)}}>Temporary Request Profiles Config</Button>
-                        <ProfileEditor open={editorOpen} onClose={() => setEditorOpen(false)} />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => {setRequestingConfig(0)}}>Temporary Send Profiles Config</Button>
-                        <ProfileEditor open={editorOpen} onClose={() => setEditorOpen(false)} />
+                        <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => {
+                            console.log(profileName);
+                        }}>Temporary</Button>
+                        <ProfileEditor open={editorOpen} currentProfile={profileName} onClose={() => setEditorOpen(false)} />
                     </Grid>
                 </Grid>
             </Box>

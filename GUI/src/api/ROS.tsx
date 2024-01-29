@@ -46,23 +46,28 @@ export function InitROS() {
         ,[powerMultipliers]);
 
     const configClient = new ROSLIB.Service({ros:ros, 
-                                            name:"/profiles_config", 
+                                            name:"/profile_config", 
                                             serviceType: "eer_messages/Config"});
 
+    //setMappings(JSON.parse(result.result.replaceAll("'",'"'))); //Zaid: JSON only likes double quotes
     React.useEffect(()=>{
-        if (requestingConfig==0 || requestingConfig==1){
+        if (requestingConfig.state ==0){
             const request = new ROSLIB.ServiceRequest({
-                state:requestingConfig,
-                data:JSON.stringify(mappings)});
-                configClient.callService(request, function(result){
-                if (requestingConfig==1){ //If Profile service==0, we don't care about the result since we are loading config into database
-                    if (result.result !=""){ //Do not load the result if there are no profiles stored  
-                        setMappings(JSON.parse(result.result.replaceAll("'",'"'))); //Zaid: JSON only likes double quotes
-                    }
-                }
-            })
+                state:requestingConfig.state,
+                data:JSON.stringify({"profileName": requestingConfig.profileName,"controller1": requestingConfig.controller1,
+                                    "controller2": requestingConfig.controller2,"associated_mappings": mappings})}); //Load data into specified profile
+                configClient.callService(request, function(result){ console.log("Call Successful");})
         }
-        setRequestingConfig(2);
+        else if (requestingConfig.state==1){
+            const request = new ROSLIB.ServiceRequest({
+                state:requestingConfig.state,
+                data:requestingConfig.profileName});
+                configClient.callService(request, function(result){ 
+                    console.log(JSON.parse(result.result));}) //May or may not work right away
+        }
+        if (requestingConfig.state != 2){
+            setRequestingConfig({state:2, profileName:"default", controller1:"null", controller2:"null"});
+        }
         }    
         ,[requestingConfig]);
 
@@ -77,7 +82,7 @@ export function InitROS() {
                 state:requestingProfilesList,
                 data:JSON.stringify(mappings)});
                 profilesListClient.callService(request, function(result){
-                if (requestingConfig==1){ //If Profile service==0, we don't care about the result since we are loading config into database
+                if (requestingProfilesList==1){ //If Profile service==0, we don't care about the result since we are loading config into database
                     if (result.result !=""){ //Do not load the result if there are no profiles stored  
                         setProfilesList(JSON.parse(result.result.replaceAll("'",'"'))); //JSON only likes double quotes
                     }

@@ -1,0 +1,4 @@
+<launch>
+        <node pkg="beaumont_pkg" exec="profiles_manager"/>
+        <include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml"/>
+</launch>

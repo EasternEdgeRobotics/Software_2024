@@ -20,6 +20,7 @@ class Mapping(Base):
     name: Mapped[str] = mapped_column(ForeignKey("profiles.name", ondelete="cascade"))
     controller: Mapped[str] = mapped_column()
     button: Mapped[int] = mapped_column()
+    action: Mapped[str] = mapped_column()
     isAxis: Mapped[bool] = mapped_column()
     deadzone: Mapped[float] = mapped_column(nullable=True)
     def dict(self):
