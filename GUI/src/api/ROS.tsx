@@ -12,7 +12,7 @@ export function InitROS() {
     const [requestingConfig, setRequestingConfig] = useAtom(RequestingConfig);
     const [requestingProfilesList, setRequestingProfilesList] = useAtom(RequestingProfilesList);
     const [mappings, setMappings] = useAtom(Mappings);
-    const [profilesList, setProfilesList] = useAtom(ProfilesList);
+    const [, setProfilesList] = useAtom(ProfilesList);
 
     ros.on("connection", () => {
         console.log("ROS Connected!");
@@ -52,19 +52,32 @@ export function InitROS() {
     //setMappings(JSON.parse(result.result.replaceAll("'",'"'))); //Zaid: JSON only likes double quotes
     React.useEffect(()=>{
         if (requestingConfig.state ==0){
-            console.log(requestingConfig.profileName);
             const request = new ROSLIB.ServiceRequest({
                 state:requestingConfig.state,
                 data:JSON.stringify({"profileName": requestingConfig.profileName,"controller1": requestingConfig.controller1,
                                     "controller2": requestingConfig.controller2,"associated_mappings": mappings})}); //Load data into specified profile
-                configClient.callService(request, function(result){ console.log("Call Successful");})
+                configClient.callService(request, function(result){ const i =1; })
         }
         else if (requestingConfig.state==1){
             const request = new ROSLIB.ServiceRequest({
                 state:requestingConfig.state,
                 data:requestingConfig.profileName});
                 configClient.callService(request, function(result){ 
-                    console.log(JSON.parse(result.result));}) //May or may not work right away
+                    const databaseStoredMappings = JSON.parse(result.result);
+                    const tmp = mappings; 
+					tmp[0] = {"buttons": {}, "axes": {}, "deadzones":{}};
+                    if (requestingConfig.controller1=="recognized"){
+                        tmp[0]["buttons"] = databaseStoredMappings[0]["buttons"];
+                        tmp[0]["axes"] = databaseStoredMappings[0]["axes"];
+                        tmp[0]["deadzones"] = databaseStoredMappings[0]["deadzones"];
+                    }
+                    tmp[1] = {"buttons": {}, "axes": {}, "deadzones":{}};
+                    if (requestingConfig.controller2=="recognized"){
+                        tmp[1]["buttons"] = databaseStoredMappings[1]["buttons"];
+                        tmp[1]["axes"] = databaseStoredMappings[1]["axes"];
+                        tmp[1]["deadzones"] = databaseStoredMappings[1]["deadzones"];}
+					setMappings(tmp);
+                }) 
         }
         if (requestingConfig.state != 2){
             setRequestingConfig({state:2, profileName:"default", controller1:"null", controller2:"null"});
@@ -84,10 +97,9 @@ export function InitROS() {
                 data:JSON.stringify(mappings)});
                 profilesListClient.callService(request, function(result){
                 if (requestingProfilesList==1){ //If Profile service==0, we don't care about the result since we are loading config into database
-                    if (result.result !=""){ //Do not load the result if there are no profiles stored 
+                    if (result.result !="[]"){ //Do not load the result if there are no profiles stored 
                         //setProfilesList(JSON.parse(result.result.replaceAll("'",'"'))); //The String() function replaces the outer "" with ''
                         setProfilesList(JSON.parse(result.result)); 
-                        console.log(profilesList)
                     }
                 }
             })

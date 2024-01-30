@@ -1,5 +1,5 @@
 import { useAtom } from "jotai";
-import { CameraIPs, ROSIP, RequestingConfig, ProfilesList } from "../api/Atoms";
+import { CameraIPs, ROSIP, ProfilesList, CurrentProfile, RequestingProfilesList, RequestingConfig } from "../api/Atoms";
 import { Box } from "@mui/system";
 import { Button, Divider, FormControl, Grid, InputLabel, Select, TextField, MenuItem } from "@mui/material";
 import { Trash2 } from "lucide-react";
@@ -10,8 +10,9 @@ export default function SettingsTab() {
     const [IPs, setIPs] = useAtom(CameraIPs);
     const [RosIP, setRosIP] = useAtom(ROSIP);
     const [editorOpen, setEditorOpen] = useState<boolean>(false);
-    const [profileName, setProfileName] = useState<string>("");
+    const [currentProfile, setCurrentProfile] = useAtom(CurrentProfile);
     const [profilesList, ] = useAtom(ProfilesList);
+    const [,setRequestingProfilesList] = useAtom(RequestingProfilesList);
 
     const setCameraIP = (camera: number, ip: string) => {
         setIPs(IPs.map((item, index) => index === camera ? ip : item));
@@ -53,12 +54,12 @@ export default function SettingsTab() {
             </Box>
             <br/><Divider>Profiles</Divider><br/>
             <Box display="flex" justifyContent="center">
-                <Grid container width="50%" spacing={2}>
+                <Grid container width="50%" spacing={1}>
                     <Grid item xs={9}>
                         <FormControl fullWidth >
 							<InputLabel>Profile</InputLabel>
-							<Select value={profileName} label="Profile" onChange={(e) => {
-								setProfileName(e.target.value)
+							<Select value={currentProfile} label="Profile" onClick={()=>{setRequestingProfilesList(1);}} onChange={(e) => {
+								setCurrentProfile(e.target.value)
 								return;
 							}} sx={{width: "100%"}}>
 								{profilesList.map((profile) => {
@@ -77,16 +78,10 @@ export default function SettingsTab() {
                     </Grid>
                     <Grid item xs={12}>
                         <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => {
-                            if (profileName !=""){
+                            if (currentProfile !=""){
                                 setEditorOpen(true);
                                 }}}>Profile Editor</Button>
-                        <ProfileEditor open={editorOpen} currentProfile={profileName} onClose={() => setEditorOpen(false)} />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => {
-                            console.log(profileName);
-                        }}>Temporary</Button>
-                        <ProfileEditor open={editorOpen} currentProfile={profileName} onClose={() => setEditorOpen(false)} />
+                        <ProfileEditor open={editorOpen}  onClose={() => setEditorOpen(false)} />
                     </Grid>
                 </Grid>
             </Box>

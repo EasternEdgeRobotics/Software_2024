@@ -57,10 +57,12 @@ def mappings_list_to_mappings_json(mappings_list):
 
     def obtain_bindings(binding, _json_mappings):
         if binding["isAxis"] == True:
-            _json_mappings["axes"][binding["button"]] = [binding["action"]]
-            _json_mappings["deadzones"][binding["button"]] = [binding["deadzone"]]
+            _json_mappings["axes"][binding["button"]] = binding["action"]
+            if binding["deadzone"]==None:
+                binding["deadzone"] = 0
+            _json_mappings["deadzones"][binding["button"]] = str(binding["deadzone"])
         else:
-            _json_mappings["buttons"][binding["button"]] = [binding["action"]]
+            _json_mappings["buttons"][binding["button"]] = binding["action"]
         return _json_mappings
             
 
