@@ -13,6 +13,7 @@ export default function SettingsTab() {
     const [currentProfile, setCurrentProfile] = useAtom(CurrentProfile);
     const [profilesList, ] = useAtom(ProfilesList);
     const [,setRequestingProfilesList] = useAtom(RequestingProfilesList);
+    const [,setRequestingConfig] = useAtom(RequestingConfig);
 
     const setCameraIP = (camera: number, ip: string) => {
         setIPs(IPs.map((item, index) => index === camera ? ip : item));
@@ -25,6 +26,23 @@ export default function SettingsTab() {
         fetch("/config", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(settings)});
         localStorage.setItem("ROS_IP", RosIP);
     };
+
+    const loadProfile = () => {
+        for (let controller = 0; controller<navigator.getGamepads().length;controller++){
+            if (navigator.getGamepads()[controller] == null){
+                continue;
+            }
+            for (let i = 0; i<profilesList.length; i++){
+                if (profilesList[i].name == currentProfile){
+                    if (profilesList[i].controller1 == navigator.getGamepads()[controller]?.id){ //If this controller recognized, apply approperiate mappings
+                        console.log("Controller recognized")
+                        setRequestingConfig({state:1, profileName:currentProfile, controller1:"recognized", controller2:"null"}); //Recieve latest bindings
+                        return;
+                    }
+                }
+            }
+        }
+    }
 
     return (
         <Box>
@@ -71,10 +89,10 @@ export default function SettingsTab() {
 						</FormControl>
                     </Grid>
                     <Grid item xs={2}>
-                        <Button variant="contained" sx={{height: "56px", width: "100%"}}>Load Profile</Button>
+                        <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={()=>{loadProfile();}}>Load Profile</Button>
                     </Grid>
                     <Grid item xs={1}>
-                        <Button variant="outlined" sx={{height: "56px", width: "100%"}}><Trash2 /></Button>
+                        <Button variant="outlined" sx={{height: "56px", width: "100%"}} onClick={()=>{setRequestingProfilesList(0);}}><Trash2 /></Button>
                     </Grid>
                     <Grid item xs={12}>
                         <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={() => {

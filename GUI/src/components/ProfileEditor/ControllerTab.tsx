@@ -8,6 +8,20 @@ import { useState } from "react";
 export default function ControllerTab(props: {controller: number; index: number}) {
     const [mappings, setMappings] = useAtom(Mappings);
 
+    const pilotActions = [
+        "None",
+        "surge",
+        "sway",
+        "heave",
+        "pitch",
+        "roll",
+        "yaw",
+        "openClaw",
+        "closeClaw",
+        "toggleLED",
+        "backflip"
+    ]
+
     const [, reloadComponent] = useState<number>(0);
 
     return (
@@ -24,9 +38,10 @@ export default function ControllerTab(props: {controller: number; index: number}
                                 setMappings(tmp);
                                 reloadComponent(Math.random()); //i really dont know why this needs to be here but it does apparently
                             }} sx={{width: "100%"}}>
-                                <MenuItem value="None">None</MenuItem>
-                                <MenuItem value="openClaw">Open Claw</MenuItem>
-                                <MenuItem value="closeClaw">Close Claw</MenuItem>
+                                {pilotActions.map((action) => {
+									//Add menu item for every action
+									return <MenuItem value={action}>{action}</MenuItem>;
+								})}
                             </Select>
                         </FormControl>
                     </Grid>
@@ -40,15 +55,16 @@ export default function ControllerTab(props: {controller: number; index: number}
                             <Grid item xs={8.25}>
                                 <FormControl fullWidth>
                                     <InputLabel>Axis {index} Action</InputLabel>
-                                    <Select defaultValue="None" label={`Axis ${index} Action`} onChange={(e) => {
+                                    <Select defaultValue={mappings[props.index]["axes"][index]} label={`Axis ${index} Action`} onChange={(e) => {
                                         const tmp = mappings;
                                         tmp[props.index]["axes"][index] = e.target.value as string; 
                                         setMappings(tmp);
                                         reloadComponent(Math.random()); //i really dont know why this needs to be here but it does apparently
-                                    }}>
-                                        <MenuItem value="None">None</MenuItem>
-                                        <MenuItem value="openClaw">Open Claw</MenuItem>
-                                        <MenuItem value="closeClaw">Close Claw</MenuItem>
+                                        }}>
+                                        {pilotActions.map((action) => {
+                                            //Add menu item for every action
+                                            return <MenuItem value={action}>{action}</MenuItem>;
+                                        })}
                                     </Select>
                                 </FormControl>
                             </Grid>
@@ -56,7 +72,6 @@ export default function ControllerTab(props: {controller: number; index: number}
                                 <AxisDisplay controller={props.controller} axis={index} />
                             </Grid>
                             <Grid item xs={2.75}>
-                                {/* TODO: add deadzone to mapping dict */}
                                 <TextField InputProps={{inputProps: {min: 0, max: 1, step: 0.1}}} label="Deadzone" value={mappings[props.index]["deadzones"][index]} error={ 1 < Number(mappings[props.index]["deadzones"][index]) || 0 > Number(mappings[props.index]["deadzones"][index])} onChange={(e) => { 
                                     //abs(Deadzone) should be !=0 and <1
                                     const tmp = mappings;

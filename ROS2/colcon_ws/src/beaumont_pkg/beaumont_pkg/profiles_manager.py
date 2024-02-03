@@ -127,7 +127,6 @@ class ProfilesManager(Node):
         self.srv2 = self.create_service(Config, "profiles_list", self.profiles_list_callback)
 
     def profile_config_callback(self, request, response):
-        print("Request Recieved")
         if request.state == 0:
 
             message = json.loads(request.data)
@@ -149,7 +148,7 @@ class ProfilesManager(Node):
             response.result = "Success"
 
             for i in range(session.query(Mapping).filter(Mapping.name == message["profileName"]).count()):
-                print(f"{session.query(Mapping).filter_by(name = message['profileName']).all()[i].dict()} recieved in ThrusterControl")
+               print(f"{session.query(Mapping).filter_by(name = message['profileName']).all()[i].dict()} recieved in ThrusterControl")
 
             return response
 
@@ -164,15 +163,22 @@ class ProfilesManager(Node):
             return response
 
     def profiles_list_callback(self, request, response):
-        print("Request Recieved")
-        if request.state == 1: #We only want to read the profiles
+        if request.state == 0:
+            query = session.query(Profile).filter(Profile.name == request.data) #In this case, the request data is expected to only be a string
+            if query.count() == 1: #i.e. profile exists
+                #session.delete(query)
+                #session.commit()
+                query.delete()
+                session.commit()
+                response.result = "Profile Deleted"
+            else:
+                response.result = "Profile not found"
+            return response
+        elif request.state == 1: #We only want to read the profiles
             output = []
             for row in session.query(Profile).all():
                 output.append(row.dict())
             response.result = json.dumps(output)
-            return response
-        else:
-            response.result = "Only loading works for this service"
             return response
 
 def main(args=None):

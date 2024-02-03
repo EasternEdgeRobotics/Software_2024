@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import ROSLIB from "roslib";
-import { IsROSConnected, ROSIP, PowerMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList  } from "./Atoms";
+import { IsROSConnected, ROSIP, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput } from "./Atoms";
 import React from "react";
 
 const ros = new ROSLIB.Ros({});
@@ -8,11 +8,13 @@ const ros = new ROSLIB.Ros({});
 export function InitROS() {
     const [RosIP] = useAtom(ROSIP);
     const [, setIsRosConnected] = useAtom(IsROSConnected);
-    const [powerMultipliers] = useAtom(PowerMultipliers);    
+    const [thrusterMultipliers] = useAtom(ThrusterMultipliers);    
     const [requestingConfig, setRequestingConfig] = useAtom(RequestingConfig);
     const [requestingProfilesList, setRequestingProfilesList] = useAtom(RequestingProfilesList);
     const [mappings, setMappings] = useAtom(Mappings);
     const [, setProfilesList] = useAtom(ProfilesList);
+    const [currentProfile,] = useAtom(CurrentProfile);
+    const [controllerInput, setControllerInput] = useAtom(ControllerInput);
 
     ros.on("connection", () => {
         console.log("ROS Connected!");
@@ -28,22 +30,37 @@ export function InitROS() {
     ros.connect(`ws://${RosIP}:9090`);
 
     const thrusterValsTopic = new ROSLIB.Topic({ros:ros, 
-                                        name:"/thruster_vals", 
-                                        messageType: "eer_messages/ThrusterVals"});
+                                        name:"/thruster_multipliers", 
+                                        messageType: "eer_messages/ThrusterMultipliers"});
 
     // Publish the new power multipliers whenever they change
     React.useEffect(()=>{
         const thrusterVals = new ROSLIB.Message({
-            power : powerMultipliers[0],
-            surge: powerMultipliers[1],
-            sway: powerMultipliers[2],
-            heave: powerMultipliers[3],
-            pitch: powerMultipliers[4],
-            roll: powerMultipliers[5],
-            yaw: powerMultipliers[6]});
+            power : thrusterMultipliers[0],
+            surge: thrusterMultipliers[1],
+            sway: thrusterMultipliers[2],
+            heave: thrusterMultipliers[3],
+            pitch: thrusterMultipliers[4],
+            roll: thrusterMultipliers[5],
+            yaw: thrusterMultipliers[6]});
         thrusterValsTopic.publish(thrusterVals);
         }    
-        ,[powerMultipliers]);
+        ,[thrusterMultipliers]);
+
+    const controllerInputTopic = new ROSLIB.Topic({ros:ros, 
+                                        name:"/controller_input", 
+                                        messageType: "std_msgs/String"});
+
+    // Publish the new controller input whenever it changes
+    React.useEffect(()=>{
+        if (controllerInput == ""){
+            return;
+        }
+        const controllerInputVals = new ROSLIB.Message({data: controllerInput});
+        controllerInputTopic.publish(controllerInputVals);
+        setControllerInput("");
+        }    
+        ,[controllerInput]);
 
     const configClient = new ROSLIB.Service({ros:ros, 
                                             name:"/profile_config", 
@@ -91,16 +108,25 @@ export function InitROS() {
                                             serviceType: "eer_messages/Config"});
 
     React.useEffect(()=>{
-        if (requestingProfilesList==1){
+        if (requestingProfilesList==0){
             const request = new ROSLIB.ServiceRequest({
-                state:requestingProfilesList,
+                state:0, //Delete Profile
+                data:currentProfile});
+                profilesListClient.callService(request, function(result){
+                    console.log(result.result);
+            })
+        }
+        else if (requestingProfilesList==1){
+            const request = new ROSLIB.ServiceRequest({
+                state:1, //Get Profiles
                 data:JSON.stringify(mappings)});
                 profilesListClient.callService(request, function(result){
-                if (requestingProfilesList==1){ //If Profile service==0, we don't care about the result since we are loading config into database
-                    if (result.result !="[]"){ //Do not load the result if there are no profiles stored 
-                        //setProfilesList(JSON.parse(result.result.replaceAll("'",'"'))); //The String() function replaces the outer "" with ''
-                        setProfilesList(JSON.parse(result.result)); 
-                    }
+                if (result.result !="[]"){ //Do not load the result if there are no profiles stored 
+                    //setProfilesList(JSON.parse(result.result.replaceAll("'",'"'))); //The String() function replaces the outer "" with ''
+                    setProfilesList(JSON.parse(result.result)); 
+                }
+                else {
+                    setProfilesList([{id:0, name:"default",controller1:"null",controller2:"null"}]);
                 }
             })
         }

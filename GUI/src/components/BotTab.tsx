@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Slider, Box, Button} from "@mui/material";
 import { useAtom } from "jotai";
-import { IsROSConnected, PowerMultipliers, ProfilesList, CurrentProfile, Mappings, RequestingConfig } from "../api/Atoms";
+import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput } from "../api/Atoms";
 import { useState, useEffect, } from "react";
 
 export function StatusIndicator(props: {statement: boolean}) {
@@ -11,61 +11,87 @@ export function StatusIndicator(props: {statement: boolean}) {
 
 export function BotTab() {
     const [isRosConnected] = useAtom(IsROSConnected);
-    const [powerMultipliers, setPowerMultipliers] = useAtom(PowerMultipliers);
+    const [thrusterMultipliers, setThrusterMultipliers] = useAtom(ThrusterMultipliers);
     const [profilesList, ] = useAtom(ProfilesList);
     const [currentProfile, ] = useAtom(CurrentProfile);
-    const [,setRequestingConfig] = useAtom(RequestingConfig);
     const [controller1, setController1] = useState<string>("null");
     const [controller2, setController2] = useState<string>("null");
+    const [initalPageLoad, setInitialPageLoad] = useState<boolean>(true);
     const [mappings, ] = useAtom(Mappings);
+    const [,setControllerInput] = useAtom(ControllerInput);
 
     const status = [
         {"name": "ROS", "status": isRosConnected}
     ];
       
     const [, reloadComponent] = useState<number>(0);
-    useEffect(() => {
-        setInterval(() => {
-            reloadComponent(Math.random());
-        }, 100);
-    }, []);
 
     useEffect(() => {
         for (let i = 0; i<profilesList.length;i++){
             if (currentProfile==profilesList[i].name){
-                setController1(profilesList[i].controller1)
-                setController2(profilesList[i].controller2)
+                setController1(profilesList[i].controller1);
+                setController2(profilesList[i].controller2);
             }
         }
     }, [currentProfile]);
-    for (let i = 0; i < navigator.getGamepads().length; i++){
-        if (navigator.getGamepads()[i]?.id == controller1){
-            for (let j = 0; j<(navigator.getGamepads()[i]?.buttons.length as number);j++){
-                if (navigator.getGamepads()[i]?.buttons[j].pressed){
-                    console.log(mappings[0]["buttons"][j])
-                }
-            }
-            for (let j = 0; j<(navigator.getGamepads()[i]?.axes.length as number);j++){
-                if (navigator.getGamepads()[i]?.buttons[j].pressed){
-                    console.log(mappings[0]["axes"][j])
-                    console.log(mappings[0]["deadzone"][j])
-                }
+
+    //All inputs will be in the format of a list, where the first element is input value (1 for button and between (-1,1) for axis) 
+    //and the second element is the action
+    const input_listener =(controller: number) => {
+        let controllerDetected = false;
+        for (let i =0; i<navigator.getGamepads().length; i++){
+            if (navigator.getGamepads()[i] != null){
+                controllerDetected = true;
             }
         }
-        if (navigator.getGamepads()[i]?.id == controller2){
-            for (let j = 0; j<(navigator.getGamepads()[i]?.buttons.length as number);j++){
-                if (navigator.getGamepads()[i]?.buttons[j].pressed){
-                    console.log(mappings[1]["buttons"][j])
-                }
+        if (!controllerDetected){
+            return; 
+        } else if (Object.keys(mappings[controller]).length == 0) { //This indicates that no mappings have been loaded.
+            if (initalPageLoad){
+                console.log("No mappings have been loaded. Go to the settings and load a profile.");
+                setInitialPageLoad(false);
             }
-            for (let j = 0; j<(navigator.getGamepads()[i]?.axes.length as number);j++){
-                if (navigator.getGamepads()[i]?.buttons[j].pressed){
-                    console.log(mappings[1]["axes"][j])
-                    console.log(mappings[1]["deadzone"][j])
+            return; 
+        } else if (Object.keys(mappings[controller]["buttons"]).length == 0) { //This indicates that mappings have been loaded, 
+                                                                              //but that this is controller 1 and no bindings have 
+                                                                              //been set for it (since it is nullable in the database)
+            return; 
+        }
+
+        for (let i = 0; i < navigator.getGamepads().length; i++){
+            if (navigator.getGamepads()[i]?.id == controller1){
+                for (let j = 0; j<(navigator.getGamepads()[i]?.buttons.length as number);j++){
+                    if (navigator.getGamepads()[i]?.buttons[j].pressed){
+                        if (mappings[controller]["buttons"][j] != "None"){
+                            const controller_input = [];
+                            controller_input.push(1);
+                            controller_input.push(mappings[controller]["buttons"][j]);
+                            setControllerInput(JSON.stringify(controller_input));
+                        }
+                    }
+                }
+                for (let j = 0; j<(navigator.getGamepads()[i]?.axes.length as number);j++){
+                    const deadzone = Number(mappings[controller]["deadzones"][j]) > 0.05 ? Number(mappings[controller]["deadzones"][j]): 0.05;
+                    if (Math.abs(navigator.getGamepads()[i]?.axes[j] as number) >= deadzone){
+                        if (mappings[controller]["axes"][j] != "None"){
+                            const controller_input = [];
+                            controller_input.push(navigator.getGamepads()[i]?.axes[j]);
+                            controller_input.push(mappings[controller]["axes"][j]);
+                            setControllerInput(JSON.stringify(controller_input));
+                        }
+                    }
                 }
             }
         }
     }
+
+    useEffect(() => {
+        setInterval(() => {
+            reloadComponent(Math.random());
+            input_listener(0);
+            input_listener(1);
+        }, 100);
+    }, []);
     
     return (
         <Box flexGrow={1}>
@@ -73,9 +99,9 @@ export function BotTab() {
                 {["Power", "Surge", "Sway", "Heave", "Pitch", "Roll", "Yaw"].map((label, index) => {
                         return (
                             <Grid item xs={1} display="flex" justifyContent="center" alignItems="center" flexWrap="wrap" height="300px">
-                                <Slider orientation="vertical" valueLabelDisplay="auto" step={5} defaultValue={powerMultipliers[index]} onChange={(_,value) => setPowerMultipliers(powerMultipliers.map((v, i) => {if (i == index) return value as number; else return v;}))} />
+                                <Slider orientation="vertical" valueLabelDisplay="auto" step={5} defaultValue={thrusterMultipliers[index]} onChange={(_,value) => setThrusterMultipliers(thrusterMultipliers.map((v, i) => {if (i == index) return value as number; else return v;}))} />
                                 <Box flexBasis="100%" height="0" />
-                                <h2>{label}: {powerMultipliers[index]}</h2>
+                                <h2>{label}: {thrusterMultipliers[index]}</h2>
                             </Grid>
                         );})
                 }

@@ -10,30 +10,32 @@ For development purposes, you can follow the installation guide below to get ROS
 Intall Docker at https://www.docker.com/get-started/ and get it running
 
 ### Step 2
-Create a volume in Docker, which is a file directory in your computer that your docker container can access.
-```
-docker volume create colcon_ws
-```
-Copy the contents on the colcon_ws folder into the _data directory of the new volume. To find the docker volume in windows, type the following into File Explorer:
-```
-\\wsl$\docker-desktop-data\data\docker\volumes
-```
-
-### Step 3
 Download the latest ROS2 Humble image at osrf/ros:latest using Docker desktop or the following command:
 ```
-docker pull osrf/ros:humble-desktop-full
+docker pull osrf/ros:humble-desktop
 ```
 Then, run a docker container based on this image:
 ```
-docker run -p 9090:9090 --mount source=colcon_ws,destination=/home/colcon_ws -it osrf/ros:humble-desktop-full
+docker run -v "<PATH TO ROS2 directory on your computer>":/home/ROS2  -p 9090:9090 --mount source=colcon_ws,destination=/home/colcon_ws -it osrf/ros:humble-desktop-full
 ```
 Above, we are mapping port 9090 of the container to the same port on the host. This is so that we can later listen for ROS2 on port 9090 in the GUI.
+We are also mounting a volume using the -v. Any mapped folders between your host and the docker container will be shared. When you change the files in that 
+folder on your computer, they will change in your docker container. 
 
-### Step 4
+To find out where the path to the ROS2 directory is on your computer, navigate to the ROS2 folder in Software 2024 in the terminal then type the following:
+ ```
+pwd
+```
+Copy and paste the result into the docker run command.
+
+### Step 3
 To open new terminals in the running container, type:
 ```
 docker exec -it <CONTAINER_ID> bash
+```
+To find out your container id, type:
+```
+docker ps -a
 ```
 Navigate to the /home/colcon_ws directory of this container and build the packages, sourcing the main ROS2 workspace first.
 ```
@@ -42,7 +44,7 @@ source /opt/ros/humble/setup.bash
 colcon build
 ```
 
-### Step 5
+### Step 4
 Finally, make sure to source this ros workspace in every new terminal window you open of this container.
 ```
 source /home/colcon_ws/install/setup.bash
@@ -51,13 +53,12 @@ Alternatively, you can copy the above command into the bash.bashrc file, which i
 When working with these containers, you can use VIM as a file editor.
 ```
 sudo apt-get update
-sudo apt-get install vim
 cd /etc
-vim bash.bashrc
+sudo nano bash.bashrc
 ```
-Press insert on the keyboard to enter edit mode. When done, press escape, type :wq, and press enter. 
+Press CONTROL+C then Y then ENTER to exit and save the file using the nano editor.
 
-### Step 6
+### Step 5
 To allow the running ROS2 instance of this container to communicate with the GUI, install rosbridge.
 ```
 sudo apt install ros-humble-rosbridge-server
