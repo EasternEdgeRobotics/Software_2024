@@ -82,7 +82,7 @@ export default function SettingsTab() {
 							}} sx={{width: "100%"}}>
 								{profilesList.map((profile) => {
 										//Add menu item for every profile
-										return <MenuItem value={profile.name}>{profile.name}</MenuItem>;
+										return <MenuItem key={profile.name} value={profile.name}>{profile.name}</MenuItem>;
 									})
 								}
 							</Select>

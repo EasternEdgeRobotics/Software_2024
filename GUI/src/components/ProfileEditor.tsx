@@ -92,7 +92,7 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 								{navigator.getGamepads().length > 0 &&
 									navigator.getGamepads().filter((gamepad) => gamepad !== null && gamepad.index !== controller2).map((gamepad) => {
 										//Add menu item for every controller
-										return <MenuItem value={gamepad?.index}>{gamepad?.id}</MenuItem>;
+										return <MenuItem key={gamepad?.id} value={gamepad?.index}>{gamepad?.id}</MenuItem>;
 									})
 								}
 							</Select>
@@ -124,7 +124,7 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 								{navigator.getGamepads().length > 0 &&
 									navigator.getGamepads().filter((gamepad) => gamepad !== null && gamepad.index !== controller1).map((gamepad) => {
 										//Add menu item for every controller
-										return <MenuItem value={gamepad?.index}>{gamepad?.id}</MenuItem>;
+										return <MenuItem key={gamepad?.id} value={gamepad?.index}>{gamepad?.id}</MenuItem>;
 									})
 								}
 							</Select>

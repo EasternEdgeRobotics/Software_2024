@@ -3,6 +3,7 @@ import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, Ta
 import { useAtom } from "jotai";
 import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput } from "../api/Atoms";
 import { useState, useEffect, } from "react";
+import React from "react";
 
 export function StatusIndicator(props: {statement: boolean}) {
     if (props.statement) return <CheckCircle2 color="lime" />;
@@ -14,11 +15,13 @@ export function BotTab() {
     const [thrusterMultipliers, setThrusterMultipliers] = useAtom(ThrusterMultipliers);
     const [profilesList, ] = useAtom(ProfilesList);
     const [currentProfile, ] = useAtom(CurrentProfile);
-    const [controller1, setController1] = useState<string>("null");
-    const [controller2, setController2] = useState<string>("null");
-    const [initalPageLoad, setInitialPageLoad] = useState<boolean>(true);
     const [mappings, ] = useAtom(Mappings);
     const [,setControllerInput] = useAtom(ControllerInput);
+
+    let controller1 = "null";
+    let controller2 = "null"
+
+    let initialPageLoad = true;
 
     const status = [
         {"name": "ROS", "status": isRosConnected}
@@ -29,8 +32,8 @@ export function BotTab() {
     useEffect(() => {
         for (let i = 0; i<profilesList.length;i++){
             if (currentProfile==profilesList[i].name){
-                setController1(profilesList[i].controller1);
-                setController2(profilesList[i].controller2);
+                controller1 = profilesList[i].controller1;
+                controller2 = profilesList[i].controller2;
             }
         }
     }, [currentProfile]);
@@ -47,9 +50,9 @@ export function BotTab() {
         if (!controllerDetected){
             return; 
         } else if (Object.keys(mappings[controller]).length == 0) { //This indicates that no mappings have been loaded.
-            if (initalPageLoad){
+            if (initialPageLoad){
                 console.log("No mappings have been loaded. Go to the settings and load a profile.");
-                setInitialPageLoad(false);
+                initialPageLoad = false;
             }
             return; 
         } else if (Object.keys(mappings[controller]["buttons"]).length == 0) { //This indicates that mappings have been loaded, 
@@ -67,6 +70,7 @@ export function BotTab() {
                             controller_input.push(1);
                             controller_input.push(mappings[controller]["buttons"][j]);
                             setControllerInput(JSON.stringify(controller_input));
+                            console.log(controller_input);
                         }
                     }
                 }
@@ -78,6 +82,7 @@ export function BotTab() {
                             controller_input.push(navigator.getGamepads()[i]?.axes[j]);
                             controller_input.push(mappings[controller]["axes"][j]);
                             setControllerInput(JSON.stringify(controller_input));
+                            console.log(controller_input);
                         }
                     }
                 }
@@ -98,7 +103,7 @@ export function BotTab() {
             <Grid container justifyContent={"center"} spacing={1}>
                 {["Power", "Surge", "Sway", "Heave", "Pitch", "Roll", "Yaw"].map((label, index) => {
                         return (
-                            <Grid item xs={1} display="flex" justifyContent="center" alignItems="center" flexWrap="wrap" height="300px">
+                            <Grid item xs={1} key={index} display="flex" justifyContent="center" alignItems="center" flexWrap="wrap" height="300px">
                                 <Slider orientation="vertical" valueLabelDisplay="auto" step={5} defaultValue={thrusterMultipliers[index]} onChange={(_,value) => setThrusterMultipliers(thrusterMultipliers.map((v, i) => {if (i == index) return value as number; else return v;}))} />
                                 <Box flexBasis="100%" height="0" />
                                 <h2>{label}: {thrusterMultipliers[index]}</h2>

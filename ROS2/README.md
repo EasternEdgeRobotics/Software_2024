@@ -79,27 +79,27 @@ The following commands allow for controlling the BOT via the command line:
 
 Pitch
 ```
-ros2 topic pub -1 /demo/world/force_demo_pitch geometry_msgs/Wrench "force: {z: 100.0}"
+ros2 topic pub -1 /demo/link/force_demo_pitch geometry_msgs/Wrench "force: {z: 100.0}"
 ```
 Roll
 ```
-ros2 topic pub -1 /demo/world/force_demo_roll geometry_msgs/Wrench "force: {z: 100.0}"
+ros2 topic pub -1 /demo/link/force_demo_roll geometry_msgs/Wrench "force: {z: 100.0}"
 ```
 Yaw
 ```
-ros2 topic pub -1 /demo/world/force_demo_yaw geometry_msgs/Wrench "force: {x: 100.0}"
+ros2 topic pub -1 /demo/link/force_demo_yaw geometry_msgs/Wrench "force: {x: 100.0}"
 ```
 Surge
 ```
-ros2 topic pub -1 /demo/world/force_demo_linear geometry_msgs/Wrench "force: {y: 100.0}"
+ros2 topic pub -1 /demo/link/force_demo_linear geometry_msgs/Wrench "force: {y: 100.0}"
 ```
 Sway 
 ```
-ros2 topic pub -1 /demo/world/force_demo_linear geometry_msgs/Wrench "force: {x: 100.0}"
+ros2 topic pub -1 /demo/link/force_demo_linear geometry_msgs/Wrench "force: {x: 100.0}"
 ```
 Heave
 ```
-ros2 topic pub -1 /demo/world/force_demo_linear geometry_msgs/Wrench "force: {z: 100.0}"
+ros2 topic pub -1 /demo/link/force_demo_linear geometry_msgs/Wrench "force: {z: 100.0}"
 ```
 View the Cameras (currently only front and bottom camera)
 ```

@@ -749,7 +749,7 @@
     <plugin name='gazebo_ros_force_linear' filename='libgazebo_ros_force.so'>
       <ros>
         <namespace>/demo/link</namespace>
-        <remapping>gazebo_ros_force:=force_demo_linear</remapping>
+        <remapping>gazebo_ros_force:=simulation_model_linear_velocity</remapping>
       </ros>
       <link_name>chassis</link_name>
       <force_frame>world</force_frame>
@@ -794,5 +794,6 @@
       <covariance_y>0.0001</covariance_y>
       <covariance_yaw>0.01</covariance_yaw>
     </plugin>
+
   </model>
 </sdf>
