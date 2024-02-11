@@ -1,7 +1,7 @@
 import { atom } from "jotai";
 
 //global states for things that are needed from multiple files
-export const CameraIPs = atom<string[]>(["", "", ""]);
+export const CameraIPs = atom<string[]>(["", "", "", ""]);
 export const ROSIP = atom<string>(localStorage.getItem("ROS_IP") || window.location.hostname);
 export const IsROSConnected = atom<boolean>(false);
 

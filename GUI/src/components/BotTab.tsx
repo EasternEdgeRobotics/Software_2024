@@ -17,6 +17,7 @@ export function BotTab() {
     const [currentProfile, ] = useAtom(CurrentProfile);
     const [mappings, ] = useAtom(Mappings);
     const [,setControllerInput] = useAtom(ControllerInput);
+    const [controllerDetected, setControllerDetected] = useState<boolean>(false);
 
     let controller1 = "null";
     let controller2 = "null"
@@ -24,7 +25,8 @@ export function BotTab() {
     let initialPageLoad = true;
 
     const status = [
-        {"name": "ROS", "status": isRosConnected}
+        {"name": "ROS", "status": isRosConnected},
+        {"name":"Controller Detected", "status": controllerDetected}
     ];
       
     const [, reloadComponent] = useState<number>(0);
@@ -60,6 +62,8 @@ export function BotTab() {
                                                                               //been set for it (since it is nullable in the database)
             return; 
         }
+
+        setControllerDetected(true);
 
         for (let i = 0; i < navigator.getGamepads().length; i++){
             if (navigator.getGamepads()[i]?.id == controller1){

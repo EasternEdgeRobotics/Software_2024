@@ -52,20 +52,19 @@ export default function SettingsTab() {
                 <TextField label="ROS Bridge IP (Must Refresh After Changing)" variant="outlined" sx={{width: "40%"}} value={RosIP} onChange={(e) => setRosIP(e.target.value)} />
             </Box>
             <br/><Divider>Cameras</Divider><br/>
-            <Grid container>
-                <Grid item xs={1/2} />
-                <Grid item xs={10/3}>
+            <Grid container spacing={2} padding={1}>
+                <Grid item xs={6}>
                     <TextField label="Camera 1 URL" variant="outlined" sx={{width: "100%"}} value={IPs[0]} onChange={(e) => setCameraIP(0, e.target.value)} />
                 </Grid>
-                <Grid item xs={1/2} />
-                <Grid item xs={10/3}>
+                <Grid item xs={6}>
                     <TextField label="Camera 2 URL" variant="outlined" sx={{width: "100%"}} value={IPs[1]} onChange={(e) => setCameraIP(1, e.target.value)} />
                 </Grid>
-                <Grid item xs={1/2} />
-                <Grid item xs={10/3}>
-                    <TextField label="Camera 2 URL" variant="outlined" sx={{width: "100%"}} value={IPs[2]} onChange={(e) => setCameraIP(2, e.target.value)} />
+                <Grid item xs={6}>
+                    <TextField label="Camera 3 URL" variant="outlined" sx={{width: "100%"}} value={IPs[2]} onChange={(e) => setCameraIP(2, e.target.value)} />
                 </Grid>
-                <Grid item xs={1/2} />
+                <Grid item xs={6}>
+                    <TextField label="Camera 4 URL" variant="outlined" sx={{width: "100%"}} value={IPs[2]} onChange={(e) => setCameraIP(3, e.target.value)} />
+                </Grid>
             </Grid>
             <Box position="absolute" bottom="8px" left="10%" width="80%">
                 <Button variant="contained" sx={{width: "100%"}} onClick={() => {save();}}>Save Settings</Button>
