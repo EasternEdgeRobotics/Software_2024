@@ -63,7 +63,7 @@ export default function SettingsTab() {
                     <TextField label="Camera 3 URL" variant="outlined" sx={{width: "100%"}} value={IPs[2]} onChange={(e) => setCameraIP(2, e.target.value)} />
                 </Grid>
                 <Grid item xs={6}>
-                    <TextField label="Camera 4 URL" variant="outlined" sx={{width: "100%"}} value={IPs[2]} onChange={(e) => setCameraIP(3, e.target.value)} />
+                    <TextField label="Camera 4 URL" variant="outlined" sx={{width: "100%"}} value={IPs[3]} onChange={(e) => setCameraIP(3, e.target.value)} />
                 </Grid>
             </Grid>
             <Box position="absolute" bottom="8px" left="10%" width="80%">
