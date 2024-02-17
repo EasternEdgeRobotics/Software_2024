@@ -6,17 +6,23 @@ import { Mappings, ProfilesList, RequestingConfig, RequestingProfilesList, Curre
 
 export default function ProfileEditor(props: {open: boolean; onClose: () => void}) {
 	const [tabIndex, setTabIndex] = useState<number>(0);
+
 	const [controller1, setController1] = useState<number>(-1);
 	const [controller2, setController2] = useState<number>(-1);
-	const [currentProfile, setCurrentProfile] = useAtom(CurrentProfile);
+	const [mappings, setMappings] = useAtom(Mappings);
+
+	const [currentProfile, setCurrentProfile] = useAtom(CurrentProfile); 
 	const [profilesList, ] = useAtom(ProfilesList)
+
 	const [profileTextField, setProfileTextField] = useState<string>("");
+
 	const [,setRequestingConfig] = useAtom(RequestingConfig);
 	const [,setRequestingProfilesList] = useAtom(RequestingProfilesList);
-	const [mappings, setMappings] = useAtom(Mappings);
+	//The two variables above are used for the purposes or getting or loading data into database (see ROS.tsx script)
 
 	const [, reloadComponent] = useState<number>(0);
 
+	//Add listeners for connected controllers. Ensure to clear the mappings when a controller is disconnected
 	useEffect(() => {
 		window.addEventListener("gamepadconnected", () => {
 			reloadComponent(Math.random());
@@ -39,6 +45,7 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 		});
 	}, []);
 
+	//Function to check if a certain profile exists
 	const profileExists = (profile : string) => {
 		for (let i = 0; i<profilesList.length;i++){
 			if (profilesList[i].name == profile){
@@ -63,25 +70,21 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 						<FormControl fullWidth sx={{marginY: "16px"}}>
 							<InputLabel>Controller 1</InputLabel>
 							<Select value={controller1} label="Controller 1" onChange={(e) => {
-								if (e.target.value as number < 0) { 
+								if (e.target.value as number < 0) { //If it is less than 0, it means that we didn't actually select a dropdown item
 									return;
 								}
-								setController1(e.target.value as number); 
-								setRequestingProfilesList(1);
+								setController1(e.target.value as number); //The dropdown items are organized by the order of the controllers recognized by the browser
+								setRequestingProfilesList(1); //Request a list of all current profiles (will update the ProfilesList global state)
 								for (let i = 0; i<profilesList.length; i++){
 									if (profilesList[i].name == currentProfile){
 										if (profilesList[i].controller1 == navigator.getGamepads()[e.target.value as number]?.id){ //If this controller recognized, apply approperiate mappings
 											console.log("Controller recognized")
-											setRequestingConfig({state:1, profileName:currentProfile, controller1:"recognized", controller2:"null"}); //Recieve latest bindings
-											return;
+											setRequestingConfig({state:1, profileName:currentProfile, controller1:"recognized", controller2:"null"}); //Recieve latest controller mappings for this controller
+											return; 
 										}
 									}
 								}
 								const tmp = mappings; //If we get here, it means that the controller is not recognized (apply empty mappings)
-								if (e.target.value as number < 0) { //No controller is selected
-									tmp[0] = {}; 
-									return;
-								}
 								tmp[0] = {"buttons": {}, "axes": {}};
 								tmp[0]["buttons"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.buttons.length ?? 0 }, () => "None")};
 								tmp[0]["axes"] = {...Array.from({ length: navigator.getGamepads()[e.target.value as number]?.axes.length ?? 0 }, () => "None")};
@@ -100,16 +103,16 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 						<FormControl fullWidth sx={{marginTop: "2px"}}>
 							<InputLabel>Controller 2</InputLabel>
 							<Select value={controller2} label="Controller 2" onChange={(e) => {
-								if (e.target.value as number < 0) { 
+								if (e.target.value as number < 0) { //If it is less than 0, it means that we didn't actually select a dropdown item
 									return;
 								}
-								setController2(e.target.value as number); 
-								setRequestingProfilesList(1);
+								setController2(e.target.value as number); //The dropdown items are organized by the order of the controllers recognized by the browser
+								setRequestingProfilesList(1); //Request a list of all current profiles (will update the ProfilesList global state)
 								for (let i = 0; i<profilesList.length; i++){
 									if (profilesList[i].name == currentProfile){
 										if (profilesList[i].controller2 == navigator.getGamepads()[e.target.value as number]?.id){ //If this controller recognized, apply approperiate mappings
 											console.log("Controller 2 Recognized");
-											setRequestingConfig({state:1, profileName:currentProfile, controller1:"null", controller2:"recognized"});
+											setRequestingConfig({state:1, profileName:currentProfile, controller1:"null", controller2:"recognized"}); //Recieve latest controller mappings for this controller
 										}
 									}
 								}
@@ -139,7 +142,7 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 							<Grid item xs={2}>
 								<Button variant="contained" onClick={() => {
 									if ((profileTextField.replaceAll(" ","") != "") && !(profileExists(profileTextField))){
-									setCurrentProfile(profileTextField);
+									setCurrentProfile(profileTextField); //Now, once the save button is clicked, this profile with the new name will be sent to the database. 
 								}}}>Create Profile</Button>
 							</Grid>
 						</Grid>
@@ -156,6 +159,9 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 			<DialogActions>
 					<Button onClick={() => {
 						props.onClose();
+
+						//The two states below are used for the dropdown select functionality and don't actually determine the current controller mappings
+						//They are reset upon exit
 						setController1(-1);
 						setController2(-1);
 						}}>Close</Button>
@@ -165,15 +171,19 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 						if (controller1 == -1){
 							return
 						} else {
-							controller1Name = navigator.getGamepads()[controller1]?.id;
+							controller1Name = navigator.getGamepads()[controller1]?.id; //Obtain the name for controller 1
 						}
 						if (controller2 != -1){
-							controller2Name = navigator.getGamepads()[controller2]?.id;
+							controller2Name = navigator.getGamepads()[controller2]?.id; //Obtain the name for controller 2
 						} 
+
+						//The two states below are used for the dropdown select functionality and don't actually determine the current controller mappings
+						//They are reset upon exit
 						setController1(-1);
 						setController2(-1);
-						setRequestingConfig({state:0, profileName:currentProfile, controller1:controller1Name, controller2:controller2Name}); 
-						setRequestingProfilesList(1); 
+
+						setRequestingConfig({state:0, profileName:currentProfile, controller1:controller1Name, controller2:controller2Name}); //Write (or overwrite) this profile into the database
+						setRequestingProfilesList(1); //Update the profiles list
 						props.onClose();
 						}}>Save</Button>
 			</DialogActions>

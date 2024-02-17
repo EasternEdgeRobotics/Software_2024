@@ -1,5 +1,6 @@
 <launch>
 	<node pkg="beaumont_pkg" exec="simulation_thruster_control"/>
+	<node pkg="beaumont_pkg" exec="simulation_camera_subscriber"/>
 	<node pkg="beaumont_pkg" exec="profiles_manager"/>
 	<include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml"/>
 </launch>

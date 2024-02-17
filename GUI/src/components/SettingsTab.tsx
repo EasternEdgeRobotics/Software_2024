@@ -7,11 +7,15 @@ import ProfileEditor from "./ProfileEditor";
 import { useState } from "react";
 
 export default function SettingsTab() {
+
     const [IPs, setIPs] = useAtom(CameraIPs);
     const [RosIP, setRosIP] = useAtom(ROSIP);
+
     const [editorOpen, setEditorOpen] = useState<boolean>(false);
+
     const [currentProfile, setCurrentProfile] = useAtom(CurrentProfile);
     const [profilesList, ] = useAtom(ProfilesList);
+
     const [,setRequestingProfilesList] = useAtom(RequestingProfilesList);
     const [,setRequestingConfig] = useAtom(RequestingConfig);
 
@@ -27,6 +31,7 @@ export default function SettingsTab() {
         localStorage.setItem("ROS_IP", RosIP);
     };
 
+    //The loadProfile function iterates through each profile for each controller, checking if that profile is the current profile and if this controller is recognized 
     const loadProfile = () => {
         for (let controller = 0; controller<navigator.getGamepads().length;controller++){
             if (navigator.getGamepads()[controller] == null){
@@ -36,7 +41,7 @@ export default function SettingsTab() {
                 if (profilesList[i].name == currentProfile){
                     if (profilesList[i].controller1 == navigator.getGamepads()[controller]?.id){ //If this controller recognized, apply approperiate mappings
                         console.log("Controller recognized")
-                        setRequestingConfig({state:1, profileName:currentProfile, controller1:"recognized", controller2:"null"}); //Recieve latest bindings
+                        setRequestingConfig({state:1, profileName:currentProfile, controller1:"recognized", controller2:"null"}); //Recieve latest bindings for this profile
                         return;
                     }
                 }
@@ -52,20 +57,19 @@ export default function SettingsTab() {
                 <TextField label="ROS Bridge IP (Must Refresh After Changing)" variant="outlined" sx={{width: "40%"}} value={RosIP} onChange={(e) => setRosIP(e.target.value)} />
             </Box>
             <br/><Divider>Cameras</Divider><br/>
-            <Grid container>
-                <Grid item xs={1/2} />
-                <Grid item xs={10/3}>
+            <Grid container spacing={2} padding={1}>
+                <Grid item xs={6}>
                     <TextField label="Camera 1 URL" variant="outlined" sx={{width: "100%"}} value={IPs[0]} onChange={(e) => setCameraIP(0, e.target.value)} />
                 </Grid>
-                <Grid item xs={1/2} />
-                <Grid item xs={10/3}>
+                <Grid item xs={6}>
                     <TextField label="Camera 2 URL" variant="outlined" sx={{width: "100%"}} value={IPs[1]} onChange={(e) => setCameraIP(1, e.target.value)} />
                 </Grid>
-                <Grid item xs={1/2} />
-                <Grid item xs={10/3}>
-                    <TextField label="Camera 2 URL" variant="outlined" sx={{width: "100%"}} value={IPs[2]} onChange={(e) => setCameraIP(2, e.target.value)} />
+                <Grid item xs={6}>
+                    <TextField label="Camera 3 URL" variant="outlined" sx={{width: "100%"}} value={IPs[2]} onChange={(e) => setCameraIP(2, e.target.value)} />
                 </Grid>
-                <Grid item xs={1/2} />
+                <Grid item xs={6}>
+                    <TextField label="Camera 4 URL" variant="outlined" sx={{width: "100%"}} value={IPs[3]} onChange={(e) => setCameraIP(3, e.target.value)} />
+                </Grid>
             </Grid>
             <Box position="absolute" bottom="8px" left="10%" width="80%">
                 <Button variant="contained" sx={{width: "100%"}} onClick={() => {save();}}>Save Settings</Button>

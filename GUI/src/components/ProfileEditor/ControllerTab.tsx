@@ -8,6 +8,7 @@ import { useState } from "react";
 export default function ControllerTab(props: {controller: number; index: number}) {
     const [mappings, setMappings] = useAtom(Mappings);
 
+    //Define all the possible pilot actions. These are interperted once they get the to the RPi4 inside the enclosure
     const pilotActions = [
         "None",
         "surge",
@@ -16,6 +17,12 @@ export default function ControllerTab(props: {controller: number; index: number}
         "pitch",
         "roll",
         "yaw",
+        "heave_up",
+        "heave_down",
+        "pitch_up",
+        "pitch_down",
+        "roll_up",
+        "roll_down",
         "openClaw",
         "closeClaw",
         "toggleLED",
