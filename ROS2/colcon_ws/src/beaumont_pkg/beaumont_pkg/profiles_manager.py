@@ -10,6 +10,7 @@ import json
 class Base(DeclarativeBase):
     pass
 
+#Define the Profiles database schema
 class Profile(Base):
     __tablename__ = "profiles"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -20,6 +21,7 @@ class Profile(Base):
     def dict(self):
         return {"id": self.id, "name": self.name, "controller1": self.controller1, "controller2": self.controller2}
 
+#Define the Mappings database schema
 class Mapping(Base):
     __tablename__ = "mappings"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -31,7 +33,9 @@ class Mapping(Base):
     deadzone: Mapped[float] = mapped_column(nullable=True)
     def dict(self):
         return {"id": self.id, "name": self.name, "controller": self.controller, "button": self.button, "action": self.action , "isAxis": self.isAxis, "deadzone": self.deadzone}
-    
+
+#Define the Cameras database schema
+#TODO: Integrate this with GUI
 class Camera(Base):
     __tablename__ = "cameras"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -41,15 +45,9 @@ class Camera(Base):
 
 engine = create_engine("sqlite:///config.db")
 
-
-
-
-# [{"id": 0, "name": zaid, "controller": Logi, "button": 3, "isAxis": False, "deadzone": 0.2},
-#    {"id": 18, "name": zaid, "controller": xbox, "button": 1, "isAxis": True, "deadzone": 0.1}]
-
-
 def mappings_list_to_mappings_json(mappings_list):
     """Takes in a list of mappings for a certain profile from the database and turns in into a JSON"""
+
     i = 0
     controller1 = ""
     controller_1_json_mappings = {"axes": {}, "buttons": {}, "deadzones": {}}
@@ -65,10 +63,8 @@ def mappings_list_to_mappings_json(mappings_list):
             _json_mappings["buttons"][binding["button"]] = binding["action"]
         return _json_mappings
             
-
-
     for mapping in mappings_list:
-        if i==0:
+        if i==0: #Set the first controller seen in the mappings list to controller 1. Only used to distinguish between the two controllers 
             controller1 = mapping["controller"]
         
         if mapping["controller"] == controller1:
@@ -87,11 +83,11 @@ def mappings_json_to_mappings_list(profile_name, controller_name, mappings_json)
     buttons_dict = mappings_json["buttons"]
     for i, key in enumerate(list(buttons_dict.keys())):
         query = session.query(Mapping).filter(Mapping.name == profile_name, Mapping.controller == controller_name, Mapping.button == i) 
-        if query.count() > 0: #Mapping exists
-            query.update({"action":buttons_dict[str(i)]})
+        if query.count() > 0: #A mapping exists
+            query.update({"action":buttons_dict[str(i)]}) #Overwrite 
             session.commit()
-        else:
-            new_mapping = Mapping(name = profile_name, controller = controller_name, button = i, action = buttons_dict[str(i)], isAxis = False)
+        else: #Mapping does not exist
+            new_mapping = Mapping(name = profile_name, controller = controller_name, button = i, action = buttons_dict[str(i)], isAxis = False) 
             session.add(new_mapping)
 
         session.commit()
@@ -100,15 +96,15 @@ def mappings_json_to_mappings_list(profile_name, controller_name, mappings_json)
     deadzones_dict = mappings_json["deadzones"]
     for i, key in enumerate(list(axes_dict.keys())):
         query = session.query(Mapping).filter(Mapping.name == profile_name, Mapping.controller == controller_name, Mapping.button == i , Mapping.isAxis == True) 
-        if query.count() > 0: #Mapping exists
-            query.update({"action":axes_dict[str(i)]})
-            if (float(deadzones_dict[str(i)]) != 0):
-                query.update({"deadzone":float(deadzones_dict[str(i)])})
-            else:
-                query.update({"deadzone":None})
+        if query.count() > 0: #A mapping exists
+            query.update({"action":axes_dict[str(i)]}) #Overwrite axis action
+            if (float(deadzones_dict[str(i)]) != 0): #There is a non-zero deadzone
+                query.update({"deadzone":float(deadzones_dict[str(i)])}) #Overwrite deadzone value
+            else: #The deadzone is equal to 0 (i.e. no deadzone for this joystick)
+                query.update({"deadzone":None}) 
             session.commit()
         else:
-            if (float(deadzones_dict[str(i)]) == 0):
+            if (float(deadzones_dict[str(i)]) == 0): 
                 new_mapping = Mapping(name = profile_name, controller = controller_name, button = i, action = axes_dict[str(i)], isAxis = True)
             else:
                 new_mapping = Mapping(name = profile_name, controller = controller_name, button = i, action = axes_dict[str(i)], isAxis = True, deadzone = float(deadzones_dict[str(i)]))
@@ -123,15 +119,18 @@ class ProfilesManager(Node):
 
     def __init__(self):
         super().__init__('profiles_manager')
+
+        #The ROS services below communicate straight with the GUI, as long as rosbridge_server is running
+        #The service names ("profile_config" and "profiles_list") MUST match those defined in the GUI
         self.srv1 = self.create_service(Config, "profile_config", self.profile_config_callback)
         self.srv2 = self.create_service(Config, "profiles_list", self.profiles_list_callback)
 
     def profile_config_callback(self, request, response):
-        if request.state == 0:
+        if request.state == 0: #We are looking to load mappings into database from GUI
 
-            message = json.loads(request.data)
+            message = json.loads(request.data) #Turn the recieved string into a JSON object (i.e. Python dictionary)
 
-            if session.query(Profile).filter(Profile.name == message["profileName"]).count() == 0: #i.e. profile does not exist
+            if session.query(Profile).filter(Profile.name == message["profileName"]).count() == 0: #i.e. profile does not exist, a new one was created in the GUI
                 if (message["controller2"] == "null"):
                     new_profile = Profile(name=message["profileName"], controller1 = message["controller1"])
                 else:
@@ -147,27 +146,27 @@ class ProfilesManager(Node):
 
             response.result = "Success"
 
-            for i in range(session.query(Mapping).filter(Mapping.name == message["profileName"]).count()):
-               print(f"{session.query(Mapping).filter_by(name = message['profileName']).all()[i].dict()} recieved in ThrusterControl")
+            #==========================DEBUG===========================
+            #for i in range(session.query(Mapping).filter(Mapping.name == message["profileName"]).count()):
+            #   print(f"{session.query(Mapping).filter_by(name = message['profileName']).all()[i].dict()} recieved in ThrusterControl")
+            #==========================================================
 
             return response
 
-        elif request.state == 1:
+        elif request.state == 1: #We are looking to load mapping into GUI from database
 
             mappings_list = []
             for row in session.query(Mapping).all():
-                if (row.dict()["name"]==request.data): #request.data in this case stores the desired profile
+                if (row.dict()["name"]==request.data): #request.data in this case stores the name of the profile for which mappings are being requested
                     mappings_list.append(row.dict())
             mappings_json = mappings_list_to_mappings_json(mappings_list)
-            response.result = json.dumps(mappings_json)
+            response.result = json.dumps(mappings_json) #Turn the JSON object into a string
             return response
 
     def profiles_list_callback(self, request, response):
         if request.state == 0:
             query = session.query(Profile).filter(Profile.name == request.data) #In this case, the request data is expected to only be a string
             if query.count() == 1: #i.e. profile exists
-                #session.delete(query)
-                #session.commit()
                 query.delete()
                 session.commit()
                 response.result = "Profile Deleted"
@@ -178,7 +177,7 @@ class ProfilesManager(Node):
             output = []
             for row in session.query(Profile).all():
                 output.append(row.dict())
-            response.result = json.dumps(output)
+            response.result = json.dumps(output) #Turn the JSON object into a string
             return response
 
 def main(args=None):

@@ -17,12 +17,6 @@ export function AltCamera(props: {ip: string, width: number}) {
     );
 }
 
-export function Camera(props: {ip:string, width:number}){
-    return (
-        <Box height={props.width * (19/108)} sx={{backgroundImage: `url(${props.ip}), url(./nosignal.jpg)`, backgroundSize: "100% 100%", borderRadius: "12px"}}/>
-    );
-}
-
 export default function CameraTab() {
     const [width, setWidth] = React.useState<number>(window.innerWidth);
     const [IPs] = useAtom<string[]>(CameraIPs);

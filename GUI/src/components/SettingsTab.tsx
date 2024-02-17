@@ -7,11 +7,15 @@ import ProfileEditor from "./ProfileEditor";
 import { useState } from "react";
 
 export default function SettingsTab() {
+
     const [IPs, setIPs] = useAtom(CameraIPs);
     const [RosIP, setRosIP] = useAtom(ROSIP);
+
     const [editorOpen, setEditorOpen] = useState<boolean>(false);
+
     const [currentProfile, setCurrentProfile] = useAtom(CurrentProfile);
     const [profilesList, ] = useAtom(ProfilesList);
+
     const [,setRequestingProfilesList] = useAtom(RequestingProfilesList);
     const [,setRequestingConfig] = useAtom(RequestingConfig);
 
@@ -27,6 +31,7 @@ export default function SettingsTab() {
         localStorage.setItem("ROS_IP", RosIP);
     };
 
+    //The loadProfile function iterates through each profile for each controller, checking if that profile is the current profile and if this controller is recognized 
     const loadProfile = () => {
         for (let controller = 0; controller<navigator.getGamepads().length;controller++){
             if (navigator.getGamepads()[controller] == null){
@@ -36,7 +41,7 @@ export default function SettingsTab() {
                 if (profilesList[i].name == currentProfile){
                     if (profilesList[i].controller1 == navigator.getGamepads()[controller]?.id){ //If this controller recognized, apply approperiate mappings
                         console.log("Controller recognized")
-                        setRequestingConfig({state:1, profileName:currentProfile, controller1:"recognized", controller2:"null"}); //Recieve latest bindings
+                        setRequestingConfig({state:1, profileName:currentProfile, controller1:"recognized", controller2:"null"}); //Recieve latest bindings for this profile
                         return;
                     }
                 }
