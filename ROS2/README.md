@@ -19,7 +19,7 @@ docker pull osrf/ros:humble-desktop
 ```
 Then, run a docker container based on this image:
 ```
-docker run -v "<PATH TO ROS2 directory on your computer>":/home/ROS2  -p 9090:9090 --mount source=colcon_ws,destination=/home/colcon_ws -it osrf/ros:humble-desktop-full
+docker run -v "<PATH TO ROS2 directory on your computer>":/home/ROS2  -p 9090:9090 -it osrf/ros:humble-desktop
 ```
 Above, we are mapping port 9090 of the container to the same port on the host. This is so that we can later listen for ROS2 on port 9090 in the GUI.
 We are also mounting a volume using the -v. Any mapped folders between your host and the docker container will be shared. When you change the files in that 
