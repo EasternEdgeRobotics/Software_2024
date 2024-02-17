@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import ROSLIB from "roslib";
-import { IsROSConnected, ROSIP, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput } from "./Atoms";
+import { IsROSConnected, ROSIP, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, ImuData } from "./Atoms";
 import React from "react";
 
 const ros = new ROSLIB.Ros({});
@@ -13,6 +13,7 @@ export function InitROS() {
     const [requestingProfilesList, setRequestingProfilesList] = useAtom(RequestingProfilesList); //Used below for requesting profiles data from the database running in the Pi4
     const [mappings, setMappings] = useAtom(Mappings); //Controller mappings
     const [, setProfilesList] = useAtom(ProfilesList); //The known list of pilot profiles
+    const [,setImuData] = useAtom(ImuData);
     const [currentProfile,] = useAtom(CurrentProfile); 
     const [controllerInput, setControllerInput] = useAtom(ControllerInput); //The current controller input from the pilot
 
@@ -147,6 +148,15 @@ export function InitROS() {
         setRequestingProfilesList(2);
         }    
         ,[requestingProfilesList]);
+
+
+    const ImuDataListener = new ROSLIB.Topic({ros:ros, 
+        name:"/imu", 
+        messageType: "std_msgs/String"});
+
+    ImuDataListener.subscribe(function(message) {
+        console.log(message);
+    });
     
     return (null);
 }

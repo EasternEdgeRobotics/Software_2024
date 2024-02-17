@@ -1,13 +1,18 @@
-import { Box, Grid, Paper } from "@mui/material";
+import { Box, Button, Grid, Paper } from "@mui/material";
 import { useAtom } from "jotai";
-import { CameraIPs } from "../api/Atoms";
+import { CameraIPs, ImuData } from "../api/Atoms";
 import React from "react";
 
 // Main camera vs alt camera are the exact same without margin and different height
 
-export function MainCamera(props: {ip: string, width: number}) {
-    return (
-        <Box height={(props.width-8) * (3/8)} sx={{backgroundImage: `url(${props.ip}), url(./nosignal.jpg)`, backgroundSize: "100% 100%", borderRadius: "12px", margin: "0 4px 0 4px"}}/>
+export function MainCamera(props: {ip: string, width: number, enableHud: boolean}) {
+    return(
+        <Box height={(props.width-8) * (3/8)} sx={{backgroundImage: `url(${props.ip}), url(./nosignal.jpg)`, backgroundSize: "100% 100%", borderRadius: "12px", margin: "0 4px 0 4px"}}>
+            <Box display={props.enableHud ? "block" : "none"} sx={{width:"100%", height:"20%", backgroundColor:"rgba(0,0,0,0.5)", backdropFilter:"blur(1px)", float:"right", borderTopRightRadius: "12px", borderTopLeftRadius: "12px"}}>
+                <h1 style={{color: "red", display: "inline"}}>demo text</h1>
+                <h1 style={{color: "lime", display: "inline"}}>&nbsp;stats will be here</h1>
+            </Box>
+        </Box>
     );
 }
 

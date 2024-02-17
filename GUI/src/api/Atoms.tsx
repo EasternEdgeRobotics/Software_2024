@@ -13,6 +13,8 @@ export const CameraIPs = atom<string[]>(["", "", "", ""]);
 export const ROSIP = atom<string>(localStorage.getItem("ROS_IP") || window.location.hostname);
 export const IsROSConnected = atom<boolean>(false);
 
+export const ImuData = atom<string>(''); 
+
 export const Mappings = atom<{[controller: number]: {[type: string]: {[index: number]: string}}}>({0: {}, 1: {}}); //Current controller mappings
 
 export const ThrusterMultipliers = atom<number[]>([0,0,0,0,0,0,0]); //Power:0, Surge:1, Sway:2, Heave:3, Pitch:4, Roll:5, Yaw:6
