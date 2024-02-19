@@ -9,47 +9,38 @@ import "@fontsource/roboto/700.css";
 import SafetyDisclaimer from "../components/SafetyDisclaimer";
 import { InitROS } from "../api/ROS";
 import { CameraIPs } from "../api/Atoms";
-
+import React, { useRef } from 'react';
 // export {}
+const fetch = require('node-fetch');
+const { createCanvas, Image } = require('canvas');
+const { JSDOM } = require('jsdom');
 
 export function ControllerApp() {
   const [IPs] = useAtom<string[]>(CameraIPs);
 
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const captureScreenshot = async () => {
+    // Fetch the video data from the server
+    const response = await fetch('http://localhost:8880/');
+    const data = await response.buffer();
+
+    // Create an Image object from the video data
+    const img = new Image();
+    img.src = data;
+
+    // Create a canvas and draw the image onto it
+    const canvas = createCanvas(img.width, img.height);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, img.width, img.height);
+  };
+
+  const streamUrl = 'http://localhost:8880/';
   return (
     <Box>
       <InitROS /> {/* Initialize ROS */}
-      <SafetyDisclaimer /> {/* Display the safety disclaimer */}
-            // a button to screenshot selected camera
-      <Button variant="outlined" onClick={async () => {
-        fetch(IPs[0], {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'image/png',
-          },
-        })
-          .then((response) => response.blob())
-          .then((blob) => {
-            // Create blob link to download
-            const url = window.URL.createObjectURL(
-              new Blob([blob]),
-            );
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute(
-              'download',
-              `FileName.png`,
-            );
-
-            // Append to html link element page
-            document.body.appendChild(link);
-
-            // Start download
-            link.click();
-
-            // Clean up and remove the link
-            // link.parentNode.removeChild(link);
-          });
-      }}>Screenshot</Button>
+      {/* <SafetyDisclaimer /> {Display the safety disclaimer} */}
+      <Button variant="outlined" onClick={captureScreenshot}>Screenshot</Button>
     </Box>
   );
 }
