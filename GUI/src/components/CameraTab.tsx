@@ -29,7 +29,7 @@ export default function CameraTab() {
             <Grid item xs display="flex" flexDirection="column" justifyContent="space-between">
                 <Paper elevation={7} sx={{alignSelf: "flex-start", borderRadius: "12px", width: "100%"}}>
                     <h3 style={{textAlign: "center", margin: "0"}}>Camera 1</h3>
-                    <AltCamera ip={IPs[0]} width={width} />
+                    <AltCamera ip={"http://localhost:8880"} width={width} />
                 </Paper>
                 <Paper elevation={7} sx={{alignSelf: "flex-end", borderRadius: "12px", width: "100%"}}>
                     <h3 style={{textAlign: "center", margin: "0"}}>Camera 2</h3>

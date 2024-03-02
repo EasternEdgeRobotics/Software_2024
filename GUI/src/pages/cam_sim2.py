@@ -2,7 +2,7 @@ import cv2
 from flask import Flask, Response
 
 app = Flask(__name__)
-
+    
 @app.route('/')
 def video_feed():
     return Response(generate(),
