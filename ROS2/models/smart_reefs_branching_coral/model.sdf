@@ -4,7 +4,7 @@
     <link name='part_1'>
       <inertial>
         <pose>0 0 0 0 -0 0</pose>
-        <mass>1000</mass>
+        <mass>2</mass>
         <inertia>
           <ixx>0</ixx>
           <ixy>0</ixy>
@@ -17,7 +17,7 @@
       <self_collide>0</self_collide>
       <enable_wind>0</enable_wind>
       <kinematic>0</kinematic>
-      <pose>-0.087877 -0.216714 0 0 -0 0</pose>
+      <pose>-0.087877 -0.216714 -0 0 -0 0</pose>
       <gravity>1</gravity>
       <is_static>1</is_static>
       <frame name='part_1_frame'>
@@ -28,7 +28,7 @@
         <geometry>
           <mesh>
             <uri>/home/eer/Documents/Software_2024/ROS2/models/smart_reefs_branching_coral/assembly_visual.stl</uri>
-            <scale>1 1 1</scale>
+            <scale>0.65 0.65 0.65</scale>
           </mesh>
         </geometry>
         <material>
@@ -41,6 +41,7 @@
           <emissive>0 0 0 1</emissive>
           <script>
             <name>Gazebo/Red</name>
+            <uri>__default__</uri>
           </script>
         </material>
         <transparency>0</transparency>
@@ -53,7 +54,7 @@
         <geometry>
           <mesh>
             <uri>/home/eer/Documents/Software_2024/ROS2/models/smart_reefs_branching_coral/assembly_collision.stl</uri>
-            <scale>1 1 1</scale>
+            <scale>0.65 0.65 0.65</scale>
           </mesh>
         </geometry>
         <surface>
