@@ -2,32 +2,33 @@ import {Box, Button, Checkbox, FormGroup, FormControlLabel, Grid, Typography, Ap
 import { useState } from "react";
 import React from "react";
 import { useAtom } from "jotai";
-import { grey, pink } from "@mui/material/colors";
+import { grey, pink, green,} from "@mui/material/colors";
 
 export default function TabletApp() {
     var milliseconds = 0
     var seconds = 0
     var minutes = 0
     var displayedTime = ""
+    var timerOn = 0
 
-    repeat()
-
-    function repeat(){
+    function repeat(){       
         setTimeout(function() {
-            milliseconds = milliseconds + 1
+            if (timerOn == 1) {
+                milliseconds = milliseconds + 1
 
-            if (milliseconds >= 100) {
-                seconds = seconds + 1
-                milliseconds = 0
-            }
-            if (seconds >= 60) {
-                minutes = minutes + 1
-                seconds = 0
-            }
+                if (milliseconds >= 100) {
+                    seconds = seconds + 1
+                    milliseconds = 0
+                }
+                if (seconds >= 60) {
+                    minutes = minutes + 1
+                    seconds = 0
+                }
             
-            displayedTime = minutes + ":" + seconds + ":" + milliseconds
-            document.getElementById("timerDisplay")!.innerHTML = displayedTime
-            repeat()
+                displayedTime = minutes + ":" + seconds + ":" + milliseconds
+                document.getElementById("timerDisplay")!.innerHTML = displayedTime
+                repeat()
+            }
         })
     }
 
@@ -37,10 +38,15 @@ export default function TabletApp() {
                 <Typography component = "div" id = "timerDisplay" fontSize={50}> 
                     [Timer Display] 
                 </Typography>
+                <Button onClick = {() =>  {timerOn = 1; repeat()}} variant = "contained" color = "success" sx = {{color: grey[50]}}>
+                    <Typography fontSize = {25}>
+                    Start
+                    </Typography>
+                </Button>
             </AppBar>
 
             <Grid>    
-            <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
+                <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
                 <FormControlLabel control = {<Checkbox />} label = "TASK 1: OOI: Coastal Pioneer Array" />
             </Grid>
             <Grid>
