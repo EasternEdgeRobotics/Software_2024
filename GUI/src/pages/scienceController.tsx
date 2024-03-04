@@ -1,5 +1,7 @@
 import { ThemeProvider } from "@emotion/react";
-import { Box, Button, Checkbox, CssBaseline, createTheme } from "@mui/material";
+import { Box, Button, Checkbox, CssBaseline, createTheme , IconButton} from "@mui/material";
+
+
 import { useAtom } from "jotai";
 //fonts
 import "@fontsource/roboto/300.css";
@@ -19,6 +21,7 @@ import "../styles/science.css";
 import { Col, Row } from 'react-bootstrap';
 import taskJSON from './tasks.json';
 import {Task, SubTask} from '../types/Task';
+import { MenuSquareIcon } from "lucide-react";
 
 const ScreenshotVeiw = () => {
   return (
@@ -104,20 +107,29 @@ function SideBar() {
 
   return (
     <div style={{ display: 'flex', position: 'fixed', right: 0, zIndex: 1000 }}>
-      <Button
+      <IconButton
         onClick={handleToggleSidebar}
         style={{
           position: 'fixed',
           top: '50%',
-          left: !collapsed ? '200px' : '0',
-          transform: 'translateY(-50%)',
-          backgroundColor: '#007bff',
-          borderColor: '#007bff',
-          color: 'white'
+          right: !collapsed ? '600px' : '0',
+          transform: 'translateY(-50%) rotate(180deg)',
+          backgroundColor: '#e0e0e0',
+          color: 'black',
+          transition: 'right 300ms',
+          borderRadius: '5px 50px 50px 5px',
+          padding: '10px',
+          paddingTop: '30px',
+          paddingBottom: '30px',
+          paddingLeft: '5px',
+          writingMode: 'vertical-rl',
+          textOrientation: 'mixed',
         }}
       >
-        {/* {!collapsed ? <FaArrowLeft size={20} /> : <FaArrowRight size={20} />} */}
-      </Button>
+        Tasks
+        <div style={{ height: '5px' }} />
+        <MenuSquareIcon />
+      </IconButton >
       <Sidebar style={styles.sideBarHeight} collapsed={collapsed} rtl={false} width="600px" collapsedWidth="0px" backgroundColor="rgb(0, 0, 69, 0.7)">
       <Menu>
           <MenuItem icon={<Home />}>Home</MenuItem>
