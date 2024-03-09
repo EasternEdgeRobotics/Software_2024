@@ -28,7 +28,7 @@
         <geometry>
           <mesh>
             <uri>/home/eer/Documents/Software_2024/ROS2/models/smart_reefs_branching_coral/assembly_visual.stl</uri>
-            <scale>0.65 0.65 0.65</scale>
+            <scale>0.65 0.65 1</scale>
           </mesh>
         </geometry>
         <material>
@@ -54,7 +54,7 @@
         <geometry>
           <mesh>
             <uri>/home/eer/Documents/Software_2024/ROS2/models/smart_reefs_branching_coral/assembly_collision.stl</uri>
-            <scale>0.65 0.65 0.65</scale>
+            <scale>0.65 0.65 1</scale>
           </mesh>
         </geometry>
         <surface>

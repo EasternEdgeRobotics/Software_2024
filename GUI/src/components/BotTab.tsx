@@ -74,33 +74,37 @@ export function BotTab() {
         setControllerDetected(true); //Used to visually indicate a controller has been detected, and associated mappings have been loaded
 
         //The below for loop is quick, so it will detect a button press on any button even if it was for a short time
-        for (let i = 0; i < navigator.getGamepads().length; i++){
-            if (navigator.getGamepads()[i]?.id == controller1){
-                for (let j = 0; j<(navigator.getGamepads()[i]?.buttons.length as number);j++){
-                    if (navigator.getGamepads()[i]?.buttons[j].pressed){ //Button press detected
+        
+        const gamepadsInstance = navigator.getGamepads(); 
+
+        const controller_input_list:(string|number|undefined)[][] = [];
+
+        for (let i = 0; i < gamepadsInstance.length; i++){
+            if (gamepadsInstance[i]?.id == [controller1, controller2][controller]){
+                for (let j = 0; j<(gamepadsInstance[i]?.buttons.length as number);j++){
+                    if (gamepadsInstance[i]?.buttons[j].pressed){ //Button press detected
                         if (mappings[controller]["buttons"][j] != "None"){
                             const controller_input = [];
                             controller_input.push(1);
                             controller_input.push(mappings[controller]["buttons"][j]);
-                            setControllerInput(JSON.stringify(controller_input));
-                            console.log(controller_input);
+                            controller_input_list.push(controller_input);
                         }
                     }
                 }
-                for (let j = 0; j<(navigator.getGamepads()[i]?.axes.length as number);j++){
+                for (let j = 0; j<(gamepadsInstance[i]?.axes.length as number);j++){
                     const deadzone = Number(mappings[controller]["deadzones"][j]) > 0.05 ? Number(mappings[controller]["deadzones"][j]): 0.05;
-                    if (Math.abs(navigator.getGamepads()[i]?.axes[j] as number) >= deadzone){ //The axis has been moved beyond it's "deadzone", which means that this is actual pilot input and not controller drift
+                    if (Math.abs(gamepadsInstance[i]?.axes[j] as number) >= deadzone){ //The axis has been moved beyond it's "deadzone", which means that this is actual pilot input and not controller drift
                         if (mappings[controller]["axes"][j] != "None"){
                             const controller_input = [];
-                            controller_input.push(navigator.getGamepads()[i]?.axes[j]);
+                            controller_input.push(gamepadsInstance[i]?.axes[j]);
                             controller_input.push(mappings[controller]["axes"][j]);
-                            setControllerInput(JSON.stringify(controller_input));
-                            console.log(controller_input);
+                            controller_input_list.push(controller_input);
                         }
                     }
                 }
             }
         }
+        if (controller_input_list.length > 0) {setControllerInput(JSON.stringify(controller_input_list))} // The ROS.tsx script will detect changes to the global variable "ControllerInput"
     }
 
     useEffect(() => { //Constantly run the input listeners for controllers 1 and 2 (often addressed as controllers 0 and 1)
@@ -108,6 +112,7 @@ export function BotTab() {
             reloadComponent(Math.random());
             input_listener(0);
             input_listener(1);
+            //input_publisher();
         }, 100);
     }, []);
     

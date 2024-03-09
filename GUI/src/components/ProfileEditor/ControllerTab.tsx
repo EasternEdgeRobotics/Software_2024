@@ -23,10 +23,11 @@ export default function ControllerTab(props: {controller: number; index: number}
         "pitch_down",
         "roll_up",
         "roll_down",
-        "openClaw",
-        "closeClaw",
+        "open_claw",
+        "close_claw",
         "toggleLED",
-        "backflip"
+        "backflip",
+        "enter_auto_mode"
     ]
 
     const [, reloadComponent] = useState<number>(0);

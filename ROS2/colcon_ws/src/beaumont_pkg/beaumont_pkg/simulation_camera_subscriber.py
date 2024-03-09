@@ -13,9 +13,9 @@ import time
 
 camera_captures = {0: None, 1: None, 2: None, 3: None}
 
-ip_address = socket.gethostbyname(socket.gethostname()) #Get the ip address
+#ip_address = socket.gethostbyname(socket.gethostname()) #Get the ip address
 
-#ip_address = "localhost"
+ip_address = "192.168.2.199"
 
 class SimulationCameraSubscriber(Node):
 	

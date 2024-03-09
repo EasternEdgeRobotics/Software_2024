@@ -59,6 +59,7 @@ export function InitROS() {
             return;
         }
         const controllerInputVals = new ROSLIB.Message({data: controllerInput});
+        console.log(controllerInputVals);
         controllerInputTopic.publish(controllerInputVals);
         setControllerInput("");
         }    
