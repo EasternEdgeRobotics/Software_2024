@@ -96,7 +96,7 @@ class ThrusterDataSubscriber(Node):
         #No real reason for this adjustment factor other than that it seems reasonable in practice
         #There is no attempt to simulate torque and drag with pitch, roll, and yaw with angular velocity calculations
 
-        self.gazebo_simulation_velocity_yaw_adjustment_factor = 0.15
+        self.gazebo_simulation_velocity_yaw_adjustment_factor = 0.30
         #This uses the Gazebo Planar Move Plugin. Adjustment factor is reasonable
 
         #The bottom 3 threads are used for calculating velocity based on thruster force and drag
@@ -198,7 +198,7 @@ class ThrusterDataSubscriber(Node):
         '''Reset Angular Velocity to 0 After Certain Amount of Inactivity'''
         #Reset angular movement after cetain amount of inactivity
 
-        inactivity_threshold = 1 # 1 second
+        inactivity_threshold = 2 # 2 seconds
 
         pitch_velocity = Wrench()
         roll_velocity = Wrench()
