@@ -25,8 +25,8 @@
         <camera name='head'>
           <horizontal_fov>1.39626</horizontal_fov>
           <image>
-            <width>640</width>
-            <height>480</height>
+            <width>480</width>
+            <height>360</height>
             <format>R8G8B8</format>
           </image>
           <clip>
@@ -150,8 +150,8 @@
         <camera name='head'>
           <horizontal_fov>1.39626</horizontal_fov>
           <image>
-            <width>640</width>
-            <height>480</height>
+            <width>480</width>
+            <height>360</height>
             <format>R8G8B8</format>
           </image>
           <clip>
@@ -275,8 +275,8 @@
         <camera name='head'>
           <horizontal_fov>1.39626</horizontal_fov>
           <image>
-            <width>640</width>
-            <height>480</height>
+            <width>480</width>
+            <height>360</height>
             <format>R8G8B8</format>
           </image>
           <clip>
@@ -400,8 +400,8 @@
         <camera name='head'>
           <horizontal_fov>1.39626</horizontal_fov>
           <image>
-            <width>640</width>
-            <height>480</height>
+            <width>480</width>
+            <height>360</height>
             <format>R8G8B8</format>
           </image>
           <clip>
