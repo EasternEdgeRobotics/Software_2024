@@ -5,14 +5,19 @@ import { useAtom } from "jotai";
 import { grey, green, yellow, red} from "@mui/material/colors";
 
 export default function TabletApp() {
+    // Main-Timer: Variables
     var milliseconds = 0
+    var displayedMilliseconds = ""
     var seconds = 0
+    var displayedSeconds = ""
     var minutes = 0
+    var displayedMinutes = ""
     var displayedTime = ""
     var timerOn = 0
     var timerPaused = 0
     var timeOver = 0
 
+    // Main Timer: Function
     function repeat() {       
         setTimeout(function() {
             if (timerOn == 1) {
@@ -28,11 +33,31 @@ export default function TabletApp() {
                             minutes = minutes + 1
                             seconds = 0
                         }
-            
-                        if (minutes == 15){
+
+                        if (milliseconds < 10) {
+                            displayedMilliseconds = ":0" + milliseconds
+                        }
+                        else {
+                            displayedMilliseconds = ":" + milliseconds
+                        }
+                        if (seconds < 10) {
+                            displayedSeconds = ":0" + seconds
+                        }
+                        else {
+                            displayedSeconds = ":" + seconds
+                        }
+                        if (minutes < 10) {
+                            displayedMinutes = "0" + minutes 
+                        }
+                        else {
+                            displayedMinutes = "" + minutes
+                        }
+                                    
+                        if (minutes == 15) {
                             timeOver = 1
                         }
-                        displayedTime = minutes + ":" + seconds + ":" + milliseconds
+
+                        displayedTime = displayedMinutes + displayedSeconds + displayedMilliseconds
                         document.getElementById("timerDisplay")!.innerHTML = displayedTime
                         repeat()
                     }
@@ -41,12 +66,15 @@ export default function TabletApp() {
         })
     }
 
+
+    // Task 1 Timer: Variables 
     var milliseconds1 = 0
     var seconds1 = 0
     var minutes1 = 0
     var timerOn1 = false
     var displayedTime1 = ""
 
+    // Task 1 Timer: Function
     function repeat1() {
         setTimeout(function() {
             if(timerOn1 == true){
@@ -60,6 +88,11 @@ export default function TabletApp() {
                     minutes1 = minutes1 + 1
                     seconds1 = 0
                 }
+
+                if(minutes1 == 15) {
+                    timeOver = 1
+                }
+
                 displayedTime1 = minutes1 + ":" + seconds1 + ":" + milliseconds1
                 document.getElementById("timerDisplay1")!.innerHTML = displayedTime1
                 repeat1()
@@ -67,70 +100,170 @@ export default function TabletApp() {
         })
     }
 
+    // Task 2 Timer: Variables 
+    var milliseconds2 = 0
+    var seconds2 = 0
+    var minutes2 = 0
+    var timerOn2 = false
+    var displayedTime2 = ""
+
+    // Task 2 Timer: Function
+    function repeat2() {
+        setTimeout(function() {
+            if(timerOn2 == true){
+                milliseconds2 = milliseconds2 + 1
+
+                if(milliseconds2 >= 100) {
+                    seconds2 = seconds2 + 1
+                    milliseconds2 = 0
+                }
+                if(seconds2 >= 60) {
+                    minutes2 = minutes2 + 1
+                    seconds2 = 0
+                }
+
+                if(minutes2 == 15) {
+                    timeOver = 1
+                }
+
+                displayedTime2 = minutes2 + ":" + seconds2 + ":" + milliseconds2
+                document.getElementById("timerDisplay2")!.innerHTML = displayedTime2
+                repeat2()
+            }
+        })
+    }
+
+    // Task 3 Timer: Variables 
+    var milliseconds3 = 0
+    var seconds3 = 0
+    var minutes3 = 0
+    var timerOn3 = false
+    var displayedTime3 = ""
+
+    // Task 3 Timer: Function
+    function repeat3() {
+        setTimeout(function() {
+            if(timerOn3 == true){
+                milliseconds3 = milliseconds3 + 1
+
+                if(milliseconds3 >= 100) {
+                    seconds3 = seconds3 + 1
+                    milliseconds3 = 0
+                }
+                if(seconds3 >= 60) {
+                    minutes3 = minutes3 + 1
+                    seconds3 = 0
+                }
+
+                if(minutes3 == 15) {
+                    timeOver = 1
+                }
+
+                displayedTime3 = minutes3 + ":" + seconds3 + ":" + milliseconds3
+                document.getElementById("timerDisplay3")!.innerHTML = displayedTime3
+                repeat3()
+            }
+        })
+    }
+
+ // Task 4 Timer: Variables 
+ var milliseconds4 = 0
+ var seconds4 = 0
+ var minutes4 = 0
+ var timerOn4 = false
+ var displayedTime4 = ""
+
+ // Task 4 Timer: Function
+ function repeat4() {
+     setTimeout(function() {
+         if(timerOn4 == true){
+             milliseconds4 = milliseconds4 + 1
+
+             if(milliseconds4 >= 100) {
+                 seconds4 = seconds4 + 1
+                 milliseconds4 = 0
+             }
+             if(seconds4 >= 60) {
+                 minutes4 = minutes4 + 1
+                 seconds4 = 0
+             }
+
+             if(minutes4 == 15) {
+                 timeOver = 1
+             }
+
+             displayedTime4 = minutes4 + ":" + seconds4 + ":" + milliseconds4
+             document.getElementById("timerDisplay4")!.innerHTML = displayedTime4
+             repeat4()
+         }
+     })
+ }
+
     return(
-        <FormGroup>    
+        // Main Timer & Task 1 Timer: Control Layouts
+        <FormGroup>              
+            {/* Main Timer: Controls */}
             <AppBar sx = {{bgcolor: "grey", textAlign: "center"}}>
-                <Typography component = "div" id = "timerDisplay" fontSize={50}> 
-                    0:0:0
-                </Typography>
-                <Button variant = "contained" sx = {{background: green[400], color: grey[50]}}
-                onClick = {() => {
-                    if(timeOver == 0) {
-                        timerOn = 1 
-                        repeat()}}}
-                >
-                    <Typography fontSize = {25}>
-                    START
+                {/* Main Timer: Displayed Time */}
+                <Typography component = "div" id = "timerDisplay" fontSize={50}>
+                     00:00:00 
+                </Typography> 
+
+                {/* Main Timer: Start Button */}
+                <Button variant = "contained" sx = {{background: green[400], color: grey[50]}} onClick = {() => {if(timeOver == 0) {timerOn = 1} repeat()}}>                  
+                    <Typography fontSize = {25}> 
+                    START 
                     </Typography>
                 </Button>
-                <Button variant = "contained" sx = {{background: yellow[400], color: [grey[50]]}}
-                onClick = {() => {
-                    if(timeOver == 0) {
-                    timerOn = 0}}}
-                >
+                
+                {/* Main Timer: Pause Button */}
+                <Button variant = "contained" sx = {{background: yellow[400], color: [grey[50]]}} onClick = {() => {if(timeOver == 0) {timerOn = 0}}}>                 
                     <Typography fontSize = {25}>
                         PAUSE
                     </Typography>
                 </Button>
-                <Button variant = "contained" sx = {{background: red[400], color: grey[50]}}
-                    onClick = {() => {if(timeOver == 0) {
-                    timerOn = 0 
-                    milliseconds = 0 
-                    seconds = 0 
-                    minutes = 0 
-                    document.getElementById("timerDisplay")!.innerHTML = "0:0:0"
-                    }}}>
+
+                {/* Main Timer: Reset Button */}
+                <Button variant = "contained" sx = {{background: red[400], color: grey[50]}} onClick = {() => {if(timeOver == 0) {timerOn = 0; milliseconds = 0; seconds = 0; minutes = 0; document.getElementById("timerDisplay")!.innerHTML = "00:00:00"}}}>                    
                     <Typography fontSize = {25}>
                         RESET
                     </Typography>
                 </Button>
             </AppBar>
-
+            
             <Grid>    
                 <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
+                
+                {/* Task 1 Timer : Controls */}
                 <Box sx = {{width: [600], textAlign : "left"}}>
                     <Stack spacing = {2} direction = "row">
-                        <Button variant = "outlined" sx = {{borderColor: green[900], color: green[900]}}
-                        onClick = {() => { 
-                            timerOn1 = true
-                            repeat1()}}>
-                            START
+                        {/* Task 1 Timer: Start Button */}
+                        <Button variant = "outlined" sx = {{borderColor: green[900], color: green[900]}} onClick = {() => {if(timeOver == 0) {timerOn1 = true; repeat1()}}}> 
+                            START 
                         </Button>
-                        <Button variant = "outlined" sx = {{borderColor: yellow[900], color: yellow[900]}}>
-                            PAUSE
+
+                        {/* Task 1 Timer: Pause Button*/}
+                        <Button variant = "outlined" sx = {{borderColor: yellow[900], color: yellow[900]}} onClick = {() => {if (timeOver == 0) {timerOn1 = false}}}> 
+                            PAUSE 
                         </Button>
-                        <Box sx = {{border: "2px solid grey"}}>  
+                        
+                        {/* Task 1 Timer: Displayed Time */}
+                        <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay1" fontSize = {20} sx = {{color: grey[400]}}>
                                 0:0:0
                             </Typography> 
                         </Box>
-                        <Button variant = "outlined" sx ={{borderColor: red[900], color: red[900]}}>
+
+                        {/* Task 1 Timer: Reset button */}
+                        <Button variant = "outlined" sx ={{borderColor: red[900], color: red[900]}} onClick = {() => {if(timeOver == 0) {timerOn1 = false; milliseconds1 = 0; seconds1 = 0; minutes1 = 0; document.getElementById("timerDisplay1")!.innerHTML = "0:0:0"}}}>
                             RESET
                         </Button>
                     </Stack>
                 </Box>
+                
                 <FormControlLabel control = {<Checkbox />} label = "TASK 1: OOI: Coastal Pioneer Array" />
             </Grid>
+
             <Grid>
                 <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> 
                 <FormControlLabel control = {<Checkbox />} label = "1.1 Release the multi-function node" /> 
@@ -146,9 +279,37 @@ export default function TabletApp() {
                 <FormControlLabel control = {<Checkbox />} label = "Connect a recovery line to the multi-function node for manual recovery - 20 points" />
             </Grid>
 
-            <Grid>
+            <Grid>    
+                {/* Task 2 Timer : Controls */}
+                <Box sx = {{width: [600], textAlign : "left"}}>
+                    <Stack spacing = {2} direction = "row">
+                        {/* Task 2 Timer: Start Button */}
+                        <Button variant = "outlined" sx = {{borderColor: green[900], color: green[900]}} onClick = {() => {if(timeOver == 0) {timerOn2 = true; repeat2()}}}> 
+                            START 
+                        </Button>
+
+                        {/* Task 2 Timer: Pause Button*/}
+                        <Button variant = "outlined" sx = {{borderColor: yellow[900], color: yellow[900]}} onClick = {() => {if (timeOver == 0) {timerOn2 = false}}}> 
+                            PAUSE 
+                        </Button>
+                        
+                        {/* Task 2 Timer: Displayed Time */}
+                        <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
+                            <Typography component = "div" id = "timerDisplay2" fontSize = {20} sx = {{color: grey[400]}}>
+                                0:0:0
+                            </Typography> 
+                        </Box>
+
+                        {/* Task 2 Timer: Reset button */}
+                        <Button variant = "outlined" sx ={{borderColor: red[900], color: red[900]}} onClick = {() => {if(timeOver == 0) {timerOn2 = false; milliseconds2 = 0; seconds2 = 0; minutes2 = 0; document.getElementById("timerDisplay2")!.innerHTML = "0:0:0"}}}>
+                            RESET
+                        </Button>
+                    </Stack>
+                </Box>
+
                 <FormControlLabel control = {<Checkbox />} label = "TASK 2: SMART Cables for Ocean Observing" />
             </Grid>
+
             <Grid>
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
                 <FormControlLabel control = {<Checkbox />} label = "2.1 Deploy SMART Cable" />
@@ -180,9 +341,37 @@ export default function TabletApp() {
                 <FormControlLabel control = {<Checkbox />} label = "Install the power connector - 15 points" />
             </Grid>
 
-            <Grid>
-                <FormControlLabel control = {<Checkbox />} label = "TASK 3: From the Red Sea to Tenesse" />
+            <Grid>    
+                {/* Task 3 Timer : Controls */}
+                <Box sx = {{width: [600], textAlign : "left"}}>
+                    <Stack spacing = {2} direction = "row">
+                        {/* Task 3 Timer: Start Button */}
+                        <Button variant = "outlined" sx = {{borderColor: green[900], color: green[900]}} onClick = {() => {if(timeOver == 0) {timerOn3 = true; repeat3()}}}> 
+                            START 
+                        </Button>
+
+                        {/* Task 3 Timer: Pause Button*/}
+                        <Button variant = "outlined" sx = {{borderColor: yellow[900], color: yellow[900]}} onClick = {() => {if (timeOver == 0) {timerOn3 = false}}}> 
+                            PAUSE 
+                        </Button>
+                        
+                        {/* Task 3 Timer: Displayed Time */}
+                        <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
+                            <Typography component = "div" id = "timerDisplay3" fontSize = {20} sx = {{color: grey[400]}}>
+                                0:0:0
+                            </Typography> 
+                        </Box>
+
+                        {/* Task 3 Timer: Reset button */}
+                        <Button variant = "outlined" sx ={{borderColor: red[900], color: red[900]}} onClick = {() => {if(timeOver == 0) {timerOn3 = false; milliseconds3 = 0; seconds3 = 0; minutes3 = 0; document.getElementById("timerDisplay3")!.innerHTML = "0:0:0"}}}>
+                            RESET
+                        </Button>
+                    </Stack>
+                </Box>
+
+                <FormControlLabel control = {<Checkbox />} label = "TASK 3: From the Red Sea to Tennesse" />
             </Grid>
+
             <Grid>
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
                 <FormControlLabel control = {<Checkbox />} label = "3.1 Probiotics 2" />
@@ -240,9 +429,37 @@ export default function TabletApp() {
                 <FormControlLabel control = {<Checkbox />} label = "Recover a sediment sample - 10 points" />
             </Grid>
 
-            <Grid>
-                <FormControlLabel control = {<Checkbox />} label = "TASK 4: MATE Floats!"/>
+            <Grid>    
+                {/* Task 4 Timer : Controls */}
+                <Box sx = {{width: [600], textAlign : "left"}}>
+                    <Stack spacing = {2} direction = "row">
+                        {/* Task 4 Timer: Start Button */}
+                        <Button variant = "outlined" sx = {{borderColor: green[900], color: green[900]}} onClick = {() => {if(timeOver == 0) {timerOn4 = true; repeat4()}}}> 
+                            START 
+                        </Button>
+
+                        {/* Task 4 Timer: Pause Button*/}
+                        <Button variant = "outlined" sx = {{borderColor: yellow[900], color: yellow[900]}} onClick = {() => {if (timeOver == 0) {timerOn4 = false}}}> 
+                            PAUSE 
+                        </Button>
+                        
+                        {/* Task 4 Timer: Displayed Time */}
+                        <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
+                            <Typography component = "div" id = "timerDisplay4" fontSize = {20} sx = {{color: grey[400]}}>
+                                0:0:0
+                            </Typography> 
+                        </Box>
+
+                        {/* Task 4 Timer: Reset button */}
+                        <Button variant = "outlined" sx ={{borderColor: red[900], color: red[900]}} onClick = {() => {if(timeOver == 0) {timerOn4 = false; milliseconds4 = 0; seconds4 = 0; minutes4 = 0; document.getElementById("timerDisplay4")!.innerHTML = "0:0:0"}}}>
+                            RESET
+                        </Button>
+                    </Stack>
+                </Box>
+
+                <FormControlLabel control = {<Checkbox />} label = "TASK 4: MATE Floats!" />
             </Grid>
+    
             <Grid>
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
                 <FormControlLabel control = {<Checkbox />} label = " (A) Design and construct an opeartational vetical porfiling float - 5 points " />
@@ -273,8 +490,6 @@ export default function TabletApp() {
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
                 <FormControlLabel control = {<Checkbox />} label = "(B) MATE-provided data is used to graph depth over time - 10 points" />
             </Grid>
-
-
         </FormGroup>
     );
 }
