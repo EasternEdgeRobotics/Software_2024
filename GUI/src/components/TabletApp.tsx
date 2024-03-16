@@ -2,7 +2,23 @@ import {Box, Button, Checkbox, FormGroup, FormControlLabel, Grid, Typography, Ap
 import { useState } from "react";
 import React from "react";
 import { useAtom } from "jotai";
-import { grey, green, yellow, red} from "@mui/material/colors";
+import { grey, green, yellow, red, blue} from "@mui/material/colors";
+
+/* 
+The purpose of the TabletApp component is to provide the deck chief with a GUI designed for used on a tablet that:
+
+    1. Provides a checklist of tasks and subtasks that can be ticked/unticked 
+
+    2. Provides a main timer, which can be started, paused and reset, permanently displayed as bar at the top of the screen
+
+    3. Provides secondary timers, one for each task, which can be started paused and reset independently of the main timers and other task-specific timers
+
+Additional features include:
+
+    1. Should any timer reach 15 minutes, all timers "break". That is, all timers are paused and are no longer interactive
+
+    2. (Unfinished) A settings menu located underneath the checklist for debugging purposes
+*/
 
 export default function TabletApp() {
     // Main-Timer: Variables
@@ -14,7 +30,7 @@ export default function TabletApp() {
     var displayedMinutes = ""
     var displayedTime = ""
     var timerOn = 0
-    var timerPaused = 0
+    var timerPaused = 0 // Necessary variable?
     var timeOver = 0
 
     // Main Timer: Function
@@ -25,6 +41,7 @@ export default function TabletApp() {
                     if (timeOver == 0) {
                         milliseconds = milliseconds + 1
 
+                        // If millesconds and/or seconds have reached their limits, increment/reset variables accordingly
                         if (milliseconds >= 100) {
                             seconds = seconds + 1
                             milliseconds = 0
@@ -34,6 +51,7 @@ export default function TabletApp() {
                             seconds = 0
                         }
 
+                        // Set displayedMilliseconds, displayedSeconds, and displayedMinutes based upon if their corresponding non-displayed values are single-digit or double-digit
                         if (milliseconds < 10) {
                             displayedMilliseconds = ":0" + milliseconds
                         }
@@ -52,13 +70,17 @@ export default function TabletApp() {
                         else {
                             displayedMinutes = "" + minutes
                         }
-                                    
+                             
+                        // If 15 minutes have passed within the Main Timer, break all timers
                         if (minutes == 15) {
                             timeOver = 1
                         }
 
+                        // Update and display displayedTime
                         displayedTime = displayedMinutes + displayedSeconds + displayedMilliseconds
                         document.getElementById("timerDisplay")!.innerHTML = displayedTime
+
+                        // Repeat the Main Timer's function
                         repeat()
                     }
                 }
@@ -69,132 +91,253 @@ export default function TabletApp() {
 
     // Task 1 Timer: Variables 
     var milliseconds1 = 0
+    var displayedMilliseconds1 = ""
     var seconds1 = 0
+    var displayedSeconds1 = ""
     var minutes1 = 0
+    var displayedMinutes1 = ""
     var timerOn1 = false
     var displayedTime1 = ""
 
     // Task 1 Timer: Function
     function repeat1() {
         setTimeout(function() {
-            if(timerOn1 == true){
-                milliseconds1 = milliseconds1 + 1
+            if(timerOn1 == true) { 
+                if (timeOver == 0) {
+                    milliseconds1 = milliseconds1 + 1
 
-                if(milliseconds1 >= 100) {
-                    seconds1 = seconds1 + 1
-                    milliseconds1 = 0
-                }
-                if(seconds1 >= 60) {
-                    minutes1 = minutes1 + 1
-                    seconds1 = 0
-                }
+                    // If millesconds1 and/or seconds1 have reached their limits, increment/reset variables accordingly
+                    if(milliseconds1 >= 100) {
+                        seconds1 = seconds1 + 1
+                        milliseconds1 = 0
+                    }
+                    if(seconds1 >= 60) {
+                        minutes1 = minutes1 + 1
+                        seconds1 = 0
+                    }
 
-                if(minutes1 == 15) {
-                    timeOver = 1
-                }
+                    // Set displayedMilliseconds1, displayedSeconds1, and displayedMinutes1 based upon if their corresponding non-displayed values are single-digit or double-digit
+                    if (milliseconds1 < 10) {
+                        displayedMilliseconds1 = ":0" + milliseconds1
+                    }
+                    else {
+                        displayedMilliseconds1 = ":" + milliseconds1
+                    }
+                    if (seconds1 < 10) {
+                        displayedSeconds1 = ":0" + seconds1
+                    }
+                    else {
+                        displayedSeconds1 = ":" + seconds1
+                    }
+                    if (minutes1 < 10) {
+                        displayedMinutes1 = "0" + minutes1
+                    }
+                    else {
+                        displayedMinutes1 = "" + minutes1
+                    }
 
-                displayedTime1 = minutes1 + ":" + seconds1 + ":" + milliseconds1
-                document.getElementById("timerDisplay1")!.innerHTML = displayedTime1
-                repeat1()
+                    // If 15 minutes have passed within the Task 1 Timer, break all timers
+                    if(minutes1 == 15) {
+                        timeOver = 1
+                    }
+
+                    // Update and display displayedTime1
+                    displayedTime1 = displayedMinutes1 + displayedSeconds1 + displayedMilliseconds1
+                    document.getElementById("timerDisplay1")!.innerHTML = displayedTime1
+
+                    // Repeat the Task 1 Timer's function
+                    repeat1()
+                }
             }
         })
     }
 
     // Task 2 Timer: Variables 
     var milliseconds2 = 0
+    var displayedMilliseconds2 = ""
     var seconds2 = 0
+    var displayedSeconds2 = ""
     var minutes2 = 0
+    var displayedMinutes2 = ""
     var timerOn2 = false
     var displayedTime2 = ""
 
     // Task 2 Timer: Function
     function repeat2() {
         setTimeout(function() {
-            if(timerOn2 == true){
-                milliseconds2 = milliseconds2 + 1
+            if(timerOn2 == true) {
+                if (timeOver == 0) {
+                    milliseconds2 = milliseconds2 + 1
 
-                if(milliseconds2 >= 100) {
-                    seconds2 = seconds2 + 1
-                    milliseconds2 = 0
-                }
-                if(seconds2 >= 60) {
-                    minutes2 = minutes2 + 1
-                    seconds2 = 0
-                }
+                    // If millesconds2 and/or seconds2 have reached their limits, increment/reset variables accordingly
+                    if(milliseconds2 >= 100) {
+                        seconds2 = seconds2 + 1
+                        milliseconds2 = 0
+                    }
+                    if(seconds2 >= 60) {
+                        minutes2 = minutes2 + 1
+                        seconds2 = 0
+                    }
 
-                if(minutes2 == 15) {
-                    timeOver = 1
-                }
+                    // Set displayedMilliseconds2, displayedSeconds2, and displayedMinutes2 based upon if their corresponding non-displayed values are single-digit or double-digit
+                    if (milliseconds2 < 10) {
+                        displayedMilliseconds2 = ":0" + milliseconds2
+                    }
+                    else {
+                        displayedMilliseconds2 = ":" + milliseconds2
+                    }
+                    if (seconds2 < 10) {
+                        displayedSeconds2 = ":0" + seconds2
+                    }
+                    else {
+                        displayedSeconds2 = ":" + seconds2
+                    }
+                    if (minutes2 < 10) {
+                        displayedMinutes2 = "0" + minutes2
+                    }
+                    else {
+                        displayedMinutes2 = "" + minutes2
+                    }
 
-                displayedTime2 = minutes2 + ":" + seconds2 + ":" + milliseconds2
-                document.getElementById("timerDisplay2")!.innerHTML = displayedTime2
-                repeat2()
+                    // If 15 minutes have passed wihtin the Task 2 Timer, break all timers
+                    if(minutes2 == 15) {
+                        timeOver = 1
+                    }
+
+                    // Update and display displayedTime2
+                    displayedTime2 = displayedMinutes2 + displayedSeconds2 + displayedMilliseconds2
+                    document.getElementById("timerDisplay2")!.innerHTML = displayedTime2
+                    
+                    // Repeat the Task 2 Timer's function
+                    repeat2()
+                }
             }
         })
     }
 
     // Task 3 Timer: Variables 
     var milliseconds3 = 0
+    var displayedMilliseconds3 = ""
     var seconds3 = 0
+    var displayedSeconds3 = ""
     var minutes3 = 0
+    var displayedMinutes3 = ""
     var timerOn3 = false
     var displayedTime3 = ""
 
     // Task 3 Timer: Function
     function repeat3() {
         setTimeout(function() {
-            if(timerOn3 == true){
-                milliseconds3 = milliseconds3 + 1
+            if(timerOn3 == true) {
+                if (timeOver == 0) {
+                    milliseconds3 = milliseconds3 + 1
 
-                if(milliseconds3 >= 100) {
-                    seconds3 = seconds3 + 1
-                    milliseconds3 = 0
-                }
-                if(seconds3 >= 60) {
-                    minutes3 = minutes3 + 1
-                    seconds3 = 0
-                }
+                    // If millesconds3 and/or seconds3 have reached their limits, increment/reset variables accordingly
+                    if(milliseconds3 >= 100) {
+                        seconds3 = seconds3 + 1
+                        milliseconds3 = 0
+                    }
+                    if(seconds3 >= 60) {
+                        minutes3 = minutes3 + 1
+                        seconds3 = 0
+                    }
 
-                if(minutes3 == 15) {
-                    timeOver = 1
-                }
+                    // Set displayedMilliseconds3, displayedSeconds3, and displayedMinutes3 based upon if their corresponding non-displayed values are single-digit or double-digit
+                    if (milliseconds3 < 10) {
+                        displayedMilliseconds3 = ":0" + milliseconds3
+                    }
+                    else {
+                        displayedMilliseconds3 = ":" + milliseconds3
+                    }
+                    if (seconds3 < 10) {
+                        displayedSeconds3 = ":0" + seconds3
+                    }
+                    else {
+                        displayedSeconds3 = ":" + seconds3
+                    }
+                    if (minutes3 < 10) {
+                        displayedMinutes3 = "0" + minutes3
+                    }
+                    else {
+                        displayedMinutes3 = "" + minutes3
+                    }
 
-                displayedTime3 = minutes3 + ":" + seconds3 + ":" + milliseconds3
-                document.getElementById("timerDisplay3")!.innerHTML = displayedTime3
-                repeat3()
+                    // If 15 minutes have passed within the Task 3 Timer, break all timers
+                    if(minutes3 == 15) {
+                        timeOver = 1
+                    }
+
+                    // Update and display displayedTime3
+                    displayedTime3 = displayedMinutes3 + displayedSeconds3 + displayedMilliseconds3
+                    document.getElementById("timerDisplay3")!.innerHTML = displayedTime3
+
+                    // Repeat the Task 3 Timer's function
+                    repeat3()
+                }
             }
         })
     }
 
  // Task 4 Timer: Variables 
  var milliseconds4 = 0
+ var displayedMilliseconds4 = ""
  var seconds4 = 0
+ var displayedSeconds4 = ""
  var minutes4 = 0
+ var displayedMinutes4 = ""
  var timerOn4 = false
  var displayedTime4 = ""
 
  // Task 4 Timer: Function
  function repeat4() {
      setTimeout(function() {
-         if(timerOn4 == true){
-             milliseconds4 = milliseconds4 + 1
+         if(timerOn4 == true) {
+            if (timeOver == 0) {
+                milliseconds4 = milliseconds4 + 1
 
-             if(milliseconds4 >= 100) {
-                 seconds4 = seconds4 + 1
-                 milliseconds4 = 0
-             }
-             if(seconds4 >= 60) {
-                 minutes4 = minutes4 + 1
-                 seconds4 = 0
-             }
+                // If millesconds4 or seconds4 have reached their limits, increment/reset variables accordingly
+                if(milliseconds4 >= 100) {
+                    seconds4 = seconds4 + 1
+                    milliseconds4 = 0
+                }
+                if(seconds4 >= 60) {
+                    minutes4 = minutes4 + 1
+                    seconds4 = 0
+                }
 
-             if(minutes4 == 15) {
-                 timeOver = 1
-             }
+                // Set displayedMilliseconds4, displayedSeconds4, and displayedMinutes4 based upon if their corresponding non-displayed values are single-digit or double-digit
+                if (milliseconds4 < 10) {
+                    displayedMilliseconds4 = ":0" + milliseconds4
+                }
+                else {
+                    displayedMilliseconds4 = ":" + milliseconds4
+                }
+                if (seconds4 < 10) {
+                    displayedSeconds4 = ":0" + seconds4
+                }
+                else {
+                    displayedSeconds4 = ":" + seconds4
+                }
+                if (minutes4 < 10) {
+                    displayedMinutes4 = "0" + minutes4
+                }
+                else {
+                    displayedMinutes4 = "" + minutes4
+                }
 
-             displayedTime4 = minutes4 + ":" + seconds4 + ":" + milliseconds4
-             document.getElementById("timerDisplay4")!.innerHTML = displayedTime4
-             repeat4()
+
+                // If 15 minutes have passed within the Task 4 Timer, break all timers
+                if(minutes4 == 15) {
+                    timeOver = 1
+                }
+
+                 // Update and display displayedTime4
+                displayedTime4 = displayedMinutes4 + displayedSeconds4 + displayedMilliseconds4
+                document.getElementById("timerDisplay4")!.innerHTML = displayedTime4
+
+                // Repeat the Task 4 Timer's function
+                repeat4()
+            }
          }
      })
  }
@@ -250,21 +393,24 @@ export default function TabletApp() {
                         {/* Task 1 Timer: Displayed Time */}
                         <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay1" fontSize = {20} sx = {{color: grey[400]}}>
-                                0:0:0
+                                00:00:00
                             </Typography> 
                         </Box>
 
                         {/* Task 1 Timer: Reset button */}
-                        <Button variant = "outlined" sx ={{borderColor: red[900], color: red[900]}} onClick = {() => {if(timeOver == 0) {timerOn1 = false; milliseconds1 = 0; seconds1 = 0; minutes1 = 0; document.getElementById("timerDisplay1")!.innerHTML = "0:0:0"}}}>
+                        <Button variant = "outlined" sx ={{borderColor: red[900], color: red[900]}} onClick = {() => {if(timeOver == 0) {timerOn1 = false; milliseconds1 = 0; seconds1 = 0; minutes1 = 0; document.getElementById("timerDisplay1")!.innerHTML = "00:00:00"}}}>
                             RESET
                         </Button>
                     </Stack>
                 </Box>
                 
+                {/* Task 1: Checklist Header */}
                 <FormControlLabel control = {<Checkbox />} label = "TASK 1: OOI: Coastal Pioneer Array" />
             </Grid>
 
+            {/* Task 1: Indentation & Checkboxes */}
             <Grid>
+                {/* Rows of darkened checkboxes are used to simulate indentation */}
                 <Checkbox  sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> 
                 <FormControlLabel control = {<Checkbox />} label = "1.1 Release the multi-function node" /> 
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
@@ -279,6 +425,7 @@ export default function TabletApp() {
                 <FormControlLabel control = {<Checkbox />} label = "Connect a recovery line to the multi-function node for manual recovery - 20 points" />
             </Grid>
 
+            {/* Task 2 Timer: Control Layout */}
             <Grid>    
                 {/* Task 2 Timer : Controls */}
                 <Box sx = {{width: [600], textAlign : "left"}}>
@@ -296,21 +443,24 @@ export default function TabletApp() {
                         {/* Task 2 Timer: Displayed Time */}
                         <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay2" fontSize = {20} sx = {{color: grey[400]}}>
-                                0:0:0
+                                00:00:00
                             </Typography> 
                         </Box>
 
                         {/* Task 2 Timer: Reset button */}
-                        <Button variant = "outlined" sx ={{borderColor: red[900], color: red[900]}} onClick = {() => {if(timeOver == 0) {timerOn2 = false; milliseconds2 = 0; seconds2 = 0; minutes2 = 0; document.getElementById("timerDisplay2")!.innerHTML = "0:0:0"}}}>
+                        <Button variant = "outlined" sx ={{borderColor: red[900], color: red[900]}} onClick = {() => {if(timeOver == 0) {timerOn2 = false; milliseconds2 = 0; seconds2 = 0; minutes2 = 0; document.getElementById("timerDisplay2")!.innerHTML = "00:00:00"}}}>
                             RESET
                         </Button>
                     </Stack>
                 </Box>
 
+                {/* Task 2: Checklist Header */}
                 <FormControlLabel control = {<Checkbox />} label = "TASK 2: SMART Cables for Ocean Observing" />
             </Grid>
 
+            {/* Task 2: Indentation & Checkboxes */}
             <Grid>
+                {/* Rows of darkened checkboxes are to simulate indentation */}
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
                 <FormControlLabel control = {<Checkbox />} label = "2.1 Deploy SMART Cable" />
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
@@ -341,6 +491,7 @@ export default function TabletApp() {
                 <FormControlLabel control = {<Checkbox />} label = "Install the power connector - 15 points" />
             </Grid>
 
+            {/* Task 3 Timer: Control Layout */}
             <Grid>    
                 {/* Task 3 Timer : Controls */}
                 <Box sx = {{width: [600], textAlign : "left"}}>
@@ -358,21 +509,24 @@ export default function TabletApp() {
                         {/* Task 3 Timer: Displayed Time */}
                         <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay3" fontSize = {20} sx = {{color: grey[400]}}>
-                                0:0:0
+                                00:00:00
                             </Typography> 
                         </Box>
 
                         {/* Task 3 Timer: Reset button */}
-                        <Button variant = "outlined" sx ={{borderColor: red[900], color: red[900]}} onClick = {() => {if(timeOver == 0) {timerOn3 = false; milliseconds3 = 0; seconds3 = 0; minutes3 = 0; document.getElementById("timerDisplay3")!.innerHTML = "0:0:0"}}}>
+                        <Button variant = "outlined" sx ={{borderColor: red[900], color: red[900]}} onClick = {() => {if(timeOver == 0) {timerOn3 = false; milliseconds3 = 0; seconds3 = 0; minutes3 = 0; document.getElementById("timerDisplay3")!.innerHTML = "00:00:00"}}}>
                             RESET
                         </Button>
                     </Stack>
                 </Box>
 
+                {/* Task 3: Checklist Header */}
                 <FormControlLabel control = {<Checkbox />} label = "TASK 3: From the Red Sea to Tennesse" />
             </Grid>
 
+            {/* Task 3: Indentation & Checkboxes */}
             <Grid>
+                {/* Rows of darkened checkboxes are used to simulate indentation */}
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
                 <FormControlLabel control = {<Checkbox />} label = "3.1 Probiotics 2" />
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
@@ -429,8 +583,9 @@ export default function TabletApp() {
                 <FormControlLabel control = {<Checkbox />} label = "Recover a sediment sample - 10 points" />
             </Grid>
 
+            {/* Task 4 Timer: Control Layout */}
             <Grid>    
-                {/* Task 4 Timer : Controls */}
+                {/* Task 4 Timer: Controls */}
                 <Box sx = {{width: [600], textAlign : "left"}}>
                     <Stack spacing = {2} direction = "row">
                         {/* Task 4 Timer: Start Button */}
@@ -446,21 +601,24 @@ export default function TabletApp() {
                         {/* Task 4 Timer: Displayed Time */}
                         <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay4" fontSize = {20} sx = {{color: grey[400]}}>
-                                0:0:0
+                                00:00:00
                             </Typography> 
                         </Box>
 
                         {/* Task 4 Timer: Reset button */}
-                        <Button variant = "outlined" sx ={{borderColor: red[900], color: red[900]}} onClick = {() => {if(timeOver == 0) {timerOn4 = false; milliseconds4 = 0; seconds4 = 0; minutes4 = 0; document.getElementById("timerDisplay4")!.innerHTML = "0:0:0"}}}>
+                        <Button variant = "outlined" sx ={{borderColor: red[900], color: red[900]}} onClick = {() => {if(timeOver == 0) {timerOn4 = false; milliseconds4 = 0; seconds4 = 0; minutes4 = 0; document.getElementById("timerDisplay4")!.innerHTML = "00:00:00"}}}>
                             RESET
                         </Button>
                     </Stack>
                 </Box>
 
+                {/* Task 4: Checklist Header */}
                 <FormControlLabel control = {<Checkbox />} label = "TASK 4: MATE Floats!" />
             </Grid>
     
+            {/* Task 4: Indentation & Checkboxes */}
             <Grid>
+                {/* Rows of darkened checkboxes are used to simulate indentation */}
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
                 <FormControlLabel control = {<Checkbox />} label = " (A) Design and construct an opeartational vetical porfiling float - 5 points " />
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
@@ -490,6 +648,12 @@ export default function TabletApp() {
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
                 <FormControlLabel control = {<Checkbox />} label = "(B) MATE-provided data is used to graph depth over time - 10 points" />
             </Grid>
+
+        {/* Settings Menu (Unfinished) */}
+        <Button variant = "text" sx = {{width: [100], color: blue[900]}}>
+            Settings
+        </Button>
+
         </FormGroup>
     );
 }
