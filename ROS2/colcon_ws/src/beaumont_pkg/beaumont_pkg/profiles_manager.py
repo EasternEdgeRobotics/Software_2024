@@ -208,6 +208,8 @@ class ProfilesManager(Node):
             return response
         
         elif request.state == 1: # We are looking to fetch camera URLs form database into GUI
+            
+            outgoing_camera_urls = []
 
             for row in range(session.query(Camera).count()): # There will only be one "row"
                 stored_camera_urls = session.query(Camera).all()[row].dict()

@@ -182,6 +182,7 @@ export function InitROS() {
                 state:1,
                 data:"FetchCameraURLs"}); // What's in the data field is not important in this case
             cameraURLsClient.callService(request, function(result){
+                console.log(result.result);
                 if (result.result !="[]"){
                     setCameraURLs(JSON.parse(result.result));
                 }
