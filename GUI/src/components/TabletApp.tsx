@@ -5,7 +5,7 @@ import { useAtom } from "jotai";
 import { grey, green, yellow, red, blue} from "@mui/material/colors";
 
 /* 
-The purpose of the TabletApp component is to provide the deck chief with a GUI designed for used on a tablet that:
+The purpose of the TabletApp component is to provide the deck chief with a GUI which is to be used on a tablet that:
 
     1. Provides a checklist of tasks and subtasks that can be ticked/unticked 
 
@@ -17,7 +17,7 @@ Additional features include:
 
     1. Should any timer reach 15 minutes, all timers "break". That is, all timers are paused and are no longer interactive
 
-    2. (Unfinished) A settings menu located underneath the checklist for debugging purposes
+    2. A settings menu located underneath the checklist for debugging purposes
 */
 
 export default function TabletApp() {
@@ -349,7 +349,7 @@ export default function TabletApp() {
             <AppBar sx = {{bgcolor: "grey", textAlign: "center"}}>
                 {/* Main Timer: Displayed Time */}
                 <Typography component = "div" id = "timerDisplay" fontSize={50}>
-                     00:00:00 
+                    00:00:00 
                 </Typography> 
 
                 {/* Main Timer: Start Button */}
@@ -393,7 +393,7 @@ export default function TabletApp() {
                         {/* Task 1 Timer: Displayed Time */}
                         <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay1" fontSize = {20} sx = {{color: grey[400]}}>
-                                00:00:00
+                            00:00:00
                             </Typography> 
                         </Box>
 
@@ -443,7 +443,7 @@ export default function TabletApp() {
                         {/* Task 2 Timer: Displayed Time */}
                         <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay2" fontSize = {20} sx = {{color: grey[400]}}>
-                                00:00:00
+                            00:00:00
                             </Typography> 
                         </Box>
 
@@ -509,7 +509,7 @@ export default function TabletApp() {
                         {/* Task 3 Timer: Displayed Time */}
                         <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay3" fontSize = {20} sx = {{color: grey[400]}}>
-                                00:00:00
+                            00:00:00
                             </Typography> 
                         </Box>
 
@@ -601,7 +601,7 @@ export default function TabletApp() {
                         {/* Task 4 Timer: Displayed Time */}
                         <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay4" fontSize = {20} sx = {{color: grey[400]}}>
-                                00:00:00
+                            00:00:00
                             </Typography> 
                         </Box>
 
@@ -649,11 +649,34 @@ export default function TabletApp() {
                 <FormControlLabel control = {<Checkbox />} label = "(B) MATE-provided data is used to graph depth over time - 10 points" />
             </Grid>
 
-        {/* Settings Menu (Unfinished) */}
-        <Button variant = "text" sx = {{width: [100], color: blue[900]}}>
-            Settings
-        </Button>
+        {/* Settings Menu */}
+        <Stack>
+            {/* Main Timer: Setting */}
+            <Button sx = {{width: [190], color: blue[900]}} onClick = {() => {minutes = 14; seconds = 50; milliseconds = 0; document.getElementById("timerDisplay")!.innerHTML = "14:50:00"}}>
+                - Main Timer: [14:50:00]
+            </Button>
+
+            {/* Task 1 Timer: Setting */}
+            <Button sx = {{width: [200], color: blue[900]}} onClick = {() => {minutes1 = 14; seconds1 = 50; milliseconds = 0; document.getElementById("timerDisplay1")!.innerHTML = "14:50:00"}}>
+                - Task 1 Timer: [14:50:00]
+            </Button>
+
+            {/* Task 2 Timer: Seting */}
+            <Button sx = {{width: [200], color: blue[900]}} onClick = {() => {minutes2 = 14; seconds2 = 50; milliseconds2 = 0; document.getElementById("timerDisplay2")!.innerHTML = "14:50:00"}}>
+                - Task 2 Timer: [14:50:00]
+            </Button>
+
+            {/* Task 3 Timer: Setting */}
+            <Button sx = {{width: [200], color: blue[900]}} onClick = {() => {minutes3 = 14; seconds3 = 50; milliseconds3 = 0; document.getElementById("timerDisplay3")!.innerHTML = "14:50:00"}}>
+                - Task 3 Timer: [14:50:00]
+            </Button>
+
+            {/* Task 4 Timer: Setting */}
+            <Button sx = {{width: [200], color: blue[900]}} onClick = {() => {minutes4 = 14; seconds4 = 50; milliseconds4 = 0; document.getElementById("timerDisplay4")!.innerHTML = "14:50:00"}}>
+                - Task 4 Timer: [14:50:00]
+            </Button>
+        </Stack>
 
         </FormGroup>
     );
-}
+}  
