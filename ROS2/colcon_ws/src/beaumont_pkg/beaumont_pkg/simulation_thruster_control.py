@@ -147,8 +147,8 @@ class ThrusterDataSubscriber(Node):
 
         for controller_input in controller_inputs:
 
-            if controller_input[1] == "backflip": #Perhaps this should be named better
-                self.stop_bot()
+            # if controller_input[1] == "backflip": #Perhaps this should be named better
+            #     self.stop_bot()
 
             if (len(controller_input[1].split("_")) == 2): #We may get inputs such as "heave_up" or "pitch_down", where a button is being used instead of an axis
                 input = 1 if controller_input[1].split("_")[1] == "up" else -1 

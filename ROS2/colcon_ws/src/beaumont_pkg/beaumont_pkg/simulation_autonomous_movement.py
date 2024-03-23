@@ -55,39 +55,69 @@ class SimulationAutonomusMovement(Node):
 		for controller_input in controller_inputs:
 			if controller_input[1] != "enter_auto_mode":
 				return
-			time_in_second_1 = 14 
-			start_time = time()
+			time_in_second_1 = 9
+			time_in_second_3 = 4
+			
+			self.get_logger().info("In Auto Mode")
+
 			#the function for movement 
-			def time_to_move(time):
-				while True:
-					x_movement = [0.5,"surge"]
+			def time_to_move():
+				start_time = time()
+				while True: ### this while loop makes the ROV move up for 20 seconds
+					y_movement = [-1, "heave"]
+					y_movement_string = String()
+					y_movement_string.data = json.dumps([y_movement]) 
+					self.autonomus_controls_publisher.publish(y_movement_string)
+					claw_movement1 = [1,"open_claw"] ### this is closing the claw all the time
+					claw_movement_string1 = String()
+					claw_movement_string1.data = json.dumps([claw_movement1]) 
+					self.autonomus_controls_publisher.publish(claw_movement_string1)
+					if (time()-start_time) > time_in_second_3:
+						y_movement = [0, "heave"]
+						y_movement_string = String()
+						y_movement_string.data = json.dumps([y_movement]) 
+						self.autonomus_controls_publisher.publish(y_movement_string)
+						break
+				
+				start_time_2 = time()
+				while True: ### this while loop makes the ROV move forward for 10 seconds
+					x_movement = [-1,"surge"]
 					x_movement_string = String()
-					x_movement_string.data = json.dumps(x_movement)
+					x_movement_string.data = json.dumps([x_movement])
 					self.autonomus_controls_publisher.publish(x_movement_string)
-					if time()-start_time > time_in_second_1:
-						x_movement = [0,"surge"]
+					claw_movement2 = [1,"open_claw"] ### this is closing the claw all the time
+					claw_movement_string2 = String()
+					claw_movement_string2.data = json.dumps([claw_movement2]) 
+					self.autonomus_controls_publisher.publish(claw_movement_string2)
+					if (time()-start_time_2) > time_in_second_1:
+						x_movement = [-1,"surge"]
 						x_movement_string = String()
-						x_movement_string.data = json.dumps(x_movement)
+						x_movement_string.data = json.dumps([x_movement])
 						self.autonomus_controls_publisher.publish(x_movement_string)
 						break
-			# # move for 15 seconds part (using a while loop)
-			time_to_move(time_in_second_1)
+			
+			time_to_move()
 			## then start checking if the red color is dectected to know when to drop the object
 				## will also have a while loop involving the if statment for the box
-			time_in_second_2 = 2
+			start_time = time()
 			while True:
+				if (time()-start_time) == 14:
+					break
 				if box is not None: ### this line make the bot identify the object with a bonding box 
 					x1, y1, x2, y2 = box
 					cv_image = cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 255, 0), 5) ## this line rap the object with a bounding box of color yellow with depth 5
 					## this line should drop the object
-					claw_movement = [1,"open_claw"]
+					claw_movement = [1,"close_claw"] ### this is opening the claw 
 					claw_movement_string = String()
-					claw_movement_string.data = json.dumps(claw_movement)
+					claw_movement_string.data = json.dumps([claw_movement])
 					self.autonomus_controls_publisher.publish(claw_movement_string)
 					# then break
 					break
 				else:
-					time_to_move(time_in_second_2)
+					x_movement = [-1,"surge"]
+					x_movement_string = String()
+					x_movement_string.data = json.dumps([x_movement])
+					self.autonomus_controls_publisher.publish(x_movement_string)
 		
 
 		
