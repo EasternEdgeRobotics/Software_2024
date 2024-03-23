@@ -102,7 +102,7 @@ export default function TabletApp() {
     // Task 1 Timer: Function
     function repeat1() {
         setTimeout(function() {
-            if(timerOn1 == true) { 
+            if (timerOn1 == true) { 
                 if (timeOver == 0) {
                     milliseconds1 = milliseconds1 + 1
 
@@ -165,7 +165,7 @@ export default function TabletApp() {
     // Task 2 Timer: Function
     function repeat2() {
         setTimeout(function() {
-            if(timerOn2 == true) {
+            if (timerOn2 == true) {
                 if (timeOver == 0) {
                     milliseconds2 = milliseconds2 + 1
 
@@ -228,7 +228,7 @@ export default function TabletApp() {
     // Task 3 Timer: Function
     function repeat3() {
         setTimeout(function() {
-            if(timerOn3 == true) {
+            if (timerOn3 == true) {
                 if (timeOver == 0) {
                     milliseconds3 = milliseconds3 + 1
 
@@ -291,7 +291,7 @@ export default function TabletApp() {
  // Task 4 Timer: Function
  function repeat4() {
      setTimeout(function() {
-         if(timerOn4 == true) {
+         if (timerOn4 == true) {
             if (timeOver == 0) {
                 milliseconds4 = milliseconds4 + 1
 
