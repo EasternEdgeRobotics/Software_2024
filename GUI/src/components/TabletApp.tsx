@@ -391,7 +391,7 @@ export default function TabletApp() {
                         </Button>
                         
                         {/* Task 1 Timer: Displayed Time */}
-                        <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
+                        <Box textAlign = "center" sx = {{width: [80]}}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay1" fontSize = {20} sx = {{color: grey[400]}}>
                             00:00:00
                             </Typography> 
@@ -441,7 +441,7 @@ export default function TabletApp() {
                         </Button>
                         
                         {/* Task 2 Timer: Displayed Time */}
-                        <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
+                        <Box textAlign = "center" sx = {{width: [80]}}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay2" fontSize = {20} sx = {{color: grey[400]}}>
                             00:00:00
                             </Typography> 
@@ -507,7 +507,7 @@ export default function TabletApp() {
                         </Button>
                         
                         {/* Task 3 Timer: Displayed Time */}
-                        <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
+                        <Box textAlign = "center" sx = {{width: [80]}}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay3" fontSize = {20} sx = {{color: grey[400]}}>
                             00:00:00
                             </Typography> 
@@ -599,7 +599,7 @@ export default function TabletApp() {
                         </Button>
                         
                         {/* Task 4 Timer: Displayed Time */}
-                        <Box textAlign = "center" sx = {{width: [80] }}>  {/* Include 'border: "2px solid grey"'? */}                            
+                        <Box textAlign = "center" sx = {{width: [80]}}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay4" fontSize = {20} sx = {{color: grey[400]}}>
                             00:00:00
                             </Typography> 
