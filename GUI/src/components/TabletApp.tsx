@@ -11,6 +11,8 @@ The purpose of the TabletApp component is to provide the deck chief with a GUI w
 
     2. Provides a main timer, which can be started, paused and reset, permanently displayed as bar at the top of the screen
 
+    TIMERS TOO FAST!
+
     3. Provides secondary timers, one for each task, which can be started paused and reset independently of the main timers and other task-specific timers
 
 Additional features include:
@@ -355,7 +357,7 @@ export default function TabletApp() {
                 {/* Main Timer: Start Button */}
                 <Button variant = "contained" sx = {{background: green[400], color: grey[50]}} onClick = {() => {if(timeOver == 0) {timerOn = 1} repeat()}}>                  
                     <Typography fontSize = {25}> 
-                    START 
+                        START 
                     </Typography>
                 </Button>
                 
@@ -393,7 +395,7 @@ export default function TabletApp() {
                         {/* Task 1 Timer: Displayed Time */}
                         <Box textAlign = "center" sx = {{width: [80]}}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay1" fontSize = {20} sx = {{color: grey[400]}}>
-                            00:00:00
+                                00:00:00
                             </Typography> 
                         </Box>
 
@@ -443,7 +445,7 @@ export default function TabletApp() {
                         {/* Task 2 Timer: Displayed Time */}
                         <Box textAlign = "center" sx = {{width: [80]}}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay2" fontSize = {20} sx = {{color: grey[400]}}>
-                            00:00:00
+                                00:00:00
                             </Typography> 
                         </Box>
 
@@ -509,7 +511,7 @@ export default function TabletApp() {
                         {/* Task 3 Timer: Displayed Time */}
                         <Box textAlign = "center" sx = {{width: [80]}}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay3" fontSize = {20} sx = {{color: grey[400]}}>
-                            00:00:00
+                                00:00:00
                             </Typography> 
                         </Box>
 
@@ -601,7 +603,7 @@ export default function TabletApp() {
                         {/* Task 4 Timer: Displayed Time */}
                         <Box textAlign = "center" sx = {{width: [80]}}>  {/* Include 'border: "2px solid grey"'? */}                            
                             <Typography component = "div" id = "timerDisplay4" fontSize = {20} sx = {{color: grey[400]}}>
-                            00:00:00
+                                00:00:00
                             </Typography> 
                         </Box>
 
