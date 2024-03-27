@@ -15,15 +15,15 @@ export function BotTab() {
 
     const [thrusterMultipliers, setThrusterMultipliers] = useAtom(ThrusterMultipliers);
 
-    const [profilesList, ] = useAtom(ProfilesList);
-    const [currentProfile, ] = useAtom(CurrentProfile);
-    const [mappings, ] = useAtom(Mappings);
+    const [profilesList] = useAtom(ProfilesList);
+    const [currentProfile] = useAtom(CurrentProfile);
+    const [mappings] = useAtom(Mappings);
     const [,setControllerInput] = useAtom(ControllerInput);
 
     const [controllerDetected, setControllerDetected] = useState<boolean>(false);
 
     let controller1 = "null";
-    let controller2 = "null"
+    let controller2 = "null";
 
     let initialPageLoad = true;
 
@@ -35,8 +35,8 @@ export function BotTab() {
     const [, reloadComponent] = useState<number>(0);
 
     useEffect(() => { //Whenever the current profile changes, set controller 1 and 2 to that profile's controllers
-        for (let i = 0; i<profilesList.length;i++){
-            if (currentProfile==profilesList[i].name){
+        for (let i = 0; i < profilesList.length;i++){
+            if (currentProfile == profilesList[i].name){
                 controller1 = profilesList[i].controller1;
                 controller2 = profilesList[i].controller2;
             }
@@ -49,7 +49,7 @@ export function BotTab() {
     //Likely one of the most important functions in the software package
     //This function listens to the controller input and updates the ControllerInput global state. When this state is changed, 
     //ROS.tsx recognizes this and publishes the input to the device running the rosbridge server (RPi4 inside the enclosure) 
-    const input_listener =(controller: number) => {
+    const input_listener = (controller: number) => {
         let controllerDetected = false;
         for (let i =0; i<navigator.getGamepads().length; i++){
             if (navigator.getGamepads()[i] != null){ //The browser (accessed through the predefined navigator object) natively recognizes controllers 
@@ -101,7 +101,7 @@ export function BotTab() {
                 }
             }
         }
-    }
+    };
 
     useEffect(() => { //Constantly run the input listeners for controllers 1 and 2 (often addressed as controllers 0 and 1)
         setInterval(() => {

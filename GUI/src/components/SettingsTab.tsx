@@ -1,5 +1,5 @@
 import { useAtom } from "jotai";
-import { CameraIPs, ROSIP, ProfilesList, CurrentProfile, RequestingProfilesList, RequestingConfig } from "../api/Atoms";
+import { CameraIPs, ROSIP, ProfilesList, CurrentProfile, RequestingProfilesList, RequestingConfig, Controller1, Controller2 } from "../api/Atoms";
 import { Box } from "@mui/system";
 import { Button, Divider, FormControl, Grid, InputLabel, Select, TextField, MenuItem } from "@mui/material";
 import { Trash2 } from "lucide-react";
@@ -19,6 +19,9 @@ export default function SettingsTab() {
     const [,setRequestingProfilesList] = useAtom(RequestingProfilesList);
     const [,setRequestingConfig] = useAtom(RequestingConfig);
 
+    const [controller1 ,setController1] = useAtom(Controller1);
+    const [controller2 ,setController2] = useAtom(Controller2);
+
     const setCameraIP = (camera: number, ip: string) => {
         setIPs(IPs.map((item, index) => index === camera ? ip : item));
     };
@@ -37,17 +40,21 @@ export default function SettingsTab() {
             if (navigator.getGamepads()[controller] == null){
                 continue;
             }
+            //TODO: controller 2
             for (let i = 0; i<profilesList.length; i++){
                 if (profilesList[i].name == currentProfile){
                     if (profilesList[i].controller1 == navigator.getGamepads()[controller]?.id){ //If this controller recognized, apply approperiate mappings
-                        console.log("Controller recognized")
+                        console.log("Controller recognized");
+                        //TODO: get controller to be selected in dropout when opening profile editor
+                        console.log(navigator.getGamepads()[controller]?.index);
+                        setController1(navigator.getGamepads()[controller]?.index || -1);
                         setRequestingConfig({state:1, profileName:currentProfile, controller1:"recognized", controller2:"null"}); //Recieve latest bindings for this profile
                         return;
                     }
                 }
             }
         }
-    }
+    };
 
     return (
         <Box>
@@ -81,7 +88,7 @@ export default function SettingsTab() {
                         <FormControl fullWidth >
 							<InputLabel>Profile</InputLabel>
 							<Select value={currentProfile} label="Profile" onClick={()=>{setRequestingProfilesList(1);}} onChange={(e) => {
-								setCurrentProfile(e.target.value)
+								setCurrentProfile(e.target.value);
 								return;
 							}} sx={{width: "100%"}}>
 								{profilesList.map((profile) => {

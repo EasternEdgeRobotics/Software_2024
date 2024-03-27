@@ -2,17 +2,17 @@ import { Box, Button, Dialog, DialogActions, DialogContent, FormControl, InputLa
 import { useEffect, useState } from "react";
 import ControllerTab from "./ProfileEditor/ControllerTab";
 import { useAtom } from "jotai";
-import { Mappings, ProfilesList, RequestingConfig, RequestingProfilesList, CurrentProfile } from "../api/Atoms";
+import { Mappings, ProfilesList, RequestingConfig, RequestingProfilesList, CurrentProfile, Controller1, Controller2 } from "../api/Atoms";
 
 export default function ProfileEditor(props: {open: boolean; onClose: () => void}) {
 	const [tabIndex, setTabIndex] = useState<number>(0);
 
-	const [controller1, setController1] = useState<number>(-1);
-	const [controller2, setController2] = useState<number>(-1);
+	const [controller1, setController1] = useAtom(Controller1);
+	const [controller2, setController2] = useAtom(Controller2);
 	const [mappings, setMappings] = useAtom(Mappings);
 
 	const [currentProfile, setCurrentProfile] = useAtom(CurrentProfile); 
-	const [profilesList, ] = useAtom(ProfilesList)
+	const [profilesList, ] = useAtom(ProfilesList);
 
 	const [profileTextField, setProfileTextField] = useState<string>("");
 
@@ -53,7 +53,7 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 			} 
 		}
 		return false;
-	}
+	};
 
 	return (
 		<Dialog open={props.open} onClose={props.onClose} fullWidth maxWidth="lg">
@@ -78,7 +78,7 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 								for (let i = 0; i<profilesList.length; i++){
 									if (profilesList[i].name == currentProfile){
 										if (profilesList[i].controller1 == navigator.getGamepads()[e.target.value as number]?.id){ //If this controller recognized, apply approperiate mappings
-											console.log("Controller recognized")
+											console.log("Controller recognized");
 											setRequestingConfig({state:1, profileName:currentProfile, controller1:"recognized", controller2:"null"}); //Recieve latest controller mappings for this controller
 											return; 
 										}
@@ -166,10 +166,10 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 						setController2(-1);
 						}}>Close</Button>
 					<Button onClick={() => {
-						let controller1Name: any = "null";
-						let controller2Name: any = "null"; 
+						let controller1Name: string | undefined = "null";
+						let controller2Name: string | undefined = "null"; 
 						if (controller1 == -1){
-							return
+							return;
 						} else {
 							controller1Name = navigator.getGamepads()[controller1]?.id; //Obtain the name for controller 1
 						}
@@ -182,7 +182,7 @@ export default function ProfileEditor(props: {open: boolean; onClose: () => void
 						setController1(-1);
 						setController2(-1);
 
-						setRequestingConfig({state:0, profileName:currentProfile, controller1:controller1Name, controller2:controller2Name}); //Write (or overwrite) this profile into the database
+						setRequestingConfig({state:0, profileName:currentProfile, controller1:controller1Name || "null", controller2:controller2Name || "null"}); //Write (or overwrite) this profile into the database
 						setRequestingProfilesList(1); //Update the profiles list
 						props.onClose();
 						}}>Save</Button>

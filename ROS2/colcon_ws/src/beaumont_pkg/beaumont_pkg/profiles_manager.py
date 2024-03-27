@@ -34,14 +34,26 @@ class Mapping(Base):
     def dict(self):
         return {"id": self.id, "name": self.name, "controller": self.controller, "button": self.button, "action": self.action , "isAxis": self.isAxis, "deadzone": self.deadzone}
 
+class PowerPreset(Base):
+    __tablename__ = "powerPresets"
+    name: Mapped[str] = mapped_column(primary_key=True)
+    power: Mapped[int] = mapped_column()
+    surge: Mapped[int] = mapped_column()
+    sway: Mapped[int] = mapped_column()
+    heave: Mapped[int] = mapped_column()
+    pitch: Mapped[int] = mapped_column()
+    roll: Mapped[int] = mapped_column()
+    yaw: Mapped[int] = mapped_column()
+
 #Define the Cameras database schema
 #TODO: Integrate this with GUI
 class Camera(Base):
     __tablename__ = "cameras"
     id: Mapped[int] = mapped_column(primary_key=True)
-    ip: Mapped[str] = mapped_column()
-    def dict(self):
-        return {"id": self.id, "ip": self.ip}
+    ip1: Mapped[str] = mapped_column()
+    ip2: Mapped[str] = mapped_column()
+    ip3: Mapped[str] = mapped_column()
+    ip4: Mapped[str] = mapped_column()
 
 engine = create_engine("sqlite:///config.db")
 
@@ -74,8 +86,6 @@ def mappings_list_to_mappings_json(mappings_list):
         i = i+1
 
     return {0: controller_1_json_mappings, 1: controller_2_json_mappings}
-
-
 
 def mappings_json_to_mappings_list(profile_name, controller_name, mappings_json):
     """Takes in a JSON dictionary for a certain profile and turns in into a mappings list to store in database"""
@@ -154,13 +164,13 @@ class ProfilesManager(Node):
             return response
 
         elif request.state == 1: #We are looking to load mapping into GUI from database
-
             mappings_list = []
             for row in session.query(Mapping).all():
                 if (row.dict()["name"]==request.data): #request.data in this case stores the name of the profile for which mappings are being requested
                     mappings_list.append(row.dict())
             mappings_json = mappings_list_to_mappings_json(mappings_list)
             response.result = json.dumps(mappings_json) #Turn the JSON object into a string
+            print(response)
             return response
 
     def profiles_list_callback(self, request, response):
@@ -179,6 +189,10 @@ class ProfilesManager(Node):
                 output.append(row.dict())
             response.result = json.dumps(output) #Turn the JSON object into a string
             return response
+        
+    def camera_ips_callback(self, request, response):
+        if request.state == 0:
+            
 
 def main(args=None):
     global session
