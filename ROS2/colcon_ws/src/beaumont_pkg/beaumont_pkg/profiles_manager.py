@@ -192,6 +192,7 @@ class ProfilesManager(Node):
         
     def camera_ips_callback(self, request, response):
         if request.state == 0:
+            pass
             
 
 def main(args=None):
