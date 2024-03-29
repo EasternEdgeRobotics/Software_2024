@@ -4,14 +4,17 @@ from eer_messages.msg import ThrusterMultipliers
 from eer_messages.srv import Multipliers
 from std_msgs.msg import String
 import json
-import Adafruit_PCA9685
+from adafruit_pca9685 import PCA9685
 import threading
+import board
+
+i2c = board.I2C()
 
 # Configure minimum, middle and maximum pulse lengths (out of 4096)
 # Values should be adjusted so that the center arms the thrusters
-MIN_SPEED = 1100
-MAX_SPEED = 1900
-CENTER_SPEED = 110
+MIN_SPEED = 0
+MAX_SPEED = 10000
+CENTER_SPEED = 5000
 
 ACCELERATION = 75
 #1900 1500 1100 maps to 180 90 0
@@ -32,7 +35,7 @@ class Thruster:
         self.current = CENTER_SPEED
 
         # Arm thruster
-        pwm.set_pwm(ch, 0, CENTER_SPEED)
+        pwm.channels[ch].duty_cycle = CENTER_SPEED
 
     def thruster_scale(self, thruster):
         """
@@ -59,10 +62,10 @@ class Thruster:
             if(abs(self.target - self.current) > ACCELERATION):
                 direction = (self.target - self.current) / abs(self.target - self.current)
                 self.current += int(direction * ACCELERATION)
-                self.pwm.set_pwm(self.ch, 0, self.current)
+                self.pwm.channels[self.ch].duty_cycle = self.current
             else:
                 self.current = self.target
-                self.pwm.set_pwm(self.ch, 0, self.current)
+                self.pwm.channels[self.ch].duty_cycle = self.current
 
 class ThrusterDataSubscriber(Node):
 
@@ -70,7 +73,7 @@ class ThrusterDataSubscriber(Node):
         super().__init__('thruster_data_subscriber')
         self.copilot_listener = self.create_subscription(ThrusterMultipliers, 'thruster_multipliers', self.copilot_listener_callback, 10)
         self.pilot_listener = self.create_subscription(String, 'controller_input', self.pilot_listener_callback, 10)
-        self.multiple_query_service = self.create_service(Multipliers, "multipliers_query", self.multipliers_query_callback)
+        # self.multiple_query_service = self.create_service(Multipliers, "multipliers_query", self.multipliers_query_callback)
 
         # prevent unused variable warning
         self.copilot_listener 
@@ -85,8 +88,8 @@ class ThrusterDataSubscriber(Node):
 
         self.accepted_actions = ("surge", "sway", "heave", "pitch", "roll", "yaw")
 
-        self.pwm = Adafruit_PCA9685.PCA9685()
-        self.pwm.set_pwm_freq(100)
+        self.pwm = PCA9685(i2c)
+        self.pwm.frequency = 100
 
         self.test_servo = Thruster(self.pwm, 0)
 
