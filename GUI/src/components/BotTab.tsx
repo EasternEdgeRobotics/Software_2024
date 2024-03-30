@@ -104,7 +104,8 @@ export function BotTab() {
                 }
             }
         }
-        if (controller_input_list.length > 0) {setControllerInput(JSON.stringify(controller_input_list))} // The ROS.tsx script will detect changes to the global variable "ControllerInput"
+        if (controller_input_list.length > 0) {setControllerInput(JSON.stringify(controller_input_list));
+                                                console.log(controller_input_list);} // The ROS.tsx script will detect changes to the global variable "ControllerInput"
     }
 
     useEffect(() => { //Constantly run the input listeners for controllers 1 and 2 (often addressed as controllers 0 and 1)

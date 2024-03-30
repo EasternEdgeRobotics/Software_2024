@@ -1,23 +1,43 @@
 import rclpy
 from rclpy.node import Node 
 from eer_messages.msg import ThrusterMultipliers
-from eer_messages.srv import Multipliers
 from std_msgs.msg import String
 import json
 from adafruit_pca9685 import PCA9685
 import threading
 import board
 
-i2c = board.I2C()
-
 # Configure minimum, middle and maximum pulse lengths (out of 4096)
 # Values should be adjusted so that the center arms the thrusters
-MIN_SPEED = 0
-MAX_SPEED = 10000
-CENTER_SPEED = 5000
+MIN_SPEED = 3000
+MAX_SPEED = 15000
+CENTER_SPEED = 9000
+
+THRUSTER = {
+    "surge": 0,
+    "sway": 1,
+    "heave": 12,
+    "pitch": 3,
+    "roll": 4,
+    "yaw": 2,
+    "null": 6,
+    "null": 7
+}
+
+# Below is what we should eventually have for the THRUSTER dictionary. Upon recieving pilot input, 
+# rov math will be performed and translated into values corresponding to the dictionary below
+# THRUSTER = {
+#     "for-port-vert": 0,
+#     "for-star-vert": 1,
+#     "aft-port-vert": 2,
+#     "aft-star-vert": 3,
+#     "for-port-horz": 4,
+#     "for-star-horz": 5,
+#     "aft-port-horz": 6,
+#     "aft-star-horz": 7
+# }
 
 ACCELERATION = 75
-#1900 1500 1100 maps to 180 90 0
 
 class Thruster:
     """Thruster class."""
@@ -66,13 +86,14 @@ class Thruster:
             else:
                 self.current = self.target
                 self.pwm.channels[self.ch].duty_cycle = self.current
+        # print(f"Channel {self.ch}, duty cycle is {self.current}")
 
 class ThrusterDataSubscriber(Node):
 
     def __init__(self):
         super().__init__('thruster_data_subscriber')
-        self.copilot_listener = self.create_subscription(ThrusterMultipliers, 'thruster_multipliers', self.copilot_listener_callback, 10)
-        self.pilot_listener = self.create_subscription(String, 'controller_input', self.pilot_listener_callback, 10)
+        self.copilot_listener = self.create_subscription(ThrusterMultipliers, 'thruster_multipliers', self.copilot_listener_callback, 100)
+        self.pilot_listener = self.create_subscription(String, 'controller_input', self.pilot_listener_callback, 1000)
         # self.multiple_query_service = self.create_service(Multipliers, "multipliers_query", self.multipliers_query_callback)
 
         # prevent unused variable warning
@@ -87,13 +108,27 @@ class ThrusterDataSubscriber(Node):
         self.yaw = 0
 
         self.accepted_actions = ("surge", "sway", "heave", "pitch", "roll", "yaw")
+        self.i2c = board.I2C()
 
-        self.pwm = PCA9685(i2c)
+        try:
+            self.pwm = PCA9685(self.i2c)
+        except:
+            self.get_logger().error("NOTHING ON I2C BUS!")
+
+        self.ports = {}
+
         self.pwm.frequency = 100
 
-        self.test_servo = Thruster(self.pwm, 0)
+        self.connected_devices = [] 
+        for i in range(15): 
+            try:
+                self.ports[i] = Thruster(self.pwm, i)
+                self.connected_devices.append(i)
+            except:
+                print("No thruster on channel ", i)
 
         threading.Thread(target=self.tick, daemon=True).start()
+        
 
     def copilot_listener_callback(self, msg):
         self.get_logger().info(f"{msg} recieved in ThrusterControl")
@@ -107,44 +142,16 @@ class ThrusterDataSubscriber(Node):
 
     def tick(self):
         while True:
-            self.test_servo.tick()
+            for i in self.connected_devices:
+                self.ports[i].tick()
 
     def pilot_listener_callback(self, msg):  
         controller_inputs = json.loads(msg.data)
         for controller_input in controller_inputs:
             if (controller_input[1] in self.accepted_actions):
-                print(controller_input)
-                if controller_input[1] == "surge":
-                    self.get_logger().info(f"{msg} recieved in ThrusterControl")
-                    self.test_servo.fly(controller_input[0])
-
-    # def execute(self, thruster_values):
-    #     print(thruster_values)
-    #     for i in thruster_values:
-    #         if i == 'for-port-vert':
-    #             dt = self.ports.get(0)
-    #             dt.fly(-thruster_values[i])
-    #         elif i == 'for-star-vert':
-    #             dt = self.ports.get(1)
-    #             dt.fly(thruster_values[i])
-    #         elif i == 'aft-port-vert':
-    #             dt = self.ports.get(2)
-    #             dt.fly(-thruster_values[i])
-    #         elif i == 'aft-star-vert':
-    #             dt = self.ports.get(3)
-    #             dt.fly(thruster_values[i])
-    #         elif i == 'for-port-horz':
-    #             dt = self.ports.get(4)
-    #             dt.fly(thruster_values[i])
-    #         elif i == 'for-star-horz':
-    #             dt = self.ports.get(5)
-    #             dt.fly(thruster_values[i])
-    #         elif i == 'aft-port-horz':
-    #             dt = self.ports.get(6)
-    #             dt.fly(thruster_values[i])
-    #         elif i == 'aft-star-horz':
-    #             dt = self.ports.get(7)
-    #             dt.fly(thruster_values[i])
+                # WOULD DO THRUSTER MATH HERE. CODE BELOW IS TEMPORARY
+                if THRUSTER[controller_input[1]] in self.connected_devices:
+                    self.ports[THRUSTER[controller_input[1]]].fly(controller_input[0])
 
 
 def main(args=None):
