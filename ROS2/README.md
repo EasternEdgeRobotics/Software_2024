@@ -89,6 +89,14 @@ ros2 pkg executables beaumont_pkg
 ## Raspberry Pi Installation
 Note that this installation guide is not exclusive to Raspberry Pi's and can work for other Linux distros that support ROS2. If installing on an operating system such as Windows and Mac, steps will vary (refer to documentation).
 
+If you were trying to install on raspberry pi os (debian bookworm) using docker, follow the Docker Installation section above but instead run the following two commands in step 2:
+```
+docker pull arm64v8/ros:humble-ros-base-jammy
+```
+Then, run a docker container based on this image:
+```
+sudo docker run -v /home/easternedge/colcon_ws:/home/easternedge/colcon_ws -v /dev:/dev --privileged -p 9090:9090 -it arm64v8/ros:humble-ros-base-jammy
+```
 ### Step 1
 Install a Linux Distro that supports ROS2 (such as Ubuntu). [A guide can be followed here](https://ubuntu.com/tutorials/how-to-install-ubuntu-on-your-raspberry-pi#1-overview). Ensure that you will have access to the terminal on the Pi, either through SSH on the network or by plugging in a mouse, keyboard, and monitor. Also, ensure the Pi has internet access.
 
