@@ -3,6 +3,7 @@ export type Task = {
     completed?: boolean;
     subTasks?: Task[];
     Points?: number;
+    checked?: boolean;
     };
 
 export type SubTask = {

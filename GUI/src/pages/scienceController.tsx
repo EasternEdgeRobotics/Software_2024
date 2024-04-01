@@ -11,7 +11,7 @@ import "@fontsource/roboto/700.css";
 import SafetyDisclaimer from "../components/SafetyDisclaimer";
 import { InitROS } from "../api/ROS";
 import { CameraIPs } from "../api/Atoms";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect, } from "react";
 
 import '../styles/science.css'
 import { AltCamera } from "../components/CameraTab";
@@ -61,12 +61,29 @@ const ScreenshotVeiw = () => {
 }
 
 function renderTasks(tasks: Task[], level = 0) {
+  if (!(level >= 1 || tasks.length > 2)) level = level - 1;
+
+  const handleCheckboxChange = (task: Task) => {
+    task.checked = !task.checked;
+    const updatedTask = { ...task, checked: !task.checked };
+    localStorage.setItem(task.name, JSON.stringify(updatedTask));
+  };
+
   return tasks.map((task: Task) => (
     <div style={{ paddingLeft: `${level * 35}px` }}>
-      <Col style={{minHeight: "5px"}}>
-        <div style={{ display: 'flex',flex:1, minHeight: "2px", alignItems: 'flex-start' }}>
-          <Checkbox style={{ marginBottom: "10px" }} aria-label={task.name} defaultChecked color="success" aria-checked={false} />
-          <div style={{ marginLeft: '10px', flex: 1, wordBreak: 'break-word', alignItems:"flex-start" }}>{task.name}</div>
+      <Col style={{ minHeight: "45px" }}>
+        <div style={{ display: 'flex', flex: 1, minHeight: "2px", alignItems: 'flex-start' }}>
+          {(level >= 1 || tasks.length > 2) &&
+            <Checkbox
+              style={{ marginBottom: "10px", padding: "0px" }}
+              aria-label={task.name}
+              defaultChecked={task.checked}
+              color="success"
+              aria-checked={task.checked}
+              onChange={() => handleCheckboxChange(task)}
+            />
+          }
+          <div style={{ marginLeft: '10px', flex: 1, wordBreak: 'break-word', alignItems: "flex-start" }}>{task.name}</div>
         </div>
         {task.subTasks && renderTasks(task.subTasks, level + 1)}
       </Col>
@@ -74,14 +91,23 @@ function renderTasks(tasks: Task[], level = 0) {
   ));
 }
 
-function SubList(props:{name: string, tasks: Task[]}) { 
+function SubList(props: { name: string, tasks: Task[] }) {
+  const [tasks, setTasks] = useState<Task[]>([]);
+
+  useEffect(() => {
+    const loadedTasks = props.tasks.map((task: Task) => {
+      const savedTask = localStorage.getItem(task.name);
+      return savedTask ? JSON.parse(savedTask) : task;
+    });
+    setTasks(loadedTasks);
+  }, [props.tasks]);
+
   return (
-    <div style={{ paddingLeft: '20px', paddingRight: '20px' , paddingBottom: "10px" }}>
+    <div style={{ paddingLeft: '20px', paddingRight: '20px', paddingBottom: "10px" }}>
       <Row>
         <h2>{props.name}</h2>
         <div>
-          {renderTasks(props.tasks)}
-          {/* ... rest of your code ... */}
+          {renderTasks(tasks)}
         </div>
       </Row>
     </div>
