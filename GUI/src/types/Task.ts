@@ -2,7 +2,7 @@ export type Task = {
     name: string;
     completed?: boolean;
     subTasks?: Task[];
-    Points?: number;
+    points?: number;
     checked?: boolean;
     };
 
@@ -10,5 +10,5 @@ export type SubTask = {
     name: string;
     completed: boolean;
     subTasks?: SubTask[];
-    Points?: number;
+    points?: number;
 };

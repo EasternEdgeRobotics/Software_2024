@@ -1,5 +1,5 @@
 import { ThemeProvider } from "@emotion/react";
-import { Box, Button, Checkbox, CssBaseline, createTheme , IconButton} from "@mui/material";
+import { Box, Button, Checkbox, CssBaseline, createTheme, IconButton, Icon } from "@mui/material";
 
 
 import { useAtom } from "jotai";
@@ -16,12 +16,14 @@ import React, { useRef, useState, useEffect, } from "react";
 import '../styles/science.css'
 import { AltCamera } from "../components/CameraTab";
 import { Sidebar, Menu, MenuItem } from 'react-pro-sidebar';
-import { Home, Brightness4, SwapHoriz, CheckBox } from '@mui/icons-material';
+import { Home, Brightness4, SwapHoriz, CheckBox, Circle } from '@mui/icons-material';
 import "../styles/science.css";
 import { Col, Row } from 'react-bootstrap';
 import taskJSON from './tasks.json';
 import {Task, SubTask} from '../types/Task';
-import { MenuSquareIcon } from "lucide-react";
+import { BoxIcon, BoxSelectIcon, CircleDotIcon, CircleIcon, MenuSquareIcon, Square, TicketIcon, ZoomOutIcon } from "lucide-react";
+import SquareIcon from '@mui/icons-material/Square';
+import { JsxElement } from "typescript";
 
 const ScreenshotVeiw = () => {
   return (
@@ -61,7 +63,7 @@ const ScreenshotVeiw = () => {
 }
 
 function renderTasks(tasks: Task[], level = 0) {
-  if (!(level >= 1 || tasks.length > 2)) level = level - 1;
+  // if (!(level >= 1 || tasks.length > 2)) level = level - 1;
 
   const handleCheckboxChange = (task: Task) => {
     task.checked = !task.checked;
@@ -69,30 +71,43 @@ function renderTasks(tasks: Task[], level = 0) {
     localStorage.setItem(task.name, JSON.stringify(updatedTask));
   };
 
-  return tasks.map((task: Task) => (
-    <div style={{ paddingLeft: `${level * 35}px` }}>
-      <Col style={{ minHeight: "45px" }}>
-        <div style={{ display: 'flex', flex: 1, minHeight: "2px", alignItems: 'flex-start' }}>
-          {(level >= 1 || tasks.length > 2) &&
-            <Checkbox
-              style={{ marginBottom: "10px", padding: "0px" }}
-              aria-label={task.name}
-              defaultChecked={task.checked}
-              color="success"
-              aria-checked={task.checked}
-              onChange={() => handleCheckboxChange(task)}
-            />
-          }
-          <div style={{ marginLeft: '10px', flex: 1, wordBreak: 'break-word', alignItems: "flex-start" }}>{task.name}</div>
+
+
+  return tasks.map((task: Task) => {
+    const Icon = () => {
+      if (!task.subTasks && tasks.length > 1) return <Checkbox
+        style={{ marginBottom: "10px", padding: "0px" }}
+        aria-label={task.name}
+        defaultChecked={task.checked}
+        color="success"
+        aria-checked={task.checked}
+        onChange={() => handleCheckboxChange(task)}
+      />
+      else if (task.subTasks) return <SquareIcon style={{ marginBottom: "10px", padding: "0px" }}
+        scale={0.5}
+      />
+      else return <a></a>
+    };
+
+    return (
+      <div style={{ paddingLeft: `${(level ** 0.5) * 30}px` }}>
+        <Col style={{ minHeight: "45px" }}>
+          <div style={{ display: 'flex', flex: 1, minHeight: "2px", alignItems: 'flex-start' }}>
+            <Icon />
+            {(!task.subTasks) && <div style={{ marginLeft: '10px', flex: 1, wordBreak: 'break-word', alignItems: "flex-start" }}>{task.name} ({task.points })</div>}
+            {(task.subTasks) && <div style={{ marginLeft: '10px', flex: 1, wordBreak: 'break-word', alignItems: "flex-start", fontWeight: "bolder", paddingBottom: "10px" }}>{task.name} :</div>}
         </div>
         {task.subTasks && renderTasks(task.subTasks, level + 1)}
       </Col>
     </div>
-  ));
+    )
+  });
 }
 
 function SubList(props: { name: string, tasks: Task[] }) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [score, setScore] = useState<number>(0);
+  const [totalScore, setTotalScore] = useState<number>(0);
 
   useEffect(() => {
     const loadedTasks = props.tasks.map((task: Task) => {
@@ -102,10 +117,34 @@ function SubList(props: { name: string, tasks: Task[] }) {
     setTasks(loadedTasks);
   }, [props.tasks]);
 
+  useEffect(() => {
+    // const calculateScore = (tasks: Task[]): number => {
+    //   return tasks.reduce((total, task) => total + (task.checked ? task.points : 0) + (task.subTasks ? calculateScore(task.subTasks) : 0), 0);
+    // };
+
+
+    const calculateTotalScore = (tasks: Task[]): number => {
+      let total = 0;
+      tasks.forEach((subtask) => {
+        if (subtask.subTasks) {
+          total += calculateTotalScore(subtask.subTasks);
+        } else {
+          total += subtask.points ?? 0;
+        }
+      });
+
+      return total;
+    };
+
+    // setScore(calculateScore(tasks));
+    setTotalScore(calculateTotalScore(tasks));
+  }, [tasks]);
+
+
   return (
     <div style={{ paddingLeft: '20px', paddingRight: '20px', paddingBottom: "10px" }}>
       <Row>
-        <h2>{props.name}</h2>
+        <h2>{props.name} ({score}/{totalScore})</h2>
         <div>
           {renderTasks(tasks)}
         </div>
@@ -138,7 +177,7 @@ function SideBar() {
         style={{
           position: 'fixed',
           top: '50%',
-          right: !collapsed ? '600px' : '0',
+          right: !collapsed ? '700px' : '0',
           transform: 'translateY(-50%) rotate(180deg)',
           backgroundColor: '#e0e0e0',
           color: 'black',
@@ -156,7 +195,7 @@ function SideBar() {
         <div style={{ height: '5px' }} />
         <MenuSquareIcon />
       </IconButton >
-      <Sidebar style={styles.sideBarHeight} collapsed={collapsed} rtl={false} width="600px" collapsedWidth="0px" backgroundColor="rgb(0, 0, 69, 0.7)">
+      <Sidebar style={styles.sideBarHeight} collapsed={collapsed} rtl={false} width="700px" collapsedWidth="0px" backgroundColor="rgb(0, 0, 69, 0.7)">
       <Menu>
           <MenuItem icon={<Home />}>Home</MenuItem>
           <SubList name="TASK 1 : Coastal Pioneer Array" tasks={taskJSON.task1.tasks} />
