@@ -6,6 +6,7 @@ import json
 from adafruit_pca9685 import PCA9685
 import threading
 import board
+from math import sqrt
 
 # Configure minimum, middle and maximum pulse lengths (out of 4096)
 # Values should be adjusted so that the center arms the thrusters
@@ -152,6 +153,51 @@ class ThrusterDataSubscriber(Node):
                 # WOULD DO THRUSTER MATH HERE. CODE BELOW IS TEMPORARY
                 if THRUSTER[controller_input[1]] in self.connected_devices:
                     self.ports[THRUSTER[controller_input[1]]].fly(controller_input[0])
+  
+  
+    def rov_math(self, inputs_in):
+       
+       inputs = {'surge': 0, 'sway': 0, 'yaw': 0, 'heave': 0, 'pitch': 0}
+
+
+        overrides = {'surge': self.surge, 'sway': self.surge, 'yaw': self.surge, 'heave': self.surge, 'pitch': self.surge, 'power' : self.surge}
+
+        thrusterValues = {}
+
+        for value, name in inputs_in:
+            inputs[name] = value
+
+        # Horizontals
+        inputs['surge'] *= overrides['power'] * overrides['surge'] 
+        inputs['sway'] *= overrides['power'] * overrides['sway'] 
+        inputs['yaw'] *= overrides['power'] * overrides['yaw'] 
+
+        strafePower = sqrt(inputs['sway'] ** 2 + inputs['surge'] ** 2)
+        strafeScalingCoeff = strafePower / (abs(inputs['sway']) + abs(inputs['surge'])) if strafePower else 0
+        strafeAvgCoeff = strafePower / (strafePower + abs(inputs['yaw'])) if strafePower or inputs['yaw'] else 0
+        rotAvgCoeff = abs(inputs['yaw']) / (strafePower + abs(inputs['yaw'])) if strafePower or inputs['yaw'] else 0
+
+        thrusterValues['for-port-horz'] = (inputs['sway'] + inputs['surge']) * strafeScalingCoeff * strafeAvgCoeff + inputs['yaw'] * rotAvgCoeff
+        thrusterValues['for-star-horz'] = (-inputs['sway'] + inputs['surge']) * strafeScalingCoeff * strafeAvgCoeff - inputs['yaw'] * rotAvgCoeff
+        thrusterValues['aft-star-horz'] = (inputs['sway'] + inputs['surge']) * strafeScalingCoeff * strafeAvgCoeff - inputs['yaw'] * rotAvgCoeff
+        thrusterValues['aft-port-horz'] = (-inputs['sway'] + inputs['surge']) * strafeScalingCoeff * strafeAvgCoeff + inputs['yaw'] * rotAvgCoeff
+
+        # Verticals
+        inputs['heave'] *= overrides['power'] * overrides['heave'] 
+        inputs['pitch'] *= overrides['power'] * overrides['heave'] 
+
+        strafeAvgCoeff = abs(inputs['heave']) / (abs(inputs['heave']) + abs(inputs['pitch'])) if inputs['heave'] or inputs['pitch'] else 0
+        rotAvgCoeff = abs(inputs['pitch']) / (abs(inputs['heave']) + abs(inputs['pitch'])) if inputs['heave'] or inputs['pitch'] else 0
+
+        thrusterValues['for-port-vert'] = inputs['heave'] * strafeAvgCoeff - inputs['pitch'] * rotAvgCoeff
+        thrusterValues['for-star-vert'] = inputs['heave'] * strafeAvgCoeff - inputs['pitch'] * rotAvgCoeff
+        thrusterValues['aft-port-vert'] = inputs['heave'] * strafeAvgCoeff + inputs['pitch'] * rotAvgCoeff
+        thrusterValues['aft-star-vert'] = inputs['heave'] * strafeAvgCoeff + inputs['pitch'] * rotAvgCoeff
+
+        return thrusterValues
+
+        
+
 
 
 def main(args=None):
