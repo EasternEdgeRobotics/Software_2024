@@ -1,3 +1,0 @@
-[submodule "Cameras/mjpg-streamer"]
-	path = Cameras/mjpg-streamer
-	url = https://github.com/jacksonliam/mjpg-streamer
