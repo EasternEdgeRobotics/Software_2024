@@ -1,5 +1,5 @@
 import { useAtom } from "jotai";
-import { CameraIPs, ROSIP, ProfilesList, CurrentProfile, RequestingProfilesList, RequestingConfig, Controller1, Controller2 } from "../api/Atoms";
+import { CameraIPs, ROSIP, ProfilesList, CurrentProfile, RequestingProfilesList, RequestingConfig } from "../api/Atoms";
 import { Box } from "@mui/system";
 import { Button, Divider, FormControl, Grid, InputLabel, Select, TextField, MenuItem } from "@mui/material";
 import { Trash2 } from "lucide-react";
@@ -19,41 +19,51 @@ export default function SettingsTab() {
     const [,setRequestingProfilesList] = useAtom(RequestingProfilesList);
     const [,setRequestingConfig] = useAtom(RequestingConfig);
 
-    const [controller1 ,setController1] = useAtom(Controller1);
-    const [controller2 ,setController2] = useAtom(Controller2);
-
     const setCameraIP = (camera: number, ip: string) => {
         setIPs(IPs.map((item, index) => index === camera ? ip : item));
     };
 
     const save = () => {
-        setIPs(IPs.map(ip => !ip.startsWith("http://") && !ip.startsWith("https://") ? "http://" + ip : ip));
+        setIPs(IPs.map(ip => !ip.startsWith("http:// ") && !ip.startsWith("https:// ") ? "http:// " + ip : ip));
         const settings: {[id: string] : string[]} = {};
-        settings.CameraIPs = IPs.map(ip => !ip.startsWith("http://") && !ip.startsWith("https://") ? "http://" + ip : ip);
+        settings.CameraIPs = IPs.map(ip => !ip.startsWith("http:// ") && !ip.startsWith("https:// ") ? "http:// " + ip : ip);
         fetch("/config", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(settings)});
         localStorage.setItem("ROS_IP", RosIP);
     };
 
-    //The loadProfile function iterates through each profile for each controller, checking if that profile is the current profile and if this controller is recognized 
-    const loadProfile = () => {
-        for (let controller = 0; controller<navigator.getGamepads().length;controller++){
-            if (navigator.getGamepads()[controller] == null){
-                continue;
-            }
-            //TODO: controller 2
-            for (let i = 0; i<profilesList.length; i++){
-                if (profilesList[i].name == currentProfile){
-                    if (profilesList[i].controller1 == navigator.getGamepads()[controller]?.id){ //If this controller recognized, apply approperiate mappings
-                        console.log("Controller recognized");
-                        //TODO: get controller to be selected in dropout when opening profile editor
-                        console.log(navigator.getGamepads()[controller]?.index);
-                        setController1(navigator.getGamepads()[controller]?.index || -1);
-                        setRequestingConfig({state:1, profileName:currentProfile, controller1:"recognized", controller2:"null"}); //Recieve latest bindings for this profile
-                        return;
-                    }
-                }
+    // The loadProfile function iterates through each profile, checking if that profile is the current profile and which controller is recognized
+    const loadProfile = (profileName: string) => {
+        const controllers_recognized = [false, false]
+        let current_profile_index = -1
+
+        for (let i = 0; i<profilesList.length; i++){
+            if (profilesList[i].name == profileName){
+                current_profile_index = i
             }
         }
+
+        if (current_profile_index == -1) {
+            console.log("Can't find current profile in the profiles list!");
+            return;
+        }
+        for (let controllerIndex = 0; controllerIndex<navigator.getGamepads().length;controllerIndex++){
+            if (navigator.getGamepads()[controllerIndex] == null){
+                continue;
+            }
+            // Check if either controller is currently being seen by the browser
+            if (profilesList[current_profile_index].controller1 == navigator.getGamepads()[controllerIndex]?.id && !controllers_recognized[0]){ //  !controllers_recognized[0] handles the case where controllers 1 and 2 have the same name
+                console.log("Controller 1 recognized");
+                controllers_recognized[0] = true;
+            } 
+            if (profilesList[current_profile_index].controller2 == navigator.getGamepads()[controllerIndex]?.id) {
+                console.log("Controller 2 recognized");
+                controllers_recognized[1] = true
+            }
+        }
+        // Recieve latest bindings for this profile
+        setRequestingConfig({state:1, profileName:profileName, 
+            controller1: (controllers_recognized[0]) ? "recognized":"null", 
+            controller2: (controllers_recognized[1]) ? "recognized":"null"}); 
     };
 
     return (
@@ -84,23 +94,21 @@ export default function SettingsTab() {
             <br/><Divider>Profiles</Divider><br/>
             <Box display="flex" justifyContent="center">
                 <Grid container width="50%" spacing={1}>
-                    <Grid item xs={9}>
+                    <Grid item xs={11}>
                         <FormControl fullWidth >
 							<InputLabel>Profile</InputLabel>
 							<Select value={currentProfile} label="Profile" onClick={()=>{setRequestingProfilesList(1);}} onChange={(e) => {
 								setCurrentProfile(e.target.value);
+                                loadProfile(e.target.value);
 								return;
 							}} sx={{width: "100%"}}>
 								{profilesList.map((profile) => {
-										//Add menu item for every profile
+										// Add menu item for every profile
 										return <MenuItem key={profile.name} value={profile.name}>{profile.name}</MenuItem>;
 									})
 								}
 							</Select>
 						</FormControl>
-                    </Grid>
-                    <Grid item xs={2}>
-                        <Button variant="contained" sx={{height: "56px", width: "100%"}} onClick={()=>{loadProfile();}}>Load Profile</Button>
                     </Grid>
                     <Grid item xs={1}>
                         <Button variant="outlined" sx={{height: "56px", width: "100%"}} onClick={()=>{setRequestingProfilesList(0);}}><Trash2 /></Button>
