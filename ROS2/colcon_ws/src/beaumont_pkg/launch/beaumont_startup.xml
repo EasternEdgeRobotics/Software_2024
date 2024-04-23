@@ -1,0 +1,5 @@
+<launch>
+	<include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml"/>
+	<node pkg="beaumont_pkg" exec="profiles_manager"/>
+	<node pkg="beaumont_pkg" exec="thruster_control"/>
+</launch>

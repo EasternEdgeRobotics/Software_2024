@@ -4,7 +4,7 @@ import React from "react";
 export default function SafetyDisclaimer() {
     const [open, setOpen] = React.useState<boolean>(true);
 
-    return(
+    return (
         <Dialog open={open}>
             <DialogTitle>Eastern Edge Safety Disclaimer</DialogTitle>
             <DialogContent>
@@ -18,12 +18,12 @@ export default function SafetyDisclaimer() {
                         <li>You will not swing the ROV around by the tether.</li>
                         <li>You will not battle other ROVs with the ROV.</li>
                     </ul>
-                    After reading this, press the "I Agree" button to continue.
+                    After reading this, press the &quot;I Agree&quot; button to continue.
                 </DialogContentText>
             </DialogContent>
             <DialogActions>
                 <Button onClick={() => setOpen(false)}>I Agree</Button>
             </DialogActions>
         </Dialog>
-    )
+    );
 }
