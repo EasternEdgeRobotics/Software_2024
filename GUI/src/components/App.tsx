@@ -5,7 +5,7 @@ import CameraTab from "./CameraTab";
 import SettingsTab from "./SettingsTab";
 import React from "react";
 import { useAtom } from "jotai";
-import { CameraIPs } from "../api/Atoms";
+import { CameraURLs } from "../api/Atoms";
 import SafetyDisclaimer from "./SafetyDisclaimer";
 import { InitROS } from "../api/ROS";
 import { BotTab } from "./BotTab";
@@ -24,13 +24,13 @@ export function RenderTab(props: {tab: number}) {
 
 export default function App() {
     const [tabIndex, setTabIndex] = useState<number>(0);
-    const [, setCameraIPs] = useAtom(CameraIPs);
+    const [, setCameraURLs] = useAtom(CameraURLs);
 
     React.useEffect(() => {
         /**fetch('/config').then(response => response.json()).then(data => {
-            setCameraIPs(data.CameraIPs || ["", "", ""]);
+            setCameraURLs(data.CameraURLs || ["", "", ""]);
        });**/
-    }, [setCameraIPs]);
+    }, [setCameraURLs]);
 
     return (
         <Box>
