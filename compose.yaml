@@ -1,0 +1,16 @@
+services:
+  backend:
+    build: ./ROS2
+    tty: true
+    container_name: backend
+    privileged: true
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./ROS2/colcon_ws:/root/colcon_ws
+      - /dev:/dev
+  frontend:
+    build: ./GUI
+    tty: true
+    ports:
+     - "80:80"

@@ -1,7 +1,7 @@
-# Introduction
+### Introduction
 This ROS2 (Robotics Operating System 2) workspace contains the "Backend" of the software package, such as thruster math, profiles database, simulation environment, and tooling interface. It is meant to run on Beaumont's onboard Raspberry Pi 4.
 
-The workspace uses the ROS2 "Humble" distribution.
+The workspace uses the ROS2 Humble distribution.
 
 You can follow the installation guide below to get ROS2 running and communicating with the GUI in a docker container on your own computer or a Raspberry Pi.
 
@@ -19,11 +19,10 @@ docker pull osrf/ros:humble-desktop
 ```
 Then, run a docker container based on this image:
 ```
-docker run -v "<PATH TO ROS2 directory on your computer>":/home/ROS2  -p 9090:9090 --mount source=colcon_ws,destination=/home/colcon_ws -it osrf/ros:humble-desktop-full
+docker run -v "<PATH TO ROS2 directory on your computer>":/home/ROS2  -p 9090:9090 -it osrf/ros:humble-desktop
 ```
 Above, we are mapping port 9090 of the container to the same port on the host. This is so that we can later listen for ROS2 on port 9090 in the GUI.
-We are also mounting a volume using the -v. Any mapped folders between your host and the docker container will be shared. When you change the files in that 
-folder on your computer, they will change in your docker container. 
+We are also mounting a volume using the -v. Any mapped folders between your host and the docker container will be shared. When you change the files in that folder on your computer, they will change in your docker container. 
 
 To find out where the path to the ROS2 directory is on your computer, navigate to the ROS2 folder in Software 2024 in the terminal then type the following:
  ```
@@ -42,7 +41,7 @@ docker ps -a
 ```
 Navigate to the /home/colcon_ws directory of this container and build the packages, sourcing the main ROS2 workspace first.
 ```
-cd /home/colcon_ws
+cd /home/ROS2/colcon_ws
 source /opt/ros/humble/setup.bash
 colcon build
 ```
@@ -72,9 +71,9 @@ ros2 launch rosbridge_server rosbridge_websocket_launch.xml
 Rosbridge starts litening on port 9090 by default. Run the GUI in your browser, both sides should indicate that they are connected.
 
 ### Step 6
-Note that the Docker Installation will not be able to run the simulation environment (which requires a Beefy computer and a Gazebo install) or interface with any outside components. It will, however, contain the profiles database.
+Note that the Docker Installation will not be able to run the simulation environment (which requires a Beefy computer and a Gazebo install) or interface with any outside components. It will, however, contain the profiles database and allow you to set some frontend-backend communications.
 
-If you run into an issue with a dependancy in one of the Python script, you can install that specific library using pip
+If you run into an issue with a dependency in one of the Python scripts, you can install that specific library using pip
 ```
 pip install <library name (ex. sqlalchemy)>
 ```
@@ -90,6 +89,14 @@ ros2 pkg executables beaumont_pkg
 ## Raspberry Pi Installation
 Note that this installation guide is not exclusive to Raspberry Pi's and can work for other Linux distros that support ROS2. If installing on an operating system such as Windows and Mac, steps will vary (refer to documentation).
 
+If you were trying to install on raspberry pi os (debian bookworm) using docker, follow the Docker Installation section above but instead run the following two commands in step 2:
+```
+docker pull arm64v8/ros:humble-ros-base-jammy
+```
+Then, run a docker container based on this image:
+```
+sudo docker run -v /home/easternedge/colcon_ws:/home/easternedge/colcon_ws -v /dev:/dev --privileged -p 9090:9090 -it arm64v8/ros:humble-ros-base-jammy
+```
 ### Step 1
 Install a Linux Distro that supports ROS2 (such as Ubuntu). [A guide can be followed here](https://ubuntu.com/tutorials/how-to-install-ubuntu-on-your-raspberry-pi#1-overview). Ensure that you will have access to the terminal on the Pi, either through SSH on the network or by plugging in a mouse, keyboard, and monitor. Also, ensure the Pi has internet access.
 
@@ -129,20 +136,20 @@ The simulation environment is mainly for use in developing and testing code for 
 
 ## Explanation
 
-The Open Source Robotics Foundation (osrf) resposible for writing ROS also created a simulation software called Gazebo. The version used for this simulation is Gazebo Classic (which has an end of life at 2025). It is to be superceeded by Modern Gazebo (foremally called Ignition).
+The Open Source Robotics Foundation (osrf) resposible for writing ROS also created a simulation software called Gazebo. The version used for this simulation is Gazebo Classic (which has an end of life at 2025). It is to be superceeded by Modern Gazebo (used to be called called Ignition).
 
 Gazebo allows for creating robot models with visuals, collision, physics, plugins, and sensors. 
 
-For visuals and collision, models can be made using the normal Gazebo model editor (which has powerful features such as mating), or they can be imported as STL. An open source custom Onshape API called [Onshape to Robot](https://onshape-to-robot.readthedocs.io/en/latest/) allows for downloading Onshape models as STL files (TODO: Experiment around trying to lower quality of models, currently causing a strong performance hit).
+For visuals and collision, models can be made using the normal Gazebo model editor (which has powerful features such as mating), or they can be imported as STL. An open-source custom Onshape API called [Onshape to Robot](https://onshape-to-robot.readthedocs.io/en/latest/) allows for downloading Onshape models as STL files. Alternatively, the STL files can be downloaded straight from onshape.
 
-Plugins allow for the bot to listen to and be controlled by traditional ROS topics. Sensors grab information from the simulation environment and publish their data as ROS topics. This means that the ROS2 workspace can have "simulation" versions of nodes that control the actual Bot. These simulation nodes can listen to the same topics as the real ones, and the sensors can publish to the same topics aswell (or in the case of the cameras, interface with the GUI the same way as real sensors). This means that, in the point of view of the GUI and test code, there will be no difference between the simulation and the actual bot.
+Plugins allow for the bot to listen to and be controlled by traditional ROS topics. Sensors grab information from the simulation environment and publish their data as ROS topics. This means that the ROS2 workspace can have "simulation" versions of nodes that control the actual Bot. These simulation nodes can listen to the same topics as the real ones, and the sensors can publish to the same topics as well (or in the case of the cameras, interface with the GUI the same way as real sensors). This means that, in the point of view of the GUI and test code, there will be no difference between the simulation and the actual bot.
 
 TODO:
-- Implement Claw
-- Setup a simulation version of mission tasks
 - Look into the [simulated IMU sensor plugin](https://classic.gazebosim.org/tutorials?tut=ros_gzplugins)
 
 ## Installation
+
+If the simulation environment is already installed, begin at step 3.
 
 ### Step 1
 [Install Gazebo Classic](https://classic.gazebosim.org/tutorials?tut=install_ubuntu&cat=install). Note that the version used for the simulation at the time of writing is Gazebo Classic 11.10.2
@@ -153,16 +160,16 @@ TODO:
 ### Step 3
 Navigate to the worlds folder of the ROS2 directory in the Software package and open a world
 ```
-gazebo playground.world
+gazebo competition_world
 ```
 Worlds may open with models already in them. Also, worlds can be edited on the fly then saved as a .world file. 
 
 Note that you should source the ROS workspace (as described in the ROS installation guides) in order for the Bot in the simulation to listen to the ROS topics.
 
 ### Step 4
-Navigate to the insert on the top left and click "Add Path". Navigate to the models folder of the ROS2 directory of the Software package and select it.
+Navigate to the insert on the top left and click "Add Path". Navigate to the models folder of the ROS2 directory of the Software package and select it (if it's not already there).
 
-Then, select a model such as high_performance_caribou (currently, this is the only working model). Place this model somewhere in the world.
+You should now see all of the models made by EER under the insert tab. 
 
 ### Step 5
 Launch the GUI in the browser. Ensure that the ROS IP in the settings tab is set to the IP of the machine running ROS (can be localhost).
@@ -172,7 +179,7 @@ In another window, ensure that the ROS workspace is sourced. Then run the follow
 ```
 ros2 launch beaumont_pkg simulation_beaumont_startup.xml
 ```
-A launch file is simply a shortcut to running each required node indivisually. This launch file will start the rosbridge_server, the profiles_manager (controller mappings database), the simulation_thruster_controller, and the simulation_camera_subscriber
+A launch file is simply a shortcut to running each required node individually. This launch file will start the rosbridge_server, the profiles_manager (controller mappings database), the simulation_thruster_controller, the simulation_tooling_control, and the simulation_camera_subscriber.
 
 ### Step 7
 Ensure that there is a green checkmark next to ROS in the BotTab in the GUI. If it doesn't show green, disconnecting then reconnecting the computer running ROS from the network sometimes works. Once it is green, navigate to the settings tab.

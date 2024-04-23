@@ -27,6 +27,8 @@ class ThrusterDataSubscriber(Node):
         self.simulation_angular_velocity_publishers = {"pitch":self.create_publisher(Wrench, "/demo/link/force_demo_pitch", 10),
                                                     "roll":self.create_publisher(Wrench, "/demo/link/force_demo_roll", 10),
                                                     "yaw":self.simulation_velocity_publisher_xy}
+    
+        self.accepted_thruster_directions = ("surge", "sway", "heave", "pitch", "roll", "yaw") #This script is only responsible for thruster control related actions
 
         # The differnce between the planar move plugin and the force plugin is that the palanor move plugin acts relative to the bot, while the force plugin acts relative to the world
         # All forces applied with the Gazebo Force plugin apply up in the z axis. This leads to a problem where the pitch and roll force get weaker the more that the bot it tilted
@@ -94,7 +96,7 @@ class ThrusterDataSubscriber(Node):
         #No real reason for this adjustment factor other than that it seems reasonable in practice
         #There is no attempt to simulate torque and drag with pitch, roll, and yaw with angular velocity calculations
 
-        self.gazebo_simulation_velocity_yaw_adjustment_factor = 0.075
+        self.gazebo_simulation_velocity_yaw_adjustment_factor = 0.30
         #This uses the Gazebo Planar Move Plugin. Adjustment factor is reasonable
 
         #The bottom 3 threads are used for calculating velocity based on thruster force and drag
@@ -133,54 +135,55 @@ class ThrusterDataSubscriber(Node):
         self.lock.acquire()
         self.simulation_angular_velocity_publishers["pitch"].publish(angular_velocity)
         self.simulation_angular_velocity_publishers["roll"].publish(angular_velocity)
-        self.simulation_angular_velocity_publishers["yaw"].publish(velocity) # 
+        self.simulation_angular_velocity_publishers["yaw"].publish(velocity) 
         self.simulation_velocity_publisher_xy.publish(velocity)
         self.simulation_velocity_publisher_z.publish(angular_velocity) 
         self.lock.release()      
 
     def pilot_listener_callback(self, msg):  
         '''Called when new controller input from pilot is recieved'''
-        controller_input = json.loads(msg.data)
+        self.get_logger().info(f"{msg} recieved in ThrusterControl")
+        controller_inputs = json.loads(msg.data)
 
-        if controller_input[1] == "backflip": #Perhaps this should be named better
-            self.stop_bot()
+        for controller_input in controller_inputs:
 
-        if (len(controller_input[1].split("_")) == 2): #We may get inputs such as "heave_up" or "pitch_down", where a button is being used instead of an axis
-            input = 1 if controller_input[1].split("_")[1] == "up" else -1 
-            controller_input[1] = controller_input[1].split("_")[0]
-            controller_input[0] = input        
+            # if controller_input[1] == "backflip": #Perhaps this should be named better
+            #     self.stop_bot()
 
-        accepted_thruster_directions = ("surge", "sway", "heave", "pitch", "roll", "yaw") #This script is only responsible for thruster control related actions
+            if (len(controller_input[1].split("_")) == 2): #We may get inputs such as "heave_up" or "pitch_down", where a button is being used instead of an axis
+                input = 1 if controller_input[1].split("_")[1] == "up" else -1 
+                controller_input[1] = controller_input[1].split("_")[0]
+                controller_input[0] = input        
 
-        if (controller_input[1] in accepted_thruster_directions[0:3]): 
-            self.lock.acquire()
-            self.force_input_array[controller_input[1]] = float(controller_input[0])*self.max_thruster_force
-            self.lock.release()
-        elif (controller_input[1] in accepted_thruster_directions[3:]):
-            #Will not do force and drag calculations for angular movement
-            self.lock.acquire()
+            if (controller_input[1] in self.accepted_thruster_directions[0:3]): 
+                self.lock.acquire()
+                self.force_input_array[controller_input[1]] = float(controller_input[0])*self.max_thruster_force
+                self.lock.release()
+            elif (controller_input[1] in self.accepted_thruster_directions[3:]):
+                #Will not do force and drag calculations for angular movement
+                self.lock.acquire()
 
-            #Immediately multiply the controller input by the Gazebo pitch roll adjustment factor which causes reasonable movement for the bot
-            self.angular_velocity_array[controller_input[1]] = float(controller_input[0] * self.gazebo_simulation_velocity_pitch_roll_adjustment_factor * self.thruster_force_multipliers["power"]*self.thruster_force_multipliers[controller_input[1]])
+                #Immediately multiply the controller input by the Gazebo pitch roll adjustment factor which causes reasonable movement for the bot
+                self.angular_velocity_array[controller_input[1]] = float(controller_input[0] * self.gazebo_simulation_velocity_pitch_roll_adjustment_factor * self.thruster_force_multipliers["power"]*self.thruster_force_multipliers[controller_input[1]])
 
-            pitch_velocity = Wrench()
-            roll_velocity = Wrench()
-            yaw_velocity = self.get_current_velocity_xy_twist_object() #Since yaw velocity publishes to the same topic as surge and sway, it should be ensured that it does not overwrite them to 0
+                pitch_velocity = Wrench()
+                roll_velocity = Wrench()
+                yaw_velocity = self.get_current_velocity_xy_twist_object() #Since yaw velocity publishes to the same topic as surge and sway, it should be ensured that it does not overwrite them to 0
 
 
-            pitch_velocity.force.z = float(self.angular_velocity_array["pitch"] * -1)
-            roll_velocity.force.z = float(self.angular_velocity_array["roll"])
+                pitch_velocity.force.z = float(self.angular_velocity_array["pitch"] * -1)
+                roll_velocity.force.z = float(self.angular_velocity_array["roll"])
 
-            #For yaw, divide by the pitch_roll_adjustment_factor (to return it to the raw controller input * copilot power multiplier), then multiply by the yaw adjustment factor
-            yaw_velocity.angular.z = float(-1*(self.angular_velocity_array["yaw"]/self.gazebo_simulation_velocity_pitch_roll_adjustment_factor)*self.gazebo_simulation_velocity_yaw_adjustment_factor) 
-            
-            #Publish angular velocities
-            self.simulation_angular_velocity_publishers["pitch"].publish(pitch_velocity)
-            self.simulation_angular_velocity_publishers["roll"].publish(roll_velocity)
-            self.simulation_angular_velocity_publishers["yaw"].publish(yaw_velocity)
-            
-            self.reset_unused_angular_velocity()
-            self.lock.release()
+                #For yaw, divide by the pitch_roll_adjustment_factor (to return it to the raw controller input * copilot power multiplier), then multiply by the yaw adjustment factor
+                yaw_velocity.angular.z = float(-1*(self.angular_velocity_array["yaw"]/self.gazebo_simulation_velocity_pitch_roll_adjustment_factor)*self.gazebo_simulation_velocity_yaw_adjustment_factor) 
+                
+                #Publish angular velocities
+                self.simulation_angular_velocity_publishers["pitch"].publish(pitch_velocity)
+                self.simulation_angular_velocity_publishers["roll"].publish(roll_velocity)
+                self.simulation_angular_velocity_publishers["yaw"].publish(yaw_velocity)
+                
+                self.reset_unused_angular_velocity()
+                self.lock.release()
 
     def get_current_velocity_xy_twist_object(self):
         '''Returns a Twist Object that Contains the Current Linear x and y velocity'''
@@ -195,7 +198,7 @@ class ThrusterDataSubscriber(Node):
         '''Reset Angular Velocity to 0 After Certain Amount of Inactivity'''
         #Reset angular movement after cetain amount of inactivity
 
-        inactivity_threshold = 1 # 1 second
+        inactivity_threshold = 2 # 2 seconds
 
         pitch_velocity = Wrench()
         roll_velocity = Wrench()
@@ -214,6 +217,7 @@ class ThrusterDataSubscriber(Node):
         if (time() - self.force_input_time_array["yaw"] > inactivity_threshold ):
             yaw_velocity.angular.z = float(0)
             self.simulation_angular_velocity_publishers["yaw"].publish(yaw_velocity)
+            
             self.angular_velocity_array["yaw"] = 0
             self.force_input_time_array["yaw"] = time()
 
@@ -270,7 +274,7 @@ class ThrusterDataSubscriber(Node):
                 self.reset_unused_angular_velocity()
                 
             self.lock.release()
-            sleep(0.2)
+            sleep(0.05)
 
 
 def main(args=None):
