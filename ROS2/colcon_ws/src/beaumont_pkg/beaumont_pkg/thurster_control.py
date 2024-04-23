@@ -112,13 +112,11 @@ class ThrusterDataSubscriber(Node):
         self.i2c = board.I2C()
 
         try:
-            self.pwm = PCA9685(self.i2c)
+            self.pwm = PCA9685(self.i2c)            
+            self.ports = {}
+            self.pwm.frequency = 100
         except:
             self.get_logger().error("NOTHING ON I2C BUS!")
-
-        self.ports = {}
-
-        self.pwm.frequency = 100
 
         self.connected_devices = [] 
         for i in range(15): 
