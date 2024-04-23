@@ -3,6 +3,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import socket
+import numpy as np
+from PIL import Image as PIL_Image
 import cv2 
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -11,7 +13,9 @@ import time
 
 camera_captures = {0: None, 1: None, 2: None, 3: None}
 
-ip_address = socket.gethostbyname(socket.gethostname()) #Get the ip address
+#ip_address = socket.gethostbyname(socket.gethostname()) #Get the ip address
+
+ip_address = "localhost"
 
 class SimulationCameraSubscriber(Node):
 	
@@ -31,7 +35,22 @@ class SimulationCameraSubscriber(Node):
 			cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
 		except CvBridgeError as e:
 			print(e)
+
+		hsvImage = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
 		
+		lower_range_red = np.array([100, 185, 40]) #Need to tune this to JUST detect the red
+		upper_range_red = np.array([180, 255, 255])
+
+		mask = cv2.inRange(hsvImage,lower_range_red ,upper_range_red )
+
+		convert_to_pillow = PIL_Image.fromarray(mask)
+		
+		box = convert_to_pillow.getbbox()
+
+		if box is not None: ### this line make the bot identify the object with a bonding box 
+			x1, y1, x2, y2 = box
+			cv_image = cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 255, 0), 5) ## this line rap the object with a bounding box of color yellow with depth 5
+
 		global camera_captures
 		camera_captures[camera_number] = cv_image
 		

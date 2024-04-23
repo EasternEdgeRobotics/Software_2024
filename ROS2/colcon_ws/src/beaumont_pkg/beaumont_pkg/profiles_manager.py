@@ -27,12 +27,13 @@ class Mapping(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(ForeignKey("profiles.name", ondelete="cascade"))
     controller: Mapped[str] = mapped_column()
+    controllerNumber: Mapped[int] = mapped_column()
     button: Mapped[int] = mapped_column()
     action: Mapped[str] = mapped_column()
     isAxis: Mapped[bool] = mapped_column()
     deadzone: Mapped[float] = mapped_column(nullable=True)
     def dict(self):
-        return {"id": self.id, "name": self.name, "controller": self.controller, "button": self.button, "action": self.action , "isAxis": self.isAxis, "deadzone": self.deadzone}
+        return {"id": self.id, "name": self.name, "controller": self.controller,"controllerNumber": self.controllerNumber , "button": self.button, "action": self.action , "isAxis": self.isAxis, "deadzone": self.deadzone}
 
 class PowerPreset(Base):
     __tablename__ = "powerPresets"
@@ -60,8 +61,6 @@ engine = create_engine("sqlite:///config.db")
 def mappings_list_to_mappings_json(mappings_list):
     """Takes in a list of mappings for a certain profile from the database and turns in into a JSON"""
 
-    i = 0
-    controller1 = ""
     controller_1_json_mappings = {"axes": {}, "buttons": {}, "deadzones": {}}
     controller_2_json_mappings = {"axes": {}, "buttons": {}, "deadzones": {}}
 
@@ -76,50 +75,33 @@ def mappings_list_to_mappings_json(mappings_list):
         return _json_mappings
             
     for mapping in mappings_list:
-        if i==0: #Set the first controller seen in the mappings list to controller 1. Only used to distinguish between the two controllers 
-            controller1 = mapping["controller"]
-        
-        if mapping["controller"] == controller1:
+
+        if mapping["controllerNumber"] == 0:
             controller_1_json_mappings = obtain_bindings(mapping, controller_1_json_mappings)
-        else:
+        elif mapping["controllerNumber"] == 1:
             controller_2_json_mappings = obtain_bindings(mapping, controller_2_json_mappings)
-        i = i+1
 
     return {0: controller_1_json_mappings, 1: controller_2_json_mappings}
 
-def mappings_json_to_mappings_list(profile_name, controller_name, mappings_json):
+def mappings_json_to_mappings_list(profile_name, controller_name, mappings_json, controller_number):
     """Takes in a JSON dictionary for a certain profile and turns in into a mappings list to store in database"""
 
     buttons_dict = mappings_json["buttons"]
     for i, key in enumerate(list(buttons_dict.keys())):
-        query = session.query(Mapping).filter(Mapping.name == profile_name, Mapping.controller == controller_name, Mapping.button == i) 
-        if query.count() > 0: #A mapping exists
-            query.update({"action":buttons_dict[str(i)]}) #Overwrite 
-            session.commit()
-        else: #Mapping does not exist
-            new_mapping = Mapping(name = profile_name, controller = controller_name, button = i, action = buttons_dict[str(i)], isAxis = False) 
-            session.add(new_mapping)
+        new_mapping = Mapping(name = profile_name, controller = controller_name, controllerNumber = controller_number, button = i, action = buttons_dict[str(i)], isAxis = False) 
+        session.add(new_mapping)
 
         session.commit()
     
     axes_dict = mappings_json["axes"]
     deadzones_dict = mappings_json["deadzones"]
     for i, key in enumerate(list(axes_dict.keys())):
-        query = session.query(Mapping).filter(Mapping.name == profile_name, Mapping.controller == controller_name, Mapping.button == i , Mapping.isAxis == True) 
-        if query.count() > 0: #A mapping exists
-            query.update({"action":axes_dict[str(i)]}) #Overwrite axis action
-            if (float(deadzones_dict[str(i)]) != 0): #There is a non-zero deadzone
-                query.update({"deadzone":float(deadzones_dict[str(i)])}) #Overwrite deadzone value
-            else: #The deadzone is equal to 0 (i.e. no deadzone for this joystick)
-                query.update({"deadzone":None}) 
-            session.commit()
+        if (float(deadzones_dict[str(i)]) == 0): 
+            new_mapping = Mapping(name = profile_name, controller = controller_name, controllerNumber = controller_number, button = i, action = axes_dict[str(i)], isAxis = True)
         else:
-            if (float(deadzones_dict[str(i)]) == 0): 
-                new_mapping = Mapping(name = profile_name, controller = controller_name, button = i, action = axes_dict[str(i)], isAxis = True)
-            else:
-                new_mapping = Mapping(name = profile_name, controller = controller_name, button = i, action = axes_dict[str(i)], isAxis = True, deadzone = float(deadzones_dict[str(i)]))
+            new_mapping = Mapping(name = profile_name, controller = controller_name, controllerNumber = controller_number, button = i, action = axes_dict[str(i)], isAxis = True, deadzone = float(deadzones_dict[str(i)]))
             
-            session.add(new_mapping)
+        session.add(new_mapping)
 
         session.commit()
 
@@ -140,25 +122,29 @@ class ProfilesManager(Node):
 
             message = json.loads(request.data) #Turn the recieved string into a JSON object (i.e. Python dictionary)
 
-            if session.query(Profile).filter(Profile.name == message["profileName"]).count() == 0: #i.e. profile does not exist, a new one was created in the GUI
-                if (message["controller2"] == "null"):
-                    new_profile = Profile(name=message["profileName"], controller1 = message["controller1"])
-                else:
-                    new_profile = Profile(name=message["profileName"], controller1 = message["controller1"], controller2 = message["controller2"])
-
-                session.add(new_profile)
+            query = session.query(Profile).filter(Profile.name == message["profileName"]) # Remove the profile if it exists as it will be recreated
+            if query.count() == 1: #i.e. profile exists
+                query.delete()
                 session.commit()
 
-            mappings_json_to_mappings_list(message["profileName"], message["controller1"], message["associated_mappings"]["0"]) #This function does not return a value, it directly modifies the database
+            if (message["controller2"] == "null"):
+                new_profile = Profile(name=message["profileName"], controller1 = message["controller1"])
+            else:
+                new_profile = Profile(name=message["profileName"], controller1 = message["controller1"], controller2 = message["controller2"])
+
+            session.add(new_profile)
+            session.commit()
+
+            mappings_json_to_mappings_list(message["profileName"], message["controller1"], message["associated_mappings"]["0"], 0) #This function does not return a value, it directly modifies the database
 
             if (message["controller2"] != "null"):
-                mappings_json_to_mappings_list(message["profileName"], message["controller2"], message["associated_mappings"]["1"])
+                mappings_json_to_mappings_list(message["profileName"], message["controller2"], message["associated_mappings"]["1"], 1)
 
             response.result = "Success"
 
             #==========================DEBUG===========================
-            #for i in range(session.query(Mapping).filter(Mapping.name == message["profileName"]).count()):
-            #   print(f"{session.query(Mapping).filter_by(name = message['profileName']).all()[i].dict()} recieved in ThrusterControl")
+            # for i in range(session.query(Mapping).filter(Mapping.name == message["profileName"]).count()):
+            #    print(f"{session.query(Mapping).filter_by(name = message['profileName']).all()[i].dict()} recieved in ThrusterControl")
             #==========================================================
 
             return response
@@ -170,7 +156,6 @@ class ProfilesManager(Node):
                     mappings_list.append(row.dict())
             mappings_json = mappings_list_to_mappings_json(mappings_list)
             response.result = json.dumps(mappings_json) #Turn the JSON object into a string
-            print(response)
             return response
 
     def profiles_list_callback(self, request, response):
@@ -192,6 +177,7 @@ class ProfilesManager(Node):
         
     def camera_ips_callback(self, request, response):
         if request.state == 0:
+            pass
             
 
 def main(args=None):

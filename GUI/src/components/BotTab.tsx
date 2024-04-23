@@ -1,9 +1,8 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Slider, Box, Button} from "@mui/material";
+import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Slider, Box, Button } from "@mui/material";
 import { useAtom } from "jotai";
 import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput } from "../api/Atoms";
-import { useState, useEffect, } from "react";
-import React from "react";
+import { useState, useEffect } from "react";
 
 export function StatusIndicator(props: {statement: boolean}) {
     if (props.statement) return <CheckCircle2 color="lime" />;
@@ -20,96 +19,118 @@ export function BotTab() {
     const [mappings] = useAtom(Mappings);
     const [,setControllerInput] = useAtom(ControllerInput);
 
-    const [controllerDetected, setControllerDetected] = useState<boolean>(false);
+    const [controller1Detected, setController1Detected] = useState(false);
+    const [controller2Detected, setController2Detected] = useState(false);
 
-    let controller1 = "null";
-    let controller2 = "null";
+    const [controller1Name, setController1Name] = useState("Not Assigned");
+    const [controller2Name, setController2Name] = useState("Not Assigned");
 
     let initialPageLoad = true;
 
     const status = [
         {"name": "ROS", "status": isRosConnected},
-        {"name":"Controller Detected", "status": controllerDetected}
+        {"name":"Controller 1 Detected", "status": controller1Detected},
+        {"name":"Controller 2 Detected", "status": controller2Detected}
     ];
       
     const [, reloadComponent] = useState<number>(0);
 
-    useEffect(() => { //Whenever the current profile changes, set controller 1 and 2 to that profile's controllers
+    // All inputs will be in the format of a list, where the first element is input value (1 for button and between (-1,1) for axis) 
+    // and the second element is the action
+
+    // Likely one of the most important functions in the software package
+    // This function listens to the controller input and updates the ControllerInput global state. When this state is changed, 
+    // ROS.tsx recognizes this and publishes the input to the device running the rosbridge server (RPi4 inside the enclosure) 
+    const input_listener = () => {
+
+        let controller1 = "null";
+        let controller2 = "null";
+
+        let controller1Index = -1;
+        let controller2Index = -1;
+
+        let controller1Set = false;
+
+        // Find out the controller names, stored in both a normal javascript variable for this function and as a react state to be displayed in GUI
         for (let i = 0; i < profilesList.length;i++){
             if (currentProfile == profilesList[i].name){
+
                 controller1 = profilesList[i].controller1;
-                controller2 = profilesList[i].controller2;
+                setController1Name(controller1);
+
+                controller2 = (profilesList[i].controller2 != null) ? profilesList[i].controller2 : "null";
+                setController2Name(controller2);
+        }} 
+        
+        // Find out the controller index in navigator
+        for (let controllerIndex = 0; controllerIndex < navigator.getGamepads().length;controllerIndex++){
+            if (navigator.getGamepads()[controllerIndex]?.id == controller1 && !controller1Set){
+                controller1Set = true; // This is in case controller 1 and controller 2 have the same name
+                controller1Index = controllerIndex;
+                setController1Detected(true);
+            }
+            else if (navigator.getGamepads()[controllerIndex]?.id == controller2){
+                controller2Index = controllerIndex;
+                setController2Detected(true);
             }
         }
-    }, [currentProfile]);
 
-    //All inputs will be in the format of a list, where the first element is input value (1 for button and between (-1,1) for axis) 
-    //and the second element is the action
+        const controllerIndexes = [controller1Index, controller2Index];
+        const controller_input_list:(string|number|undefined)[][] = [];
 
-    //Likely one of the most important functions in the software package
-    //This function listens to the controller input and updates the ControllerInput global state. When this state is changed, 
-    //ROS.tsx recognizes this and publishes the input to the device running the rosbridge server (RPi4 inside the enclosure) 
-    const input_listener = (controller: number) => {
-        let controllerDetected = false;
-        for (let i =0; i<navigator.getGamepads().length; i++){
-            if (navigator.getGamepads()[i] != null){ //The browser (accessed through the predefined navigator object) natively recognizes controllers 
-                                                     //If navigator.getGamepads() contains 1 non-null object, it means that the browser has detected a controller
-                controllerDetected = true;
-            }
+        if (controllerIndexes[0] == -1){
+            setController1Detected(false);
         }
-        if (!controllerDetected){
-            return; //Don't bother with the rest of the function if no controller is detected
-        } else if (Object.keys(mappings[controller]).length == 0) { //This indicates that no mappings have been loaded.
-            if (initialPageLoad){
-                console.log("No mappings have been loaded. Go to the settings and load a profile.");
-                initialPageLoad = false;
-            }
-            return; 
-        } else if (Object.keys(mappings[controller]["buttons"]).length == 0) { //This indicates that mappings have been loaded, 
-                                                                              //but that this input_listener function is being called for controller 2
-                                                                              //which happens to have no mappings (it is nullable in the database)
-            return; //Don't bother with the rest of the function 
+        if (controllerIndexes[1] == -1){
+            setController2Detected(false);
         }
 
-        setControllerDetected(true); //Used to visually indicate a controller has been detected, and associated mappings have been loaded
-
-        //The below for loop is quick, so it will detect a button press on any button even if it was for a short time
-        for (let i = 0; i < navigator.getGamepads().length; i++){
-            if (navigator.getGamepads()[i]?.id == controller1){
-                for (let j = 0; j<(navigator.getGamepads()[i]?.buttons.length as number);j++){
-                    if (navigator.getGamepads()[i]?.buttons[j].pressed){ //Button press detected
-                        if (mappings[controller]["buttons"][j] != "None"){
-                            const controller_input = [];
-                            controller_input.push(1);
-                            controller_input.push(mappings[controller]["buttons"][j]);
-                            setControllerInput(JSON.stringify(controller_input));
-                            console.log(controller_input);
-                        }
-                    }
+        // Iterate through controller 1 and controller 2
+        for (let i = 0; i<2; i++){
+            if (Object.keys(mappings[i]).length == 0) { // This indicates that no mappings have been loaded for this controller.
+                if (initialPageLoad){
+                    console.log("No mappings have been loaded. Go to the settings and load a profile.");
+                    initialPageLoad = false;
                 }
-                for (let j = 0; j<(navigator.getGamepads()[i]?.axes.length as number);j++){
-                    const deadzone = Number(mappings[controller]["deadzones"][j]) > 0.05 ? Number(mappings[controller]["deadzones"][j]): 0.05;
-                    if (Math.abs(navigator.getGamepads()[i]?.axes[j] as number) >= deadzone){ //The axis has been moved beyond it's "deadzone", which means that this is actual pilot input and not controller drift
-                        if (mappings[controller]["axes"][j] != "None"){
-                            const controller_input = [];
-                            controller_input.push(navigator.getGamepads()[i]?.axes[j]);
-                            controller_input.push(mappings[controller]["axes"][j]);
-                            setControllerInput(JSON.stringify(controller_input));
-                            console.log(controller_input);
-                        }
+                continue; 
+            } 
+
+            // The below for loop is quick, so it will detect a button press on any button even if it was for a short time
+            
+            const gamepadInstance = navigator.getGamepads()[controllerIndexes[i]]; 
+
+            for (let j = 0; j<(gamepadInstance?.buttons.length as number);j++){
+                if (gamepadInstance?.buttons[j].pressed){ //Button press detected
+                    if (mappings[i]["buttons"][j] != "None"){
+                        const controller_input = [];
+                        controller_input.push(1);
+                        controller_input.push(mappings[i]["buttons"][j]);
+                        controller_input_list.push(controller_input);
                     }
                 }
             }
+            for (let j = 0; j<(gamepadInstance?.axes.length as number);j++){
+                const deadzone = Number(mappings[i]["deadzones"][j]) > 0.05 ? Number(mappings[i]["deadzones"][j]): 0.05;
+                if (Math.abs(gamepadInstance?.axes[j] as number) >= deadzone){ // The axis has been moved beyond it's "deadzone", which means that this is actual pilot input and not controller drift
+                    if (mappings[i]["axes"][j] != "None"){
+                        const controller_input = [];
+                        controller_input.push(gamepadInstance?.axes[j]);
+                        controller_input.push(mappings[i]["axes"][j]);
+                        controller_input_list.push(controller_input);  
+                    }
+                }
+            }
         }
-    };
+        if (controller_input_list.length > 0) {setControllerInput(JSON.stringify(controller_input_list));} // The ROS.tsx script will detect changes to the global variable "ControllerInput"
+    }
 
-    useEffect(() => { //Constantly run the input listeners for controllers 1 and 2 (often addressed as controllers 0 and 1)
-        setInterval(() => {
+    useEffect(() => { // Constantly run the input listener 
+        const interval = setInterval(() => {
             reloadComponent(Math.random());
-            input_listener(0);
-            input_listener(1);
-        }, 100);
-    }, []);
+            input_listener();
+        }, 100); // 100 ms 
+        return () => clearInterval(interval); // Stop listening for input when we click off the BotTab
+    }, [currentProfile]);
     
     return (
         <Box flexGrow={1}>
@@ -158,6 +179,21 @@ export function BotTab() {
                     <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Save Power Preset</Button>
                 </Grid>
                 <Grid item xs={3} />
+            </Grid>
+            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
+                <Grid item xs="auto">
+                    Current Profile: {currentProfile}
+                </Grid>
+            </Grid>
+            <Grid container justifyContent={"center"} spacing={1}>
+                <Grid item xs="auto">
+                    Controller 1: {controller1Name}
+                </Grid>
+            </Grid>
+            <Grid container justifyContent={"center"} spacing={1}>
+                <Grid item xs="auto">
+                    Controller 2: {controller2Name}
+                </Grid>
             </Grid>
         </Box>
     );

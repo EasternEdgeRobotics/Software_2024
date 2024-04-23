@@ -27,7 +27,8 @@ setup(
             'profiles_manager = beaumont_pkg.profiles_manager:main',
             'simulation_thruster_control = beaumont_pkg.simulation_thruster_control:main',
             'simulation_camera_subscriber = beaumont_pkg.simulation_camera_subscriber:main',
-            'imu = beaumont_pkg.imu:main',
+            'simulation_tooling_control = beaumont_pkg.simulation_tooling_control:main',
+            'simulation_autonomous_movement = beaumont_pkg.simulation_autonomous_movement:main',
         ],
     },
 )
