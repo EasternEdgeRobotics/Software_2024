@@ -11,6 +11,8 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
 	"srv/Config.srv"
+	"srv/Multipliers.srv"
+	"srv/CameraIPs.srv"
 	"msg/ThrusterMultipliers.msg"
 )
 ament_export_dependencies(rosidl_default_runtime)
