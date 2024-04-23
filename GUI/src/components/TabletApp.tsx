@@ -24,16 +24,16 @@ Additional features include:
 
 export default function TabletApp() {
     // Main-Timer: Variables
-    var milliseconds = 0
-    var displayedMilliseconds = ""
-    var seconds = 0
-    var displayedSeconds = ""
-    var minutes = 0
-    var displayedMinutes = ""
-    var displayedTime = ""
-    var timerOn = 0
-    var timerPaused = 0 // Necessary variable?
-    var timeOver = 0
+    let milliseconds = 0
+    let displayedMilliseconds = ""
+    let seconds = 0
+    let displayedSeconds = ""
+    let minutes = 0
+    let displayedMinutes = ""
+    let displayedTime = ""
+    let timerOn = 0
+    const timerPaused = 0 // Necessary variable? Unless it's value is changed at any point, it must be kept to const
+    let timeOver = 0
 
     // Main Timer: Function
     function repeat() {       
@@ -92,14 +92,14 @@ export default function TabletApp() {
 
 
     // Task 1 Timer: Variables 
-    var milliseconds1 = 0
-    var displayedMilliseconds1 = ""
-    var seconds1 = 0
-    var displayedSeconds1 = ""
-    var minutes1 = 0
-    var displayedMinutes1 = ""
-    var timerOn1 = false
-    var displayedTime1 = ""
+    let milliseconds1 = 0
+    let displayedMilliseconds1 = ""
+    let seconds1 = 0
+    let displayedSeconds1 = ""
+    let minutes1 = 0
+    let displayedMinutes1 = ""
+    let timerOn1 = false
+    let displayedTime1 = ""
 
     // Task 1 Timer: Function
     function repeat1() {
@@ -155,14 +155,14 @@ export default function TabletApp() {
     }
 
     // Task 2 Timer: Variables 
-    var milliseconds2 = 0
-    var displayedMilliseconds2 = ""
-    var seconds2 = 0
-    var displayedSeconds2 = ""
-    var minutes2 = 0
-    var displayedMinutes2 = ""
-    var timerOn2 = false
-    var displayedTime2 = ""
+    let milliseconds2 = 0
+    let displayedMilliseconds2 = ""
+    let seconds2 = 0
+    let displayedSeconds2 = ""
+    let minutes2 = 0
+    let displayedMinutes2 = ""
+    let timerOn2 = false
+    let displayedTime2 = ""
 
     // Task 2 Timer: Function
     function repeat2() {
@@ -218,14 +218,14 @@ export default function TabletApp() {
     }
 
     // Task 3 Timer: Variables 
-    var milliseconds3 = 0
-    var displayedMilliseconds3 = ""
-    var seconds3 = 0
-    var displayedSeconds3 = ""
-    var minutes3 = 0
-    var displayedMinutes3 = ""
-    var timerOn3 = false
-    var displayedTime3 = ""
+    let milliseconds3 = 0
+    let displayedMilliseconds3 = ""
+    let seconds3 = 0
+    let displayedSeconds3 = ""
+    let minutes3 = 0
+    let displayedMinutes3 = ""
+    let timerOn3 = false
+    let displayedTime3 = ""
 
     // Task 3 Timer: Function
     function repeat3() {
@@ -281,14 +281,14 @@ export default function TabletApp() {
     }
 
  // Task 4 Timer: Variables 
- var milliseconds4 = 0
- var displayedMilliseconds4 = ""
- var seconds4 = 0
- var displayedSeconds4 = ""
- var minutes4 = 0
- var displayedMinutes4 = ""
- var timerOn4 = false
- var displayedTime4 = ""
+ let milliseconds4 = 0
+ let displayedMilliseconds4 = ""
+ let seconds4 = 0
+ let displayedSeconds4 = ""
+ let minutes4 = 0
+ let displayedMinutes4 = ""
+ let timerOn4 = false
+ let displayedTime4 = ""
 
  // Task 4 Timer: Function
  function repeat4() {
