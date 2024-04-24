@@ -176,15 +176,12 @@ export function InitROS() {
                 state:0,
                 data:JSON.stringify(cameraURLs)});
             cameraURLsClient.callService(request, function(result){null;});
-            console.log("Sending: ",JSON.stringify(cameraURLs))
         }
         else if (requestingCameraURLs==1){ // State 1 indicates that we are looking to fetch camera URLs from database
             const request = new ROSLIB.ServiceRequest({
                 state:1,
                 data:"FetchCameraURLs"}); // What's in the data field is not important in this case
-            console.log("attempt")
             cameraURLsClient.callService(request, function(result){
-                console.log("Recieved: ", result.result)
                 if (result.result !="[]"){
                     setCameraURLs(JSON.parse(result.result));
                 }
