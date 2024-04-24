@@ -145,7 +145,7 @@ class ProfilesManager(Node):
 
             #==========================DEBUG===========================
             # for i in range(session.query(Mapping).filter(Mapping.name == message["profileName"]).count()):
-            #    print(f"{session.query(Mapping).filter_by(name = message['profileName']).all()[i].dict()} recieved in ThrusterControl")
+            #    self.get_logger().info(f"{session.query(Mapping).filter_by(name = message['profileName']).all()[i].dict()} recieved")
             #==========================================================
 
             return response
@@ -201,8 +201,8 @@ class ProfilesManager(Node):
             response.result = "Success"
 
             #==========================DEBUG===========================
-            for i in range(session.query(Camera).count()):
-                print(f"{session.query(Camera).all()[i].dict()} recieved in ThrusterControl")
+            # for i in range(session.query(Camera).count()):
+            #     self.get_logger().info(f"{session.query(Camera).all()[i].dict()} recieved")
             #==========================================================
 
             return response

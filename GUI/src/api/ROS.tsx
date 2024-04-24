@@ -183,7 +183,7 @@ export function InitROS() {
                 state:1,
                 data:"FetchCameraURLs"}); // What's in the data field is not important in this case
             console.log("attempt")
-            profilesListClient.callService(request, function(result){
+            cameraURLsClient.callService(request, function(result){
                 console.log("Recieved: ", result.result)
                 if (result.result !="[]"){
                     setCameraURLs(JSON.parse(result.result));
