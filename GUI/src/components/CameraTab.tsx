@@ -1,6 +1,6 @@
 import { Box, Button, Grid, Paper } from "@mui/material";
 import { useAtom } from "jotai";
-import { CameraIPs } from "../api/Atoms";
+import { CameraURLs } from "../api/Atoms";
 import React from "react";
 
 // Main camera vs alt camera are the exact same without margin and different height
@@ -24,7 +24,7 @@ export function AltCamera(props: {ip: string, width: number}) {
 
 export default function CameraTab() {
     const [width, setWidth] = React.useState<number>(window.innerWidth);
-    const [IPs] = useAtom<string[]>(CameraIPs);
+    const [URLs] = useAtom<string[]>(CameraURLs);
     const [enableHud, setEnableHud] = React.useState<boolean>(false);
 
     // Create a listener to update width on window resize
@@ -36,21 +36,21 @@ export default function CameraTab() {
                 <Paper elevation={7} sx={{alignSelf: "flex-start", borderRadius: "12px", width: "100%"}}>
                     <h3 style={{textAlign: "center", margin: "0"}}>Camera 1</h3>
                     <Button onClick={() => {setEnableHud(!enableHud);}} variant="text" style={{height:"28px", margin: "0", marginTop: "-28px", float:"right", marginRight:"4px", borderRadius:"12px"}}>Toggle Hud</Button>
-                    <MainCamera ip={IPs[0]} width={width} enableHud={enableHud} />
+                    <MainCamera ip={URLs[0]} width={width} enableHud={enableHud} />
                 </Paper>
                 <Paper elevation={7} sx={{alignSelf: "flex-end", borderRadius: "12px", width: "100%"}}>
                     <h3 style={{textAlign: "center", margin: "0"}}>Camera 2</h3>
-                    <AltCamera ip={IPs[1]} width={width} />
+                    <AltCamera ip={URLs[1]} width={width} />
                 </Paper>
             </Grid>
             <Grid item xs display="flex" flexDirection="column" justifyContent="space-between">
                 <Paper elevation={7} sx={{alignSelf: "flex-start", borderRadius: "12px", width: "100%", marginBottom: "8px"}}>
                     <h3 style={{textAlign: "center", margin: "0"}}>Camera 3</h3>
-                    <AltCamera ip={IPs[2]} width={width} />
+                    <AltCamera ip={URLs[2]} width={width} />
                 </Paper>
                 <Paper elevation={7} sx={{alignSelf: "flex-end", borderRadius: "12px", width: "100%"}}>
                     <h3 style={{textAlign: "center", margin: "0"}}>Camera 4</h3>
-                    <AltCamera ip={IPs[3]} width={width} />
+                    <AltCamera ip={URLs[3]} width={width} />
                 </Paper>
             </Grid>
         </Grid>
