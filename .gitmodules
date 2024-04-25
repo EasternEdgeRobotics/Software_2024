@@ -1,0 +1,3 @@
+[submodule "Cameras/spyglass"]
+	path = Cameras/spyglass
+	url = https://github.com/roamingthings/spyglass
