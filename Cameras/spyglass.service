@@ -1,0 +1,12 @@
+[Unit]
+Description=Spyglass Camera Streamer
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+User=easternedge
+ExecStart=python3 /home/easternedge/Software_2024/Cameras/spyglass/run.py -f 60 -r "1280x720"
+
+[Install]
+WantedBy=multi-user.target

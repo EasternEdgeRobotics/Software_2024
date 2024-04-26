@@ -17,15 +17,6 @@ RUN pip3 install sqlalchemy
 RUN pip3 install adafruit-circuitpython-pca9685 
 RUN pip3 install RPi.GPIO
 
-# Source the ROS2 installation
-RUN . /opt/ros/humble/setup.sh
-
-# Build the colcon_ws
-RUN colcon build
-
-# Source the install
-RUN . install/setup.sh
-
 # Modify the bash.bashrc file such that sourcing happens automatically 
 RUN echo ". /opt/ros/humble/setup.sh" >> /etc/bash.bashrc
 RUN echo ". /root/colcon_ws/install/setup.sh" >> /etc/bash.bashrc
