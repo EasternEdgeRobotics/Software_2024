@@ -3,6 +3,7 @@ services:
     build: ./ROS2
     tty: true
     container_name: backend
+    restart: always
     privileged: true
     ports:
       - "9090:9090"
@@ -11,6 +12,7 @@ services:
       - /dev:/dev
   frontend:
     build: ./GUI
+    restart: always
     tty: true
     ports:
      - "80:80"
