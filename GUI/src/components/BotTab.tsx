@@ -1,13 +1,15 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Slider, Box, Button } from "@mui/material";
 import { useAtom } from "jotai";
-import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput } from "../api/Atoms";
+import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput, ADC_ARRAY, TEMPERATURE_ARRAY } from "../api/Atoms";
 import { useState, useEffect } from "react";
 
 export function StatusIndicator(props: {statement: boolean}) {
     if (props.statement) return <CheckCircle2 color="lime" />;
     else return <AlertCircle color="red" />;
 }
+
+
 
 export function BotTab() {
     const [isRosConnected] = useAtom(IsROSConnected);
@@ -25,12 +27,23 @@ export function BotTab() {
     const [controller1Name, setController1Name] = useState("Not Assigned");
     const [controller2Name, setController2Name] = useState("Not Assigned");
 
+    // ADC and TEMP data
+    const [read_ADCARRAY, ] = useAtom(ADC_ARRAY);
+    const [read_TEMPERATUREARRAY, ] = useAtom(TEMPERATURE_ARRAY); 
+
+
     let initialPageLoad = true;
 
     const status = [
         {"name": "ROS", "status": isRosConnected},
         {"name":"Controller 1 Detected", "status": controller1Detected},
         {"name":"Controller 2 Detected", "status": controller2Detected}
+    ];
+
+    const Arrays = [
+        {"name": "ADC", "status": read_ADCARRAY},
+        {"name":"TEMPERATURE", "status": read_TEMPERATUREARRAY}
+        
     ];
       
     const [, reloadComponent] = useState<number>(0);
@@ -195,6 +208,42 @@ export function BotTab() {
                     Controller 2: {controller2Name}
                 </Grid>
             </Grid>
+
+
+            <Grid container justifyContent={"right"} spacing={1}>
+             <Grid item xs={5}>
+                 <Grid container justifyContent={"center"} rowSpacing={3}>
+                     <Grid item xs={10}>
+                     
+                            <TableContainer component={Paper}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell align="center">Items</TableCell>
+                                            <TableCell align="center">Values</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                    {Arrays.map((data) => {
+                                        return (
+                                            <TableRow key={data.name} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                                                <TableCell align="center">{data.name}</TableCell>
+                                                <TableCell align="center">{data.status}</TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                            
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Grid>
+         
+                
+           
+
         </Box>
     );
 }

@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import ROSLIB, { Ros } from "roslib";
-import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs } from "./Atoms";
+import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs, ADC_ARRAY, TEMPERATURE_ARRAY } from "./Atoms";
 import React from "react";
 
 export function InitROS() {
@@ -43,6 +43,18 @@ export function InitROS() {
             }
         }, 1000);
     }, []);
+
+    // ADC and TEMP data
+    const [, set_ADCARRAY] = useAtom(ADC_ARRAY);
+    const [, set_TEMPERATUREARRAY] = useAtom(TEMPERATURE_ARRAY); 
+
+    React.useEffect(() => { // Constantly run the input listener 
+        setInterval(() => {
+            set_ADCARRAY(JSON.stringify([Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2)]));
+            set_TEMPERATUREARRAY(JSON.stringify([Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2)]));
+        }, 1000); // 100 ms 
+    }, []);
+
 
     // Create a publisher on the "/thruster_multipliers" ros2 topic, using a custom EER message type (see eer_messages folder in ROS2/colcon_ws/src)
     const thrusterValsTopic = new ROSLIB.Topic({ros:ros,
