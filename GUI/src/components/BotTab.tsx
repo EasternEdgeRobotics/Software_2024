@@ -184,33 +184,8 @@ export function BotTab() {
                     </Grid>
                 </Grid>
             </Grid>
-            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
-                <Grid item xs={3.5}>
-                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Load Power Preset</Button>
-                </Grid>
-                <Grid item xs={3.5}>
-                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Save Power Preset</Button>
-                </Grid>
-                <Grid item xs={3} />
-            </Grid>
-            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
-                <Grid item xs="auto">
-                    Current Profile: {currentProfile}
-                </Grid>
-            </Grid>
-            <Grid container justifyContent={"center"} spacing={1}>
-                <Grid item xs="auto">
-                    Controller 1: {controller1Name}
-                </Grid>
-            </Grid>
-            <Grid container justifyContent={"center"} spacing={1}>
-                <Grid item xs="auto">
-                    Controller 2: {controller2Name}
-                </Grid>
-            </Grid>
 
-
-            <Grid container justifyContent={"right"} spacing={1}>
+            <Grid container justifyContent={"right"} spacing={17}>
              <Grid item xs={5}>
                  <Grid container justifyContent={"center"} rowSpacing={3}>
                      <Grid item xs={10}>
@@ -240,6 +215,34 @@ export function BotTab() {
                     </Grid>
                 </Grid>
             </Grid>
+
+            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
+                <Grid item xs={3.5}>
+                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Load Power Preset</Button>
+                </Grid>
+                <Grid item xs={3.5}>
+                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Save Power Preset</Button>
+                </Grid>
+                <Grid item xs={3} />
+            </Grid>
+            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
+                <Grid item xs="auto">
+                    Current Profile: {currentProfile}
+                </Grid>
+            </Grid>
+            <Grid container justifyContent={"center"} spacing={1}>
+                <Grid item xs="auto">
+                    Controller 1: {controller1Name}
+                </Grid>
+            </Grid>
+            <Grid container justifyContent={"center"} spacing={1}>
+                <Grid item xs="auto">
+                    Controller 2: {controller2Name}
+                </Grid>
+            </Grid>
+
+
+           
          
                 
            
