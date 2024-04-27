@@ -161,7 +161,7 @@ function renderTasks(tasks: Task[], level = 0) {
   });
 }
 
-function SubList(props: { name: string; tasks: Task[] }) {
+function SubList(props: { name: string; tasks: Task[]; max?:boolean}) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [score, setScore] = useState<number>(0);
   const [totalScore, setTotalScore] = useState<number>(0);
@@ -179,11 +179,15 @@ function SubList(props: { name: string; tasks: Task[] }) {
     //   return tasks.reduce((total, task) => total + (task.checked ? task.points : 0) + (task.subTasks ? calculateScore(task.subTasks) : 0), 0);
     // };
 
-    const calculateTotalScore = (tasks: Task[]): number => {
+    const calculateTotalScore = (tasks: Task[], max=false): number => {
+      //console.log(tasks)
+      if (max) return Math.max(...tasks.map(t =>t.points?? calculateTotalScore((t.subTasks)!, t.single)))
+      
       let total = 0;
       tasks.forEach((subtask) => {
+        if (subtask.single) console.log("subtask", subtask, subtask.points??0,subtask.single)
         if (subtask.subTasks) {
-          total += calculateTotalScore(subtask.subTasks);
+            total += calculateTotalScore(subtask.subTasks, subtask.single??false);
         } else {
           total += subtask.points ?? 0;
         }
@@ -193,7 +197,7 @@ function SubList(props: { name: string; tasks: Task[] }) {
     };
 
     // setScore(calculateScore(tasks));
-    setTotalScore(calculateTotalScore(tasks));
+    setTotalScore(calculateTotalScore(tasks,props.max));
   }, [tasks]);
 
   return (
@@ -277,7 +281,7 @@ function SideBar() {
             name="TASK 3 : From the Red Sea to Tenesse"
             tasks={taskJSON.task3.tasks}
           />
-          <SubList name="TASK 4 : MATE Floats" tasks={taskJSON.task4.tasks} />
+          <SubList name="TASK 4 : MATE Floats" tasks={taskJSON.task4.tasks} max={taskJSON.task4.single} />
           {/* More menu items... */}
         </Menu>
       </Sidebar>
@@ -455,7 +459,6 @@ export function ControllerApp() {
   
 console.log("URLS", urls)
 
-  const streamUrl = "http://localhost:8880/";
   const styles = {
     contentDiv: {
       display: "flex",

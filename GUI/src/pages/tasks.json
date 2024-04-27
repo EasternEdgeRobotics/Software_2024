@@ -25,11 +25,8 @@
                 {
                     "name": "Connect a recovery line to the bale on the multi-function node for manual recovery",
                     "points": 20
-                },
-                {
-                    "name": "Manually return the multi-function node to the surface, side of the pool",
-                    "points": 5
                 }
+               
             ]
         }
     ]
@@ -62,6 +59,7 @@
                     },
                     {
                         "name": "Measure the temperature to check the SMART cable sensor readings",
+                        "single": true,
                         "subTasks": [
                             {
                                 "name": "Within 1oC",
@@ -122,6 +120,7 @@
                             },
                             {
                                 "name": "Transplant brain coral",
+                                "single": true,
                                 "subTasks": [
                                     {
                                         "name": "Autonomously",
@@ -137,6 +136,7 @@
                     },
                     {
                         "name": "3D Coral Modelling",
+                        "single": true,
                         "subTasks": [
                             {
                                 "name": "Via photogrammetry, autonomously create a scaled 3D model of the coral restoration area",
@@ -223,6 +223,7 @@
 
     "task4": {
         "name": "MATE Floats",
+        "single" :true,
         "tasks": [
             {
                 "name": "Design and construct an operational vertical profiling float",
@@ -277,15 +278,15 @@
                                 ]
                             }
                         ]
-                    },
+                    }               
+                ]
+            },
+            {
+                "name": "Company does not design and construct a vertical profiling float or float does not communicate data to the mission station",
+                "subTasks": [
                     {
-                        "name": "Company does not design and construct a vertical profiling float or float does not communicate data to the mission station",
-                        "subTasks": [
-                            {
-                                "name": "MATE-provided data is used to graph depth over time",
-                                "points": 10
-                            }
-                        ]
+                        "name": "MATE-provided data is used to graph depth over time",
+                        "points": 10
                     }
                 ]
             }
