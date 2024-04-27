@@ -1,29 +1,39 @@
-import { ThemeProvider } from "@emotion/react";
-import { Box, Button, Checkbox, CssBaseline, createTheme, IconButton, Icon } from "@mui/material";
-
-
+import { Checkbox, IconButton } from "@mui/material";
 import { useAtom } from "jotai";
 //fonts
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
-import SafetyDisclaimer from "../components/SafetyDisclaimer";
-import { InitROS } from "../api/ROS";
 import { CameraIPs } from "../api/Atoms";
-import React, { useRef, useState, useEffect, } from "react";
 
-import '../styles/science.css'
-import { AltCamera } from "../components/CameraTab";
-import { Sidebar, Menu, MenuItem } from 'react-pro-sidebar';
-import { Home, Brightness4, SwapHoriz, CheckBox, Circle } from '@mui/icons-material';
+import { useEffect, useRef, useState } from "react";
+
+
 import "../styles/science.css";
-import { Col, Row } from 'react-bootstrap';
-import taskJSON from './tasks.json';
-import {Task, SubTask} from '../types/Task';
-import { BoxIcon, BoxSelectIcon, CircleDotIcon, CircleIcon, MenuSquareIcon, Square, TicketIcon, ZoomOutIcon } from "lucide-react";
-import SquareIcon from '@mui/icons-material/Square';
-import { JsxElement } from "typescript";
+import { Sidebar, Menu, MenuItem } from "react-pro-sidebar";
+import { Home } from "@mui/icons-material";
+import "../styles/science.css";
+import { Col, Row } from "react-bootstrap";
+import taskJSON from "./tasks.json";
+import {Task} from "../types/Task";
+import { MenuSquareIcon } from "lucide-react";
+import SquareIcon from "@mui/icons-material/Square";
+
+import { Chart, Line,ChartProps } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ChartData,
+  ChartType
+} from 'chart.js';
+
 
 const ScreenshotVeiw = () => {
   return (
@@ -59,8 +69,8 @@ const ScreenshotVeiw = () => {
           </span>
         </div>
 
-  )
-}
+  );
+};
 
 function renderTasks(tasks: Task[], level = 0) {
   // if (!(level >= 1 || tasks.length > 2)) level = level - 1;
@@ -82,25 +92,25 @@ function renderTasks(tasks: Task[], level = 0) {
         color="success"
         aria-checked={task.checked}
         onChange={() => handleCheckboxChange(task)}
-      />
+      />;
       else if (task.subTasks) return <SquareIcon style={{ marginBottom: "10px", padding: "0px" }}
         scale={0.5}
-      />
-      else return <a></a>
+      />;
+      else return <a></a>;
     };
 
     return (
       <div style={{ paddingLeft: `${(level ** 0.5) * 30}px` }}>
         <Col style={{ minHeight: "45px" }}>
-          <div style={{ display: 'flex', flex: 1, minHeight: "2px", alignItems: 'flex-start' }}>
+          <div style={{ display: "flex", flex: 1, minHeight: "2px", alignItems: "flex-start" }}>
             <Icon />
-            {(!task.subTasks) && <div style={{ marginLeft: '10px', flex: 1, wordBreak: 'break-word', alignItems: "flex-start" }}>{task.name} ({task.points })</div>}
-            {(task.subTasks) && <div style={{ marginLeft: '10px', flex: 1, wordBreak: 'break-word', alignItems: "flex-start", fontWeight: "bolder", paddingBottom: "10px" }}>{task.name} :</div>}
+            {(!task.subTasks) && <div style={{ marginLeft: "10px", flex: 1, wordBreak: "break-word", alignItems: "flex-start" }}>{task.name} ({task.points })</div>}
+            {(task.subTasks) && <div style={{ marginLeft: "10px", flex: 1, wordBreak: "break-word", alignItems: "flex-start", fontWeight: "bolder", paddingBottom: "10px" }}>{task.name} :</div>}
         </div>
         {task.subTasks && renderTasks(task.subTasks, level + 1)}
       </Col>
     </div>
-    )
+    );
   });
 }
 
@@ -142,7 +152,7 @@ function SubList(props: { name: string, tasks: Task[] }) {
 
 
   return (
-    <div style={{ paddingLeft: '20px', paddingRight: '20px', paddingBottom: "10px" }}>
+    <div style={{ paddingLeft: "20px", paddingRight: "20px", paddingBottom: "10px" }}>
       <Row>
         <h2>{props.name} ({score}/{totalScore})</h2>
         <div>
@@ -168,31 +178,31 @@ function SideBar() {
       float: "right",
       margin: "10px"
     }
-  }
+  };
 
   return (
-    <div style={{ display: 'flex', position: 'fixed', right: 0, zIndex: 1000 }}>
+    <div style={{ display: "flex", position: "fixed", right: 0, zIndex: 1000 }}>
       <IconButton
         onClick={handleToggleSidebar}
         style={{
-          position: 'fixed',
-          top: '50%',
-          right: !collapsed ? '700px' : '0',
-          transform: 'translateY(-50%) rotate(180deg)',
-          backgroundColor: '#e0e0e0',
-          color: 'black',
-          transition: 'right 300ms',
-          borderRadius: '5px 50px 50px 5px',
-          padding: '10px',
-          paddingTop: '30px',
-          paddingBottom: '30px',
-          paddingLeft: '5px',
-          writingMode: 'vertical-rl',
-          textOrientation: 'mixed',
+          position: "fixed",
+          top: "50%",
+          right: !collapsed ? "700px" : "0",
+          transform: "translateY(-50%) rotate(180deg)",
+          backgroundColor: "#e0e0e0",
+          color: "black",
+          transition: "right 300ms",
+          borderRadius: "5px 50px 50px 5px",
+          padding: "10px",
+          paddingTop: "30px",
+          paddingBottom: "30px",
+          paddingLeft: "5px",
+          writingMode: "vertical-rl",
+          textOrientation: "mixed",
         }}
       >
         Tasks
-        <div style={{ height: '5px' }} />
+        <div style={{ height: "5px" }} />
         <MenuSquareIcon />
       </IconButton >
       <Sidebar style={styles.sideBarHeight} collapsed={collapsed} rtl={false} width="700px" collapsedWidth="0px" backgroundColor="rgb(0, 0, 69, 0.7)">
@@ -210,6 +220,111 @@ function SideBar() {
   );
 }
 
+function CSVHandler() {
+  ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend
+  );
+  const [chartData, setChartData] = useState<ChartData>({
+  labels: [],
+  datasets: [],
+});
+  const [fileSelected, setFileSelected] = useState(false);
+  
+   const options = {
+  responsive: true,
+  plugins: {
+    legend: {
+      position: 'top' as const,
+    },
+    title: {
+      display: true,
+      text: 'Chart.js Line Chart',
+    },
+  },
+   };
+//   const labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July'];
+
+// const data = {
+//   labels,
+//   datasets: [
+//     {
+//       label: 'Dataset 1',
+//       data: [234,4,345,45,4,45,45,5],
+//       borderColor: 'rgb(255, 99, 132)',
+//       backgroundColor: 'rgba(255, 99, 132, 0.5)',
+//     }
+//   ],
+// };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files) return;
+    console.log("event:", event.target.files[0]);
+    const file = event.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      if (e.target) {
+        const contents = e.target.result as string;
+        const lines = contents.split("\n");
+        const header = lines[0].split(",");
+        const parsedData: { [key: string]: number }[] = [];
+
+        const labels = [];
+        const datasets = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const tempData = []
+          const line = lines[i].split(",");
+          const item: { [key: string]: number } = {};
+          labels.push(line[0]?.trim() ?? "label ??");
+
+          for (let j = 0; j < header.length; j++) {
+            const key = header[j]?.trim() ?? "key ??";
+            const value = line[j]?.trim() ?? "700";
+            item[key] = Number(value);
+            tempData.push(Number(value));
+          }
+
+          datasets.push({
+      label: 'Dataset 1',
+      data: tempData,
+      borderColor: 'rgb(255, 99, 132)',
+      backgroundColor: 'rgba(255, 99, 132, 0.5)',
+    });
+        }
+
+        console.log("Parsed Data:", parsedData);
+
+        const data:ChartData = {
+          labels: labels,//parsedData.map(item => item.x), // Replace 'x' with the actual property name for the x-axis
+          datasets
+        };
+       
+
+        setChartData(data);
+      }
+    };
+
+    if (file) {
+      reader.readAsText(file);
+      setFileSelected(true);
+    }
+  };
+
+  return (
+    <div>
+      <input type="file" accept=".csv" onChange={handleFileChange} />
+      <Line data={chartData as any} options={options} />
+    </div>
+  );
+}
+
 export function ControllerApp() {
   const [IPs] = useAtom<string[]>(CameraIPs);
 
@@ -217,14 +332,14 @@ export function ControllerApp() {
 
   const captureScreenshot = async () => {
     // Fetch the video data from the server
-    const response = await fetch('http://localhost:8880/');
+    const response = await fetch("http://localhost:8880/");
     const data = await response.blob();
 
     // Create a Blob URL from the data
     const url = URL.createObjectURL(data);
 
     // Create a hidden video element
-    const video = document.createElement('video');
+    const video = document.createElement("video");
 
     // Set the source to the Blob URL
     video.src = url;
@@ -233,18 +348,18 @@ export function ControllerApp() {
     await video.play();
 
     // Create a canvas and draw the current video frame onto it
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    canvas.getContext('2d')?.drawImage(video, 0, 0);
+    canvas.getContext("2d")?.drawImage(video, 0, 0);
 
     // Use toBlob method to create blob link to download
     canvas.toBlob((blob) => {
-      if (!blob) return console.error('Failed to capture canvas to blob');
+      if (!blob) return console.error("Failed to capture canvas to blob");
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download ', 'screenshot.png');
+      link.setAttribute("download ", "screenshot.png");
 
       // Append the link to the document body and click it to start the download
       document.body.appendChild(link);
@@ -253,12 +368,12 @@ export function ControllerApp() {
       // Clean up by removing the link from the body and revoking the blob URL
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    }, 'image/png');
+    }, "image/png");
   };
 
   
 
-    const streamUrl = 'http://localhost:8880/';
+    const streamUrl = "http://localhost:8880/";
   const styles = {
     contentDiv: {
       display: "flex"
@@ -272,7 +387,7 @@ export function ControllerApp() {
   
   return (
     <>
-      <div style={{ ...styles.contentDiv, position: 'fixed', right: 0, zIndex: 1000 }}>
+      <div style={{ ...styles.contentDiv, position: "fixed", right: 0, zIndex: 1000 }}>
         <SideBar />
       </div>
 
@@ -281,6 +396,7 @@ export function ControllerApp() {
           <div style={styles.contentDiv}>
             <ScreenshotVeiw />
           </div>
+      <CSVHandler/>
         </Col>
       </Row>
     </>
