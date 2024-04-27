@@ -5,7 +5,7 @@ import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
-import { CameraIPs } from "../api/Atoms";
+import { CameraURLs } from "../api/Atoms";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -399,7 +399,7 @@ return (
 }
 
 export function ControllerApp() {
-  const [IPs] = useAtom<string[]>(CameraIPs);
+  const [IPs] = useAtom<string[]>(CameraURLs);
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
