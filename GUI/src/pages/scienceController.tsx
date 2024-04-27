@@ -38,29 +38,38 @@ import React from "react";
 import { CameraURLs, ROSIP } from "../api/Atoms";
 
 
-const ScreenshotVeiw = () => {
+const redirectToScreenshot = async (urls: string[], i:0|1|2|3) => {
+  //open a new tab with the stream url
+
+  let streamUrl = urls[i];
+  streamUrl = streamUrl.replace("/stream", "/snapshot")
+  window.open(streamUrl, "_blank");
+};
+
+const ScreenshotVeiw = ({ urls }: { urls: string[] }) => {
+  console.log(urls, "URLS");
   return (
     <div className="desktop1-rectangle1">
       <div className="desktop1-frame1">
-        <button type="button" className="desktop1-button button">
+        <button type="button" className="desktop1-button button" onClick={() => redirectToScreenshot(urls, 0)}>
           <span className="desktop1-text">
             <span>Camera 1</span>
             <br></br>
           </span>
         </button>
-        <button type="button" className="desktop1-button1 button">
+        <button type="button" className="desktop1-button1 button" onClick={() => redirectToScreenshot(urls, 1)}>
           <span className="desktop1-text03">
             <span>Camera 2</span>
             <br></br>
           </span>
         </button>
-        <button type="button" className="desktop1-button2 button">
+        <button type="button" className="desktop1-button2 button" onClick={() => redirectToScreenshot(urls, 2)}>
           <span className="desktop1-text06">
             <span>Camera 3</span>
             <br></br>
           </span>
         </button>
-        <button type="button" className="desktop1-button3 button">
+        <button type="button" className="desktop1-button3 button" onClick={() => redirectToScreenshot(urls, 3)}>
           <span className="desktop1-text09">
             <span>Camera 4</span>
             <br></br>
@@ -403,9 +412,11 @@ return (
 }
 
 export function ControllerApp() {
-  const [IPs] = useAtom<string[]>(CameraURLs);
-  const [RosIP] = useAtom(ROSIP);
+  let camUrls: string[] = [];
   const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
+  const [RosIP] = useAtom(ROSIP);
+  const [urls, setURLs] = React.useState<string[]>([]);
+  
   React.useEffect(() => {
         ros.connect(`ws://${RosIP}:9090`);
         setInterval(() => {
@@ -422,61 +433,27 @@ export function ControllerApp() {
       serviceType: "eer_messages/Config"
     });
   
-   const request = new ROSLIB.ServiceRequest({
+  if (urls.length == 0)
+  {
+    const request = new ROSLIB.ServiceRequest({
                 state:1,
                 data:"FetchCameraURLs"}); // What's in the data field is not important in this case
             cameraURLsClient.callService(request, function(result){
-                if (result.result !="[]"){
-                  //setCameraURLs(JSON.parse(result.result));
-                  console.log(JSON.parse(result.result))
-                }
-                else {
-                    console.log("No camera URLs stored in database")
-                }
+              try {
+        if (result.result.trim() !="[]"){ // Trim spaces before comparison
+          camUrls = JSON.parse(result.result);
+          setURLs(camUrls);
+            console.log("camera_urls", camUrls);
+        } else {
+            console.log("No camera URLs stored in database");
+        }
+    } catch (error) {
+        console.error("Error parsing result:", error); // Log parsing errors
+    }
             });
+  }
   
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const captureScreenshot = async () => {
-    // Fetch the video data from the server
-    const response = await fetch("http://localhost:8880/");
-    const data = await response.blob();
-
-    // Create a Blob URL from the data
-    const url = URL.createObjectURL(data);
-
-    // Create a hidden video element
-    const video = document.createElement("video");
-
-    // Set the source to the Blob URL
-    video.src = url;
-
-    // Wait for the video to load metadata (dimensions)
-    await video.play();
-
-    // Create a canvas and draw the current video frame onto it
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d")?.drawImage(video, 0, 0);
-
-    // Use toBlob method to create blob link to download
-    canvas.toBlob((blob) => {
-      if (!blob) return console.error("Failed to capture canvas to blob");
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download ", "screenshot.png");
-
-      // Append the link to the document body and click it to start the download
-      document.body.appendChild(link);
-      link.click();
-
-      // Clean up by removing the link from the body and revoking the blob URL
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }, "image/png");
-  };
+console.log("URLS", urls)
 
   const streamUrl = "http://localhost:8880/";
   const styles = {
@@ -505,7 +482,7 @@ export function ControllerApp() {
       <Row className="justify-content-center">
         <Col lg={3}>
           <div style={styles.contentDiv}>
-            <ScreenshotVeiw />
+            <ScreenshotVeiw urls={urls} />
           </div>
           <CSVHandler />
         </Col>
