@@ -1,5 +1,5 @@
 import { useAtom } from "jotai";
-import { CameraIPs, ROSIP, ProfilesList, CurrentProfile, RequestingProfilesList, RequestingConfig } from "../api/Atoms";
+import { CameraURLs, ROSIP, ProfilesList, CurrentProfile, RequestingProfilesList, RequestingConfig, RequestingCameraURLs } from "../api/Atoms";
 import { Box } from "@mui/system";
 import { Button, Divider, FormControl, Grid, InputLabel, Select, TextField, MenuItem } from "@mui/material";
 import { Trash2 } from "lucide-react";
@@ -8,7 +8,7 @@ import { useState } from "react";
 
 export default function SettingsTab() {
 
-    const [IPs, setIPs] = useAtom(CameraIPs);
+    const [URLs, setURLs] = useAtom(CameraURLs);
     const [RosIP, setRosIP] = useAtom(ROSIP);
 
     const [editorOpen, setEditorOpen] = useState<boolean>(false);
@@ -18,15 +18,16 @@ export default function SettingsTab() {
 
     const [,setRequestingProfilesList] = useAtom(RequestingProfilesList);
     const [,setRequestingConfig] = useAtom(RequestingConfig);
+    const [,setRequestingCameraURLs] = useAtom(RequestingCameraURLs);
 
     const setCameraIP = (camera: number, ip: string) => {
-        setIPs(IPs.map((item, index) => index === camera ? ip : item));
+        setURLs(URLs.map((item, index) => index === camera ? ip : item));
     };
 
     const save = () => {
-        setIPs(IPs.map(ip => !ip.startsWith("http://") && !ip.startsWith("https://") ? "http://" + ip : ip));
+        setURLs(URLs.map(ip => !ip.startsWith("http://") && !ip.startsWith("https://") ? "http://" + ip : ip));
         const settings: {[id: string] : string[]} = {};
-        settings.CameraIPs = IPs.map(ip => !ip.startsWith("http://") && !ip.startsWith("https://") ? "http://" + ip : ip);
+        settings.CameraURLs = URLs.map(ip => !ip.startsWith("http://") && !ip.startsWith("https://") ? "http://" + ip : ip);
         fetch("/config", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(settings)});
         localStorage.setItem("ROS_IP", RosIP);
     };
@@ -54,16 +55,16 @@ export default function SettingsTab() {
             if (profilesList[current_profile_index].controller1 == navigator.getGamepads()[controllerIndex]?.id && !controllers_recognized[0]){ //  !controllers_recognized[0] handles the case where controllers 1 and 2 have the same name
                 console.log("Controller 1 recognized");
                 controllers_recognized[0] = true;
-            } 
+            }
             if (profilesList[current_profile_index].controller2 == navigator.getGamepads()[controllerIndex]?.id) {
                 console.log("Controller 2 recognized");
                 controllers_recognized[1] = true
             }
         }
         // Recieve latest bindings for this profile
-        setRequestingConfig({state:1, profileName:profileName, 
-            controller1: (controllers_recognized[0]) ? "recognized":"null", 
-            controller2: (controllers_recognized[1]) ? "recognized":"null"}); 
+        setRequestingConfig({state:1, profileName:profileName,
+            controller1: (controllers_recognized[0]) ? "recognized":"null",
+            controller2: (controllers_recognized[1]) ? "recognized":"null"});
     };
 
     return (
@@ -76,16 +77,22 @@ export default function SettingsTab() {
             <br/><Divider>Cameras</Divider><br/>
             <Grid container spacing={2} padding={1}>
                 <Grid item xs={6}>
-                    <TextField label="Camera 1 URL" variant="outlined" sx={{width: "100%"}} value={IPs[0]} onChange={(e) => setCameraIP(0, e.target.value)} />
+                    <TextField label="Camera 1 URL" variant="outlined" sx={{width: "100%"}} value={URLs[0]} onChange={(e) => setCameraIP(0, e.target.value)} />
                 </Grid>
                 <Grid item xs={6}>
-                    <TextField label="Camera 2 URL" variant="outlined" sx={{width: "100%"}} value={IPs[1]} onChange={(e) => setCameraIP(1, e.target.value)} />
+                    <TextField label="Camera 2 URL" variant="outlined" sx={{width: "100%"}} value={URLs[1]} onChange={(e) => setCameraIP(1, e.target.value)} />
                 </Grid>
                 <Grid item xs={6}>
-                    <TextField label="Camera 3 URL" variant="outlined" sx={{width: "100%"}} value={IPs[2]} onChange={(e) => setCameraIP(2, e.target.value)} />
+                    <TextField label="Camera 3 URL" variant="outlined" sx={{width: "100%"}} value={URLs[2]} onChange={(e) => setCameraIP(2, e.target.value)} />
                 </Grid>
                 <Grid item xs={6}>
-                    <TextField label="Camera 4 URL" variant="outlined" sx={{width: "100%"}} value={IPs[3]} onChange={(e) => setCameraIP(3, e.target.value)} />
+                    <TextField label="Camera 4 URL" variant="outlined" sx={{width: "100%"}} value={URLs[3]} onChange={(e) => setCameraIP(3, e.target.value)} />
+                </Grid>
+                <Grid item xs={6}>
+                    <Button variant="contained" sx={{height: "30px", width: "100%"}} onClick={() => {setRequestingCameraURLs(1);}}>Fetch Camera URLs from Database</Button>
+                </Grid>
+                <Grid item xs={6}>
+                    <Button variant="contained" sx={{height: "30px", width: "100%"}} onClick={() => {setRequestingCameraURLs(0);}}>Save Current Camera URLs to Database</Button>
                 </Grid>
             </Grid>
             <Box position="absolute" bottom="8px" left="10%" width="80%">
@@ -96,19 +103,19 @@ export default function SettingsTab() {
                 <Grid container width="50%" spacing={1}>
                     <Grid item xs={11}>
                         <FormControl fullWidth >
-							<InputLabel>Profile</InputLabel>
-							<Select value={currentProfile} label="Profile" onClick={()=>{setRequestingProfilesList(1);}} onChange={(e) => {
-								setCurrentProfile(e.target.value);
+                                                        <InputLabel>Profile</InputLabel>
+                                                        <Select value={currentProfile} label="Profile" onClick={()=>{setRequestingProfilesList(1);}} onChange={(e) => {
+                                                                setCurrentProfile(e.target.value);
                                 loadProfile(e.target.value);
-								return;
-							}} sx={{width: "100%"}}>
-								{profilesList.map((profile) => {
-										// Add menu item for every profile
-										return <MenuItem key={profile.name} value={profile.name}>{profile.name}</MenuItem>;
-									})
-								}
-							</Select>
-						</FormControl>
+                                                                return;
+                                                        }} sx={{width: "100%"}}>
+                                                                {profilesList.map((profile) => {
+                                                                                // Add menu item for every profile
+                                                                                return <MenuItem key={profile.name} value={profile.name}>{profile.name}</MenuItem>;
+                                                                        })
+                                                                }
+                                                        </Select>
+                                                </FormControl>
                     </Grid>
                     <Grid item xs={1}>
                         <Button variant="outlined" sx={{height: "56px", width: "100%"}} onClick={()=>{setRequestingProfilesList(0);}}><Trash2 /></Button>

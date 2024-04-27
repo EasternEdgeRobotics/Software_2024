@@ -46,15 +46,15 @@ class PowerPreset(Base):
     roll: Mapped[int] = mapped_column()
     yaw: Mapped[int] = mapped_column()
 
-#Define the Cameras database schema
-#TODO: Integrate this with GUI
 class Camera(Base):
     __tablename__ = "cameras"
     id: Mapped[int] = mapped_column(primary_key=True)
-    ip1: Mapped[str] = mapped_column()
-    ip2: Mapped[str] = mapped_column()
-    ip3: Mapped[str] = mapped_column()
-    ip4: Mapped[str] = mapped_column()
+    url1: Mapped[str] = mapped_column()
+    url2: Mapped[str] = mapped_column()
+    url3: Mapped[str] = mapped_column()
+    url4: Mapped[str] = mapped_column()
+    def dict(self):
+        return {"url1":self.url1, "url2":self.url2, "url3":self.url3, "url4":self.url4}
 
 engine = create_engine("sqlite:///config.db")
 
@@ -116,6 +116,7 @@ class ProfilesManager(Node):
         #The service names ("profile_config" and "profiles_list") MUST match those defined in the GUI
         self.srv1 = self.create_service(Config, "profile_config", self.profile_config_callback)
         self.srv2 = self.create_service(Config, "profiles_list", self.profiles_list_callback)
+        self.srv3 = self.create_service(Config, "camera_urls", self.camera_urls_callback)
 
     def profile_config_callback(self, request, response):
         if request.state == 0: #We are looking to load mappings into database from GUI
@@ -144,7 +145,7 @@ class ProfilesManager(Node):
 
             #==========================DEBUG===========================
             # for i in range(session.query(Mapping).filter(Mapping.name == message["profileName"]).count()):
-            #    print(f"{session.query(Mapping).filter_by(name = message['profileName']).all()[i].dict()} recieved in ThrusterControl")
+            #    self.get_logger().info(f"{session.query(Mapping).filter_by(name = message['profileName']).all()[i].dict()} recieved")
             #==========================================================
 
             return response
@@ -175,9 +176,47 @@ class ProfilesManager(Node):
             response.result = json.dumps(output) #Turn the JSON object into a string
             return response
         
-    def camera_ips_callback(self, request, response):
-        if request.state == 0:
-            pass
+    def camera_urls_callback(self, request, response):
+
+        if request.state == 0: # We are looking to load camera URLs into database from GUI
+
+            message = json.loads(request.data) #Turn the recieved string into a List
+
+            query = session.query(Camera) # Remove the any saved camera URLs
+            if query.count() >= 1: 
+                query.delete()
+                session.commit()
+
+            while True:
+                if len(message) < 4:
+                    message.append("http://")
+                else:
+                    break
+
+            new_camera_urls = Camera(url1=message[0], url2=message[1], url3=message[2], url4=message[3])
+
+            session.add(new_camera_urls)
+            session.commit()
+
+            response.result = "Success"
+
+            #==========================DEBUG===========================
+            # for i in range(session.query(Camera).count()):
+            #     self.get_logger().info(f"{session.query(Camera).all()[i].dict()} recieved")
+            #==========================================================
+
+            return response
+        
+        elif request.state == 1: # We are looking to fetch camera URLs form database into GUI
+
+            for row in range(session.query(Camera).count()): # There will only be one "row"
+                stored_camera_urls = session.query(Camera).all()[row].dict()
+                outgoing_camera_urls = [stored_camera_urls["url1"], stored_camera_urls["url2"], stored_camera_urls["url3"], stored_camera_urls["url4"]]
+
+            response.result = json.dumps(outgoing_camera_urls) #Turn the list into a string
+
+            return response
+
             
 
 def main(args=None):
