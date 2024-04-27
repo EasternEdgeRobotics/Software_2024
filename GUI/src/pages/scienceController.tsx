@@ -44,6 +44,7 @@ const redirectToScreenshot = async (urls: string[], i: 0 | 1 | 2 | 3) => {
 };
 
 const ScreenshotVeiw = ({ urls }: { urls: string[] }) => {
+  //[To-do] handle the case when ROS not connected / urls are not available
   //[To-do] better styling for the components
   console.log(urls, "URLS");
   return (
@@ -446,6 +447,8 @@ export function ControllerApp() {
   const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
   const [RosIP] = useAtom(ROSIP);
   const [urls, setURLs] = React.useState<string[]>([]);
+
+  ros.on("error", () => {0}); // to prevent page breaking
 
   React.useEffect(() => {
     ros.connect(`ws://${RosIP}:9090`);
