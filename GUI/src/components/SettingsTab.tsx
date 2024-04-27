@@ -24,9 +24,9 @@ export default function SettingsTab() {
     };
 
     const save = () => {
-        setIPs(IPs.map(ip => !ip.startsWith("http:// ") && !ip.startsWith("https:// ") ? "http:// " + ip : ip));
+        setIPs(IPs.map(ip => !ip.startsWith("http://") && !ip.startsWith("https://") ? "http://" + ip : ip));
         const settings: {[id: string] : string[]} = {};
-        settings.CameraIPs = IPs.map(ip => !ip.startsWith("http:// ") && !ip.startsWith("https:// ") ? "http:// " + ip : ip);
+        settings.CameraIPs = IPs.map(ip => !ip.startsWith("http://") && !ip.startsWith("https://") ? "http://" + ip : ip);
         fetch("/config", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(settings)});
         localStorage.setItem("ROS_IP", RosIP);
     };
