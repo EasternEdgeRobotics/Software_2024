@@ -273,37 +273,70 @@ function CSVHandler() {
         const contents = e.target.result as string;
         const lines = contents.split("\n");
         const header = lines[0].split(",");
-        const parsedData: { [key: string]: number }[] = [];
 
-        const labels = [];
-        const datasets = [];
+        const datasets: ChartData['datasets'] = [];
+        const dataLists: { [key: string]: number }[] = [];
+        const labels: string[] = [];
 
         for (let i = 1; i < lines.length; i++) {
-          const tempData = []
           const line = lines[i].split(",");
           const item: { [key: string]: number } = {};
-          labels.push(line[0]?.trim() ?? "label ??");
+          labels.push(i.toString());
 
           for (let j = 0; j < header.length; j++) {
             const key = header[j]?.trim() ?? "key ??";
-            const value = line[j]?.trim() ?? "700";
+            const value = Number(line[j]?.trim()) ?? 0;
             item[key] = Number(value);
-            tempData.push(Number(value));
           }
-
-          datasets.push({
-      label: 'Dataset 1',
-      data: tempData,
-      borderColor: 'rgb(255, 99, 132)',
-      backgroundColor: 'rgba(255, 99, 132, 0.5)',
-    });
+          dataLists.push(item);
         }
 
-        console.log("Parsed Data:", parsedData);
+        const colors = [
+  'rgb(255, 99, 132)',
+  'rgb(75, 192, 192)',
+  'rgb(255, 205, 86)',
+        ];
+        
+        Object.keys(dataLists[0]).forEach((key,index) => {
+          const color = colors[index % colors.length];
+          datasets.push({
+            label: key,
+            data: dataLists.map((item) => item[key]),
+           borderColor: color,
+    backgroundColor: `${color.slice(0, -1)}, 0.3)`,
+            
+          });
+        });
+        console.log("Parsed Data:", dataLists);
+        console.log("Data sets:", datasets);
+
+    //     for (let i = 1; i < lines.length; i++) {
+    //       const tempData = []
+    //       const line = lines[i].split(",");
+    //       const item: { [key: string]: number } = {};
+    //       labels.push(line[0]?.trim() ?? "label ??");
+
+    //       for (let j = 0; j < header.length; j++) {
+    //         const key = header[j]?.trim() ?? "key ??";
+    //         const value = line[j]?.trim() ?? "700";
+    //         item[key] = Number(value);
+    //         tempData.push(Number(value));
+    //       }
+
+    //       datasets.push({
+    //   label: 'Dataset 1',
+    //   data: tempData,
+    //   borderColor: 'rgb(255, 99, 132)',
+    //   backgroundColor: 'rgba(255, 99, 132, 0.5)',
+    // });
+    //     }
+
+    //     console.log("Parsed Data:", parsedData);
 
         const data:ChartData = {
-          labels: labels,//parsedData.map(item => item.x), // Replace 'x' with the actual property name for the x-axis
-          datasets
+          labels,//parsedData.map(item => item.x), // Replace 'x' with the actual property name for the x-axis
+          datasets,
+          
         };
        
 
