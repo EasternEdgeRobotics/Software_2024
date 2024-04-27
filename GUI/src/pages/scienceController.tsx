@@ -324,43 +324,43 @@ function CSVHandler() {
     reader.onload = (e) => {
       if (e.target) {
         const contents = e.target.result as string;
-        const lines = contents.split("\n");
-        const header = lines[0].split(",");
+        //const lines = contents.split("\n");
+        //const header = lines[0].split(",");
+
+        const headers = contents.split("\n").map((line) => line.split(",")[0]);
+        const lines = contents.split("\n").map((line) => line.split(",").slice(1).map(Number));
+
+        console.log("Headers:", headers, "Lines:", lines);
 
         const datasets: ChartData["datasets"] = [];
         const dataLists: { [key: string]: number }[] = [];
-        const labels: string[] = [];
+        let labels: string[] = [];
 
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].split(",");
-          const item: { [key: string]: number } = {};
-          labels.push(i.toString());
-
-          for (let j = 0; j < header.length; j++) {
-            const key = header[j]?.trim() ?? "key ??";
-            const value = Number(line[j]?.trim()) ?? 0;
-            item[key] = Number(value);
-          }
-          dataLists.push(item);
-        }
-
+      
         const colors = [
           "rgb(0, 143, 136)",
           "rgb(245, 200, 0)",
           "rgb(241, 98, 8)",
         ];
 
-        Object.keys(dataLists[0]).forEach((key, index) => {
-          const color = colors[index % colors.length];
+        for (let i = 1; i < headers.length; i++) {
+          const key = headers[i]?.trim() ?? "key ??";
+
+          const color = colors[i % colors.length];
+
           datasets.push({
             label: key,
-            data: dataLists.map((item) => item[key]),
+            data: lines[i-1],
             borderColor: `${color.slice(0, -1)}, 0.75)`,
             backgroundColor: `${color.slice(0, -1)}, 0.95)`,
           });
-        });
-        console.log("Parsed Data:", dataLists);
-        console.log("Data sets:", datasets);
+        }
+        labels = lines[0].map((item) => item.toString());
+        
+
+
+        
+        console.log("Data sets:", datasets, "Labels:", labels);
 
         const data: ChartData = {
           labels, //parsedData.map(item => item.x), // Replace 'x' with the actual property name for the x-axis
@@ -443,7 +443,7 @@ export function ControllerApp() {
         if (result.result.trim() !="[]"){ // Trim spaces before comparison
           camUrls = JSON.parse(result.result);
           setURLs(camUrls);
-            console.log("camera_urls", camUrls);
+         //   console.log("camera_urls", camUrls);
         } else {
             console.log("No camera URLs stored in database");
         }
