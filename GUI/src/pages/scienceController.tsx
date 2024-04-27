@@ -6,7 +6,7 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import "../styles/science.css";
 import { Sidebar, Menu, MenuItem } from "react-pro-sidebar";
@@ -18,7 +18,7 @@ import { Task } from "../types/Task";
 import { MenuSquareIcon } from "lucide-react";
 import SquareIcon from "@mui/icons-material/Square";
 
-import { Chart, Line, ChartProps, Bar } from "react-chartjs-2";
+import { Line, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -29,13 +29,12 @@ import {
   Tooltip,
   Legend,
   ChartData,
-  ChartType,
   BarElement,
 } from "chart.js";
 
 import ROSLIB, { Ros } from "roslib";
 import React from "react";
-import { CameraURLs, ROSIP } from "../api/Atoms";
+import { ROSIP } from "../api/Atoms";
 
 
 const redirectToScreenshot = async (urls: string[], i:0|1|2|3) => {
@@ -175,12 +174,8 @@ function SubList(props: { name: string; tasks: Task[]; max?:boolean}) {
   }, [props.tasks]);
 
   useEffect(() => {
-    // const calculateScore = (tasks: Task[]): number => {
-    //   return tasks.reduce((total, task) => total + (task.checked ? task.points : 0) + (task.subTasks ? calculateScore(task.subTasks) : 0), 0);
-    // };
 
     const calculateTotalScore = (tasks: Task[], max=false): number => {
-      //console.log(tasks)
       if (max) return Math.max(...tasks.map(t =>t.points?? calculateTotalScore((t.subTasks)!, t.single)))
       
       let total = 0;
@@ -196,7 +191,6 @@ function SubList(props: { name: string; tasks: Task[]; max?:boolean}) {
       return total;
     };
 
-    // setScore(calculateScore(tasks));
     setTotalScore(calculateTotalScore(tasks,props.max));
   }, [tasks]);
 
@@ -337,7 +331,6 @@ function CSVHandler() {
         console.log("Headers:", headers, "Lines:", lines);
 
         const datasets: ChartData["datasets"] = [];
-        const dataLists: { [key: string]: number }[] = [];
         let labels: string[] = [];
 
       
@@ -361,13 +354,10 @@ function CSVHandler() {
         }
         labels = lines[0].map((item) => item.toString());
         
-
-
-        
         console.log("Data sets:", datasets, "Labels:", labels);
 
         const data: ChartData = {
-          labels, //parsedData.map(item => item.x), // Replace 'x' with the actual property name for the x-axis
+          labels, 
           datasets,
         };
 
