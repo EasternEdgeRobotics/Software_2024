@@ -5,7 +5,6 @@ import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
-import { CameraURLs } from "../api/Atoms";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -33,6 +32,11 @@ import {
   ChartType,
   BarElement,
 } from "chart.js";
+
+import ROSLIB, { Ros } from "roslib";
+import React from "react";
+import { CameraURLs, ROSIP } from "../api/Atoms";
+
 
 const ScreenshotVeiw = () => {
   return (
@@ -400,7 +404,37 @@ return (
 
 export function ControllerApp() {
   const [IPs] = useAtom<string[]>(CameraURLs);
-
+  const [RosIP] = useAtom(ROSIP);
+  const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
+  React.useEffect(() => {
+        ros.connect(`ws://${RosIP}:9090`);
+        setInterval(() => {
+            if (!ros.isConnected) {
+                setRos(new ROSLIB.Ros({}));
+                ros.connect(`ws://${RosIP}:9090`);
+            }
+        }, 1000);
+  }, []);
+  
+  // Create a ROS service on the "/camera_urls" topic, using a custom EER service type (see eer_messages folder in ROS2/colcon_ws/src)
+    const cameraURLsClient = new ROSLIB.Service({ros:ros,
+                                                name:"/camera_urls",
+      serviceType: "eer_messages/Config"
+    });
+  
+   const request = new ROSLIB.ServiceRequest({
+                state:1,
+                data:"FetchCameraURLs"}); // What's in the data field is not important in this case
+            cameraURLsClient.callService(request, function(result){
+                if (result.result !="[]"){
+                  //setCameraURLs(JSON.parse(result.result));
+                  console.log(JSON.parse(result.result))
+                }
+                else {
+                    console.log("No camera URLs stored in database")
+                }
+            });
+  
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const captureScreenshot = async () => {
