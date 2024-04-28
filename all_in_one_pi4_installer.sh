@@ -17,3 +17,6 @@ sudo docker compose up -d
 # Install and setup the camera streamer
 cd Cameras
 . install.sh
+
+# Get back to the Software_2024 folder
+cd ..
