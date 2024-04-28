@@ -100,7 +100,7 @@ const ScreenshotVeiw = ({ urls }: { urls: string[] }) => {
 
 //recursive function to render the tasks
 //level is used to calculate the padding of the tasks
-function renderTasks(tasks: Task[], level = 0) {
+function renderTasks(tasks: Task[], level = 0, id="") {
 
   const handleCheckboxChange = (task: Task) => {
     //[To-do] Update the tast status globally with ROS
@@ -110,7 +110,9 @@ function renderTasks(tasks: Task[], level = 0) {
     localStorage.setItem(task.name, JSON.stringify(updatedTask));
   };
 
-  return tasks.map((task: Task) => {
+  return tasks.map((task: Task, index) => {
+    const currentID = id ? `${id}:${index + 1}` : `${index + 1}`;
+
     const Icon = () => {
       if (!task.subTasks && tasks.length > 1)
         return (
@@ -121,6 +123,7 @@ function renderTasks(tasks: Task[], level = 0) {
             color="success"
             aria-checked={task.checked}
             onChange={() => handleCheckboxChange(task)}
+            key={currentID}
           />
         );
       else if (task.subTasks)
@@ -172,7 +175,7 @@ function renderTasks(tasks: Task[], level = 0) {
               </div>
             )}
           </div>
-          {task.subTasks && renderTasks(task.subTasks, level + 1)}
+          {task.subTasks && renderTasks(task.subTasks, level + 1, currentID)}
         </Col>
       </div>
     );
@@ -235,7 +238,7 @@ function SubList(props: { name: string; tasks: Task[]; max?: boolean }) {
         <h2>
           {props.name} ({score}/{totalScore})
         </h2>
-        <div>{renderTasks(tasks)}</div>
+        <div>{renderTasks(tasks,undefined,props.name.split(":")[0].trim().replace(" ",""))}</div>
       </Row>
     </div>
   );
@@ -244,9 +247,30 @@ function SubList(props: { name: string; tasks: Task[]; max?: boolean }) {
 function SideBar() {
   //[To-do] acoount for mobile view
   const [collapsed, setCollapsed] = useState(false);
+  const [RosIP] = useAtom(ROSIP);
+  const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
 
+  useEffect(() => {
+    const rosInstance = new ROSLIB.Ros({});
+    rosInstance.connect(`ws://${RosIP}:9090`);
+    setRos(rosInstance);
+  }, [RosIP]);
+
+  ros.on("connection", () => console.log("Connected to ROS"));
+
+  const publisher = new ROSLIB.Topic({
+    ros: ros,
+    name: "task_updates", // Replace with your topic name
+    messageType: "std_msgs/String", // Replace with your message type
+  });
+  const message = new ROSLIB.Message({
+    data: "Hello, ROS!",
+  });
+  // Publish the message
+  
   const handleToggleSidebar = () => {
     setCollapsed(!collapsed);
+    publisher.publish(message);
   };
   const styles = {
     sideBarHeight: {
