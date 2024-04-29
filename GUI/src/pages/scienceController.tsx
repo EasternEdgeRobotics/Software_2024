@@ -100,31 +100,46 @@ const ScreenshotVeiw = ({ urls }: { urls: string[] }) => {
 
 //recursive function to render the tasks
 //level is used to calculate the padding of the tasks
-function renderTasks(tasks: Task[], level = 0, id="") {
+function renderTasks(tasks: Task[], level = 0, id="", publisher: ROSLIB.Topic, saved?: { [key: string]: boolean }) {
 
-  const handleCheckboxChange = (task: Task) => {
+  const handleCheckboxChange = (task: Task, taskID:string) => {
     //[To-do] Update the tast status globally with ROS
     //[To-do] Listen and update the task status from ROS
+    console.log(saved, taskID, task.name, task.checked);
+
     task.checked = !task.checked;
-    const updatedTask = { ...task, checked: !task.checked };
-    localStorage.setItem(task.name, JSON.stringify(updatedTask));
+    // const updatedTask = { ...task, checked: !task.checked };
+    // localStorage.setItem(task.name, JSON.stringify(updatedTask));
+
+    const message = new ROSLIB.Message({
+      data: JSON.stringify({
+        id: taskID,
+        status: task.checked,
+      }),
+    });
+    publisher.publish(message);
   };
 
   return tasks.map((task: Task, index) => {
     const currentID = id ? `${id}:${index + 1}` : `${index + 1}`;
 
     const Icon = () => {
+      if (saved && saved[currentID] === true) task.checked = true;
+      else task.checked = false;
+        
       if (!task.subTasks && tasks.length > 1)
         return (
-          <Checkbox
-            style={{ marginBottom: "10px", padding: "0px" }}
-            aria-label={task.name}
-            defaultChecked={task.checked}
-            color="success"
-            aria-checked={task.checked}
-            onChange={() => handleCheckboxChange(task)}
-            key={currentID}
-          />
+          <div>
+            <Checkbox
+              style={{ marginBottom: "10px", padding: "0px" }}
+              aria-label={task.name}
+              defaultChecked={task.checked}
+              color="success"
+              aria-checked={task.checked}
+              onChange={() => handleCheckboxChange(task, currentID)}
+              key={currentID}
+            />
+          </div>
         );
       else if (task.subTasks)
         return (
@@ -175,14 +190,14 @@ function renderTasks(tasks: Task[], level = 0, id="") {
               </div>
             )}
           </div>
-          {task.subTasks && renderTasks(task.subTasks, level + 1, currentID)}
+          {task.subTasks && renderTasks(task.subTasks, level + 1, currentID, publisher, saved)}
         </Col>
       </div>
     );
   });
 }
 
-function SubList(props: { name: string; tasks: Task[]; max?: boolean }) {
+function SubList(props: { name: string; tasks: Task[]; max?: boolean; publisher: ROSLIB.Topic, saved?: { [key: string]: boolean}}) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [score, setScore] = useState<number>(0);
   const [totalScore, setTotalScore] = useState<number>(0);
@@ -238,7 +253,15 @@ function SubList(props: { name: string; tasks: Task[]; max?: boolean }) {
         <h2>
           {props.name} ({score}/{totalScore})
         </h2>
-        <div>{renderTasks(tasks,undefined,props.name.split(":")[0].trim().replace(" ",""))}</div>
+        <div>{
+          renderTasks(
+            tasks,
+            undefined,
+            props.name.split(":")[0].trim().replace(" ", "_"),
+            props.publisher,
+            props.saved
+          )
+        }</div>
       </Row>
     </div>
   );
@@ -249,6 +272,8 @@ function SideBar() {
   const [collapsed, setCollapsed] = useState(false);
   const [RosIP] = useAtom(ROSIP);
   const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
+  const [saved_tasks, setTasks] = useState<{ [key: string]: boolean }>({});
+  const [loading, setLoading] = useState(true); // Add a loading state
 
   useEffect(() => {
     const rosInstance = new ROSLIB.Ros({});
@@ -256,22 +281,41 @@ function SideBar() {
     setRos(rosInstance);
   }, [RosIP]);
 
+  const taskClient = new ROSLIB.Service({
+    ros: ros,
+    name: "/all_tasks",
+    serviceType: "eer_messages/Config",
+  });
+  const request = new ROSLIB.ServiceRequest({});
+
+  useEffect(() => {
+    taskClient.callService(
+      request,
+      function (result) {
+        console.log("All tasks:", result.result);
+        setTasks(JSON.parse(result.result));
+        setLoading(false);
+      },
+      function (error) {
+        console.log("Error calling service:", error);
+        setLoading(false);
+      }
+    );
+  }, [ros]);
+
   ros.on("connection", () => console.log("Connected to ROS"));
 
-  const publisher = new ROSLIB.Topic({
+  const task_publisher = new ROSLIB.Topic({
     ros: ros,
-    name: "task_updates", // Replace with your topic name
-    messageType: "std_msgs/String", // Replace with your message type
+    name: "task_updates",
+    messageType: "std_msgs/String",
   });
-  const message = new ROSLIB.Message({
-    data: "Hello, ROS!",
-  });
-  // Publish the message
-  
+
   const handleToggleSidebar = () => {
     setCollapsed(!collapsed);
-    publisher.publish(message);
+    // task_publisher.publish(message);
   };
+
   const styles = {
     sideBarHeight: {
       height: "145vh",
@@ -281,6 +325,10 @@ function SideBar() {
       margin: "10px",
     },
   };
+
+  // if (loading) {
+  //   return <div>Loading...</div>; // Display a loading message while the callService method is running
+  // }
 
   return (
     <div style={{ display: "flex", position: "fixed", right: 0, zIndex: 1000 }}>
@@ -320,19 +368,27 @@ function SideBar() {
           <SubList
             name="TASK 1 : Coastal Pioneer Array"
             tasks={taskJSON.task1.tasks}
+            publisher={task_publisher}
+            saved={saved_tasks}
           />
           <SubList
             name="TASK 2 : Deploy SMART cables"
             tasks={taskJSON.task2.tasks}
+            publisher={task_publisher}
+            saved={saved_tasks}
           />
           <SubList
             name="TASK 3 : From the Red Sea to Tenesse"
             tasks={taskJSON.task3.tasks}
+            publisher={task_publisher}
+            saved={saved_tasks}
           />
           <SubList
             name="TASK 4 : MATE Floats"
             tasks={taskJSON.task4.tasks}
             max={taskJSON.task4.single}
+            publisher={task_publisher}
+            saved={saved_tasks}
           />
           {/* More menu items... */}
         </Menu>
