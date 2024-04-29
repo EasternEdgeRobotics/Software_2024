@@ -22,8 +22,8 @@ export function InitROS() {
     ros.on("connection", () => {
         console.log("ROS Connected!");
         setIsRosConnected(true);
-        thrusterRequestService.callService(0, (response: {power: number, surge: number, sway: number, heave: number, pitch: number, roll: number, yaw: number}) =>
-            {setThrusterMultipliers([response.power, response.surge, response.sway, response.heave, response.pitch, response.roll, response.yaw]);});
+        // thrusterRequestService.callService(0, (response: {power: number, surge: number, sway: number, heave: number, pitch: number, yaw: number}) =>
+        //     {setThrusterMultipliers([response.power, response.surge, response.sway, response.heave, response.pitch, response.yaw]);});
         setHasRecieved(true);
     });
     ros.on("close", () => {
@@ -49,9 +49,9 @@ export function InitROS() {
                                         name:"/thruster_multipliers",
                                         messageType: "eer_messages/ThrusterMultipliers"});
 
-    const thrusterRequestService = new ROSLIB.Service({ros:ros,
-        name:"/multipliers_query",
-        serviceType: "eer_messages/Multipliers"});
+    // const thrusterRequestService = new ROSLIB.Service({ros:ros,
+    //     name:"/multipliers_query",
+    //     serviceType: "eer_messages/Multipliers"});
 
     // Publish the new power multipliers whenever they change
     React.useEffect(() => {
@@ -61,25 +61,37 @@ export function InitROS() {
             sway: thrusterMultipliers[2],
             heave: thrusterMultipliers[3],
             pitch: thrusterMultipliers[4],
-            roll: thrusterMultipliers[5],
-            yaw: thrusterMultipliers[6]});
+            yaw: thrusterMultipliers[4]});
         if (hasRecieved) thrusterValsTopic.publish(thrusterVals);
     }
     ,[thrusterMultipliers]);
-
+    
     // Create a publisher on the "/controller_input" ros2 topic, using the default String message which will be used from transporting JSON data
     const controllerInputTopic = new ROSLIB.Topic({ros:ros,
                                         name:"/controller_input",
-                                        messageType: "std_msgs/String"});
+                                        messageType: "eer_messages/PilotInput"});
 
     // Publish the new controller input whenever it changes
     React.useEffect(()=>{
-        if (controllerInput == ""){
-            return;
-        }
-        const controllerInputVals = new ROSLIB.Message({data: controllerInput});
+        if (!controllerInput.every(item => item == 0)){
+        const controllerInputVals = new ROSLIB.Message({
+            surge: controllerInput[0],
+            sway: controllerInput[1],
+            heave: controllerInput[2],
+            pitch: controllerInput[3],
+            yaw: controllerInput[4],
+            open_claw: controllerInput[5] ? true: false,
+            close_claw: controllerInput[6] ? true: false,
+            heave_up: controllerInput[7] ? true: false,
+            heave_down: controllerInput[8] ? true: false,
+            pitch_up: controllerInput[9] ? true: false,
+            pitch_down: controllerInput[10] ? true: false,
+            brighten_led: controllerInput[11] ? true: false,
+            dim_led: controllerInput[12] ? true: false,
+            enter_auto_mode: controllerInput[13] ? true: false
+            });
         controllerInputTopic.publish(controllerInputVals);
-        setControllerInput("");
+        setControllerInput([0,0,0,0,0,0,0,0,0,0,0,0,0,0]);}
         }
     ,[controllerInput]);
 

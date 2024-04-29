@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node 
-from eer_messages.msg import ThrusterMultipliers
+from eer_messages.msg import ThrusterMultipliers, PilotInput
 from std_msgs.msg import String
 import json
 from adafruit_pca9685 import PCA9685
@@ -17,29 +17,17 @@ CENTER_SPEED = 9000
 
 ACCELERATION = 75
 
-THRUSTER = {
-    "surge": 0,
-    "sway": 1,
-    "heave": 12,
-    "pitch": 3,
-    "roll": 4,
-    "yaw": 2,
-    "null": 6,
-    "null": 7
-}
 
-# Below is what we should eventually have for the THRUSTER dictionary. Upon recieving pilot input, 
-# rov math will be performed and translated into values corresponding to the dictionary below
-# THRUSTER = {
-#     "for-port-vert": 0,
-#     "for-star-vert": 1,
-#     "aft-port-vert": 2,
-#     "aft-star-vert": 3,
-#     "for-port-horz": 4,
-#     "for-star-horz": 5,
-#     "aft-port-horz": 6,
-#     "aft-star-horz": 7
-# }
+THRUSTER = {
+    "for-port-top": 0,
+    "for-star-top": 1,
+    "aft-port-top": 2,
+    "aft-star-top": 3,
+    "for-port-bot": 4,
+    "for-star-bot": 5,
+    "aft-port-bot": 6,
+    "aft-star-bot": 7
+}
 
 class Thruster:
     """Thruster class."""
@@ -94,37 +82,42 @@ class ThrusterDataSubscriber(Node):
     def __init__(self):
         super().__init__('thruster_data_subscriber')
         self.copilot_listener = self.create_subscription(ThrusterMultipliers, 'thruster_multipliers', self.copilot_listener_callback, 100)
-        self.pilot_listener = self.create_subscription(String, 'controller_input', self.pilot_listener_callback, 1000)
+        self.pilot_listener = self.create_subscription(PilotInput, 'controller_input', self.pilot_listener_callback, 1)
 
         # prevent unused variable warning
         self.copilot_listener 
         self.pilot_listener
+        
+        self.thrusters_detected = False
 
-        self.i2c = board.I2C()
+        try:
+            self.i2c = board.I2C()
+        except:
+            self.get_logger().error("No Hardware on I2C bus")
 
         #################################################
         ################### THRUSTERS ###################
         #################################################
 
-        self.power = 20
-        self.sway = 0
-        self.heave = 0
-        self.pitch = 0
-        self.roll = 0
-        self.yaw = 0
+        self.power_multiplier = 20
+        self.surge_multiplier = 0
+        self.sway_multiplier = 0
+        self.heave_multiplier = 0
+        self.pitch_multiplier = 0
+        self.yaw_multiplier = 0
 
-        self.thruster_actions = ("surge", "sway", "heave", "pitch", "roll", "yaw")
-
+           
+        self.ports = {}
+        self.connected_thrusters = [] 
+        
         # Connect to PCA9685
         try:
-            self.pwm = PCA9685(self.i2c)            
-            self.ports = {}
+            self.pwm = PCA9685(self.i2c)         
             self.pwm.frequency = 100
         except:
             self.get_logger().error("CANNOT FIND PCA9685 ON I2C!")
 
-        self.connected_thrusters = [] 
-        for i in range(15): # The PCA9685 can connect to up to 16 ESCs (16 thrusters)
+        for i in range(15): # The PCA9685 can connect to up to 16 ESCs (16 thrusters). 
             try:
                 # It is assumed that, if thrusters are connected, they will be
                 # connected in a way that matches the THRUSTER global dictionary
@@ -132,6 +125,14 @@ class ThrusterDataSubscriber(Node):
                 self.connected_thrusters.append(i)
             except:
                 print("No thruster on channel ", i)
+
+        if len(self.connected_thrusters) == 8:
+            for thruster in self.connected_thrusters:
+                if thruster in THRUSTER.values():
+                    continue
+                else:
+                    break
+            self.thrusters_detected = True
 
         threading.Thread(target=self.tick_thrusters, daemon=True).start()
 
@@ -141,66 +142,118 @@ class ThrusterDataSubscriber(Node):
 
     def copilot_listener_callback(self, msg):
         # self.get_logger().info(f"{msg} recieved in ThrusterControl")
-        self.power = msg.power
-        self.sway = msg.sway
-        self.heave = msg.heave
-        self.pitch = msg.pitch
-        self.roll = msg.roll
-        self.yaw = msg.yaw
-        #TODO ROV Math
+        self.power_multiplier = float(msg.power/100)
+        self.surge_multiplier = float(msg.surge/100)
+        self.sway_multiplier = float(msg.sway/100)
+        self.heave_multiplier = float(msg.heave/100)
+        self.pitch_multiplier = float(msg.pitch/100)
+        self.yaw_multiplier = float(msg.yaw/100)
 
     def tick_thrusters(self):
         while True:
             for i in self.connected_thrusters:
                 self.ports[i].tick()
 
-    def pilot_listener_callback(self, msg):  
-        controller_inputs = json.loads(msg.data)
+    def pilot_listener_callback(self, msg): 
 
-        #self.rov_math(filter(lambda controller_input: controller_input[1] in self.thruster_actions, controller_inputs)) 
+        thruster_values = self.rov_math(msg)
+
+        if self.thrusters_detected:
+            for thruster_position in list(THRUSTER.keys()):
+                self.ports(THRUSTER[thruster_position]).fly(thruster_values[thruster_position])
+
+    def rov_math(self, controller_inputs):
+
+        thruster_values = {}
+
+        surge = controller_inputs.surge * self.power_multiplier * self.surge_multiplier * 0.01
+        sway = controller_inputs.sway * self.power_multiplier * self.sway_multiplier * 0.01
+        yaw = controller_inputs.yaw * self.power_multiplier * self.yaw_multiplier * 0.01
+
+        if controller_inputs.heave_up:
+            heave = self.power_multiplier * self.heave_multiplier
+        elif controller_inputs.heave_down:
+            heave = - self.power_multiplier * self.heave_multiplier
+        else:
+            heave = controller_inputs.heave * self.power_multiplier * self.heave_multiplier * 0.01  
+
+        if controller_inputs.pitch_up:
+            pitch = self.power_multiplier * self.pitch_multiplier
+        elif controller_inputs.pitch_down:
+            pitch = - self.power_multiplier * self.pitch_multiplier
+        else:
+            pitch = controller_inputs.pitch * self.power_multiplier * self.pitch_multiplier * 0.01  
+
+        sum_of_magnitudes_of_linear_movements = abs(surge) + abs(sway) + abs(heave)
+        sum_of_magnitudes_of_rotational_movements = abs(pitch) + abs(yaw)
+
+        strafe_power = sqrt(surge**2 + sway**2 + heave**2)
+        strafe_scaling_coefficient = strafe_power / (sum_of_magnitudes_of_linear_movements) if strafe_power else 0
+        strafe_average_coefficient = strafe_power / (strafe_power + sum_of_magnitudes_of_rotational_movements) if strafe_power or sum_of_magnitudes_of_rotational_movements else 0  
+        rotation_average_coefficient = sum_of_magnitudes_of_rotational_movements / (strafe_power + sum_of_magnitudes_of_rotational_movements) if strafe_power or sum_of_magnitudes_of_rotational_movements else 0
+
+        # Calculations below are based on thruster positions
+        thruster_values["for-port-bot"] = ((-surge)+(sway)+(heave)) * strafe_scaling_coefficient * strafe_average_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient
+        thruster_values["for-star-bot"] = ((-surge)+(-sway)+(heave)) * strafe_scaling_coefficient * strafe_average_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient
+        thruster_values["aft-port-bot"] = ((surge)+(sway)+(heave)) * strafe_scaling_coefficient * strafe_average_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient
+        thruster_values["aft-star-bot"] = ((surge)+(-sway)+(heave)) * strafe_scaling_coefficient * strafe_average_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient
+        thruster_values["for-port-top"] = ((-surge)+(sway)+(-heave)) * strafe_scaling_coefficient * strafe_average_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient
+        thruster_values["for-star-top"] = ((-surge)+(-sway)+(-heave)) * strafe_scaling_coefficient * strafe_average_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient
+        thruster_values["aft-port-top"] = ((surge)+(sway)+(-heave)) * strafe_scaling_coefficient * strafe_average_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient
+        thruster_values["aft-star-top"] = ((surge)+(-sway)+(-heave)) * strafe_scaling_coefficient * strafe_average_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient
+
+        ####################################################################
+        ############################## DEBUG ###############################
+        ####################################################################
+
+        # Calculations below will calculate and display the net movement in all directions based on vector analysis
+
+        # from math import cos, pi
+
+        # self.get_logger().info(f"""
+        # Surge: {surge}\n
+        # Sway: {sway}\n
+        # Heave: {heave}\n
+        # Pitch: {pitch}\n
+        # Yaw: {yaw}""")
+
+        # self.get_logger().info(f"""
+        # Strafe Power: {strafe_power}\n
+        # Strafe Scaling Coefficent: {strafe_scaling_coefficient}\n
+        # Strafe Average Coefficient: {strafe_average_coefficient}\n
+        # Rotation Average Coefficent: {rotation_average_coefficient}""")
+
+        # self.get_logger().info(f"""
+        # for port bot: {thruster_values["for-port-bot"]}\n
+        # for star bot: {thruster_values["for-star-bot"]}\n
+        # aft port bot: {thruster_values["aft-port-bot"]}\n
+        # aft star bot: {thruster_values["aft-star-bot"]}\n
+        # for port top: {thruster_values["for-port-top"]}\n
+        # for star top: {thruster_values["for-star-top"]}\n
+        # aft port top: {thruster_values["aft-port-top"]}\n
+        # aft star top: {thruster_values["aft-star-top"]}
+        # cos(pi/3): {cos(pi/3)}""")
+
+        # net_surge = cos(pi/3)*((-thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
+        # net_sway = cos(pi/3)*((thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (-thruster_values["aft-star-bot"]) + (thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (-thruster_values["aft-star-top"]))
+        # net_heave = cos(pi/3)*((thruster_values["for-port-bot"]) + (thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (-thruster_values["aft-port-top"]) + (-thruster_values["aft-star-top"]))
         
-        # WOULD DO THRUSTER MATH HERE. CODE BELOW IS TEMPORARY
-        for controller_input in controller_inputs:
-            if (controller_input[1] in self.thruster_actions):
-                if THRUSTER[controller_input[1]] in self.connected_thrusters:
-                    self.ports[THRUSTER[controller_input[1]]].fly(controller_input[0])
+        # net_pitch = cos(pi/4)*((thruster_values["for-port-bot"]) + (thruster_values["for-star-bot"]) + (-thruster_values["aft-port-bot"]) + (-thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
+        # net_yaw = cos(pi/4)*((thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (-thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (-thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
 
-    def rov_math(self, thruster_inputs):
+        # self.get_logger().info(f"""
+        # Net Surge: {net_surge}\n
+        # Net Sway: {net_sway}\n
+        # Net Heave: {net_heave}\n
+        # Net Pitch: {net_pitch}\n
+        # Net Yaw: {net_yaw}""")
 
-        thruster_inputs_dict = {
-            "surge":0,
-            "sway":0,
-            "heave":0,
-            "pitch":0,
-            "roll":0,
-            "yaw":0
-        }
-
-        thruster_multipliers = {
-            "power":self.power,
-            "surge":self.surge,
-            "sway":self.sway,
-            "heave":self.heave,
-            "pitch":self.pitch,
-            "roll":self.roll,
-            "yaw":self.yaw
-        }
-
-        for thruster_input in thruster_inputs:
-            thruster_inputs_dict[thruster_input[1]] = thruster_input[0] 
-
-        thruster_inputs_dict["surge"] *= thruster_multipliers["power"] * thruster_multipliers["surge"]
-        thruster_inputs_dict["sway"] *= thruster_multipliers["power"] * thruster_multipliers["sway"]
-        thruster_inputs_dict["heave"] *= thruster_multipliers["power"] * thruster_multipliers["heave"]
-        thruster_inputs_dict["pitch"] *= thruster_multipliers["power"] * thruster_multipliers["pitch"]
-        thruster_inputs_dict["roll"] *= thruster_multipliers["power"] * thruster_multipliers["roll"]
-        thruster_inputs_dict["yaw"] *= thruster_multipliers["power"] * thruster_multipliers["yaw"]
-
-        thruster_power = sqrt(thruster_inputs_dict["surge"]**2 + thruster_inputs_dict["sway"]**2 + thruster_inputs_dict["heave"]**2)
         
+        ####################################################################
+        ####################################################################
+        ####################################################################
 
-
-
+        return thruster_values
 
 def main(args=None):
     rclpy.init(args=args)

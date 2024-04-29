@@ -2,33 +2,14 @@ import { Box, Divider, FormControl, Grid, InputLabel, MenuItem, Select, TextFiel
 import ButtonLabel from "./ButtonLabel";
 import AxisDisplay from "./AxisDisplay";
 import { useAtom } from "jotai";
-import { Mappings } from "../../api/Atoms";
+import { Mappings, PilotActions } from "../../api/Atoms";
 import { useState } from "react";
 
 export default function ControllerTab(props: {controller: number; index: number}) {
     const [mappings, setMappings] = useAtom(Mappings);
 
-    //Define all the possible pilot actions. These are interperted once they get the to the RPi4 inside the enclosure
-    const pilotActions = [
-        "None",
-        "surge",
-        "sway",
-        "heave",
-        "pitch",
-        "roll",
-        "yaw",
-        "heave_up",
-        "heave_down",
-        "pitch_up",
-        "pitch_down",
-        "roll_up",
-        "roll_down",
-        "open_claw",
-        "close_claw",
-        "toggleLED",
-        "backflip",
-        "enter_auto_mode"
-    ]
+    // The pilot actions are interperted once they get the to the RPi4 inside the enclosure
+    const [pilotActions,] = useAtom(PilotActions)
 
     const [, reloadComponent] = useState<number>(0);
 

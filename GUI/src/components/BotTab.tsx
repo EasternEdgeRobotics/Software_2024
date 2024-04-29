@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Slider, Box, Button } from "@mui/material";
 import { useAtom } from "jotai";
-import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput } from "../api/Atoms";
+import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput, PilotActions } from "../api/Atoms";
 import { useState, useEffect } from "react";
 
 export function StatusIndicator(props: {statement: boolean}) {
@@ -13,6 +13,7 @@ export function BotTab() {
     const [isRosConnected] = useAtom(IsROSConnected);
 
     const [thrusterMultipliers, setThrusterMultipliers] = useAtom(ThrusterMultipliers);
+    const [pilotActions,] = useAtom(PilotActions);
 
     const [profilesList] = useAtom(ProfilesList);
     const [currentProfile] = useAtom(CurrentProfile);
@@ -76,7 +77,7 @@ export function BotTab() {
         }
 
         const controllerIndexes = [controller1Index, controller2Index];
-        const controller_input_list:(string|number|undefined)[][] = [];
+        const controllerInput:(number|undefined)[] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]; // Current controller input from pilot
 
         if (controllerIndexes[0] == -1){
             setController1Detected(false);
@@ -102,10 +103,12 @@ export function BotTab() {
             for (let j = 0; j<(gamepadInstance?.buttons.length as number);j++){
                 if (gamepadInstance?.buttons[j].pressed){ //Button press detected
                     if (mappings[i]["buttons"][j] != "None"){
-                        const controller_input = [];
-                        controller_input.push(1);
-                        controller_input.push(mappings[i]["buttons"][j]);
-                        controller_input_list.push(controller_input);
+                        for (let k = 0; k < pilotActions.length; k++){
+                            if (pilotActions[k] == mappings[i]["buttons"][j]) {
+                                controllerInput[k-1] = 1;
+                                break;
+                            } 
+                        }
                     }
                 }
             }
@@ -113,15 +116,17 @@ export function BotTab() {
                 const deadzone = Number(mappings[i]["deadzones"][j]) > 0.05 ? Number(mappings[i]["deadzones"][j]): 0.05;
                 if (Math.abs(gamepadInstance?.axes[j] as number) >= deadzone){ // The axis has been moved beyond it's "deadzone", which means that this is actual pilot input and not controller drift
                     if (mappings[i]["axes"][j] != "None"){
-                        const controller_input = [];
-                        controller_input.push(gamepadInstance?.axes[j]);
-                        controller_input.push(mappings[i]["axes"][j]);
-                        controller_input_list.push(controller_input);  
+                        for (let k = 0; k < pilotActions.length; k++){
+                            if (pilotActions[k] == mappings[i]["axes"][j]) {
+                                controllerInput[k-1] = Math.round((j%2==0) ? (gamepadInstance?.axes[j] as number) * 100: (gamepadInstance?.axes[j] as number * -100));
+                                break;
+                            }
+                        } 
                     }
                 }
             }
         }
-        if (controller_input_list.length > 0) {setControllerInput(JSON.stringify(controller_input_list));} // The ROS.tsx script will detect changes to the global variable "ControllerInput"
+        if (!controllerInput.every(item => item == 0)) {setControllerInput(controllerInput);} // The ROS.tsx script will detect changes to the global variable "controllerInput"
     }
 
     useEffect(() => { // Constantly run the input listener 
@@ -135,7 +140,7 @@ export function BotTab() {
     return (
         <Box flexGrow={1}>
             <Grid container justifyContent={"center"} spacing={1}>
-                {["Power", "Surge", "Sway", "Heave", "Pitch", "Roll", "Yaw"].map((label, index) => {
+                {["Power", "Surge", "Sway", "Heave", "Pitch", "Yaw"].map((label, index) => {
                         return (
                             <Grid item xs={1} key={index} display="flex" justifyContent="center" alignItems="center" flexWrap="wrap" height="300px">
                                 <Slider orientation="vertical" valueLabelDisplay="auto" step={5} defaultValue={thrusterMultipliers[index]} onChange={(_,value) => setThrusterMultipliers(thrusterMultipliers.map((v, i) => {if (i == index) return value as number; else return v;}))} />
