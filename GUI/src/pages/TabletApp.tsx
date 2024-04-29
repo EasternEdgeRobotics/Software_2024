@@ -1,6 +1,5 @@
 import {Box, Button, Checkbox, FormGroup, FormControlLabel, Grid, Typography, AppBar, Stack} from "@mui/material";
-import { useState } from "react";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useAtom } from "jotai";
 import { grey, green, yellow, red, blue} from "@mui/material/colors";
 import { Task } from "../types/Task";
@@ -220,132 +219,99 @@ function Tasks(name: string, tasks: Task[]) {
 }
 
 function Timer() {
-        let milliseconds1 = 0;
-        let displayedMilliseconds1 = "";
-        let seconds1 = 0;
-        let displayedSeconds1 = "";
-        let minutes1 = 0;
-        let displayedMinutes1 = "";
-        let timerOn1 = false;
-        let displayedTime1 = "";
-        let timeOver = 0;
+  const [milliseconds, setMilliseconds] = useState(0);
+  const [seconds, setSeconds] = useState(0);
+  const [minutes, setMinutes] = useState(0);
+  const [timerOn, setTimerOn] = useState(false);
+  const [timeOver, setTimeOver] = useState(false);
 
-        // Task 1 Timer: Function
-        function repeat1() {
-          setTimeout(function () {
-            if (timerOn1 == true) {
-              if (timeOver == 0) {
-                milliseconds1 = milliseconds1 + 1;
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
 
-                // If millesconds1 and/or seconds1 have reached their limits, increment/reset variables accordingly
-                if (milliseconds1 >= 100) {
-                  seconds1 = seconds1 + 1;
-                  milliseconds1 = 0;
-                }
-                if (seconds1 >= 60) {
-                  minutes1 = minutes1 + 1;
-                  seconds1 = 0;
-                }
+    if (timerOn && !timeOver) {
+      interval = setInterval(() => {
+        setMilliseconds((prevMilliseconds) => {
+          if (prevMilliseconds >= 99) {
+            setSeconds((prevSeconds) => prevSeconds + 1);
+            return 0;
+          }
+          return prevMilliseconds + 1;
+        });
 
-                // Set displayedMilliseconds1, displayedSeconds1, and displayedMinutes1 based upon if their corresponding non-displayed values are single-digit or double-digit
-                if (milliseconds1 < 10) {
-                  displayedMilliseconds1 = ":0" + milliseconds1;
-                } else {
-                  displayedMilliseconds1 = ":" + milliseconds1;
-                }
-                if (seconds1 < 10) {
-                  displayedSeconds1 = ":0" + seconds1;
-                } else {
-                  displayedSeconds1 = ":" + seconds1;
-                }
-                if (minutes1 < 10) {
-                  displayedMinutes1 = "0" + minutes1;
-                } else {
-                  displayedMinutes1 = "" + minutes1;
-                }
+        setSeconds((prevSeconds) => {
+          if (prevSeconds >= 59) {
+            setMinutes((prevMinutes) => prevMinutes + 1);
+            return 0;
+          }
+          return prevSeconds;
+        });
 
-                // If 15 minutes have passed within the Task 1 Timer, break all timers
-                if (minutes1 == 15) {
-                  timeOver = 1;
-                }
-
-                // Update and display displayedTime1
-                displayedTime1 =
-                  displayedMinutes1 +
-                  displayedSeconds1 +
-                  displayedMilliseconds1;
-                document.getElementById("timerDisplay1")!.innerHTML =
-                  displayedTime1;
-
-                // Repeat the Task 1 Timer's function
-                repeat1();
-              }
-            }
-          });
+        if (minutes >= 15) {
+          setTimeOver(true);
+          setTimerOn(false);
         }
-    
-    return (
-      <Box sx={{ width: [400], textAlign: "left" }}>
-        <Stack spacing={2} direction="row">
-          {/* Task 1 Timer: Start Button */}
-          <Button
-            variant="outlined"
-            sx={{ borderColor: green[900], color: green[900] }}
-            onClick={() => {
-              if (timeOver == 0) {
-                timerOn1 = true;
-                repeat1();
-              }
-            }}
-          >
-            START
-          </Button>
+      }, 10);
+    }
 
-          {/* Task 1 Timer: Pause Button*/}
-          <Button
-            variant="outlined"
-            sx={{ borderColor: yellow[900], color: yellow[900] }}
-            onClick={() => {
-              if (timeOver == 0) {
-                timerOn1 = false;
-              }
-            }}
-          >
-            PAUSE
-          </Button>
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [timerOn, timeOver, minutes]);
 
-          {/* Task 1 Timer: Displayed Time */}
-          <Box textAlign="center" sx={{ width: [80] }}>
-            {" "}
-            {/* Include 'border: "2px solid grey"'? */}
-            <Typography
-              component="div"
-              id="timerDisplay1"
-              fontSize={20}
-              sx={{ color: grey[400] }}
-            >
-              00:00:00
-            </Typography>
-          </Box>
+  const resetTimer = () => {
+    setMilliseconds(0);
+    setSeconds(0);
+    setMinutes(0);
+    setTimeOver(false);
+  };
 
-          {/* Task 1 Timer: Reset button */}
-          <Button
-            variant="outlined"
-            sx={{ borderColor: red[900], color: red[900] }}
-            onClick={() => {
-              if (timeOver == 0) {
-                timerOn1 = false;
-                milliseconds1 = 0;
-                seconds1 = 0;
-                minutes1 = 0;
-                document.getElementById("timerDisplay1")!.innerHTML =
-                  "00:00:00";
-              }
-            }}
-          >
-            RESET
-          </Button>
-        </Stack>
-      </Box>
-    );
+  const formatTime = (time: number) => (time < 10 ? `0${time}` : `${time}`);
+
+  return (
+    <Box sx={{ width: [400], textAlign: "left" }}>
+      <Stack spacing={2} direction="row">
+        <Button
+          variant="outlined"
+          sx={{ borderColor: green[900], color: green[900] }}
+          onClick={() => {
+            if (!timeOver) {
+              setTimerOn(true);
+            }
+          }}
+        >
+          START
+        </Button>
+
+        <Button
+          variant="outlined"
+          sx={{ borderColor: yellow[900], color: yellow[900] }}
+          onClick={() => {
+            if (!timeOver) {
+              setTimerOn(false);
+            }
+          }}
+        >
+          PAUSE
+        </Button>
+
+        <Box textAlign="center" sx={{ width: [80] }}>
+          <Typography component="div" fontSize={20} sx={{ color: grey[400] }}>
+            {`${formatTime(minutes)}:${formatTime(seconds)}:${formatTime(
+              milliseconds
+            )}`}
+          </Typography>
+        </Box>
+
+        <Button
+          variant="outlined"
+          sx={{ borderColor: red[900], color: red[900] }}
+          onClick={resetTimer}
+        >
+          RESET
+        </Button>
+      </Stack>
+    </Box>
+  );
 }
