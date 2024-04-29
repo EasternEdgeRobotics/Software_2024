@@ -267,7 +267,7 @@ function SideBar() {
 
   useEffect(() => {
     const rosInstance = new ROSLIB.Ros({});
-    rosInstance.connect(`ws://${RosIP}:9090`);
+    rosInstance.connect(`wss://${RosIP}:9090`);
     setRos(rosInstance);
   }, [RosIP]);
 
@@ -519,11 +519,11 @@ export function ControllerApp() {
   ros.on("error", () => {0}); // to prevent page breaking
 
   React.useEffect(() => {
-    ros.connect(`ws://${RosIP}:9090`);
+    ros.connect(`wss://${RosIP}:9090`);
     setInterval(() => {
       if (!ros.isConnected) {
         setRos(new ROSLIB.Ros({}));
-        ros.connect(`ws://${RosIP}:9090`);
+        ros.connect(`wss://${RosIP}:9090`);
       }
     }, 1000);
   }, []);
