@@ -198,17 +198,8 @@ function renderTasks(tasks: Task[], level = 0, id="", publisher: ROSLIB.Topic, s
 }
 
 function SubList(props: { name: string; tasks: Task[]; max?: boolean; publisher: ROSLIB.Topic, saved?: { [key: string]: boolean}}) {
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [score, setScore] = useState<number>(0);
   const [totalScore, setTotalScore] = useState<number>(0);
-
-  useEffect(() => {
-    const loadedTasks = props.tasks.map((task: Task) => {
-      const savedTask = localStorage.getItem(task.name);
-      return savedTask ? JSON.parse(savedTask) : task;
-    });
-    setTasks(loadedTasks);
-  }, [props.tasks]);
 
   useEffect(() => {
     //recursive function to calculate the total score of the tasks
@@ -238,8 +229,8 @@ function SubList(props: { name: string; tasks: Task[]; max?: boolean; publisher:
       return total;
     };
 
-    setTotalScore(calculateTotalScore(tasks, props.max));
-  }, [tasks]);
+    setTotalScore(calculateTotalScore(props.tasks, props.max));
+  }, [props.tasks]);
 
   return (
     <div
@@ -255,7 +246,7 @@ function SubList(props: { name: string; tasks: Task[]; max?: boolean; publisher:
         </h2>
         <div>{
           renderTasks(
-            tasks,
+            props.tasks,
             undefined,
             props.name.split(":")[0].trim().replace(" ", "_"),
             props.publisher,
