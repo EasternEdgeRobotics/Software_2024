@@ -273,7 +273,6 @@ function SideBar() {
   const [RosIP] = useAtom(ROSIP);
   const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
   const [saved_tasks, setTasks] = useState<{ [key: string]: boolean }>({});
-  const [loading, setLoading] = useState(true); // Add a loading state
 
   useEffect(() => {
     const rosInstance = new ROSLIB.Ros({});
@@ -294,14 +293,12 @@ function SideBar() {
       function (result) {
         console.log("All tasks:", result.result);
         setTasks(JSON.parse(result.result));
-        setLoading(false);
       },
       function (error) {
         console.log("Error calling service:", error);
-        setLoading(false);
       }
     );
-  }, [ros]);
+  }, [ros,collapsed]);
 
   ros.on("connection", () => console.log("Connected to ROS"));
 

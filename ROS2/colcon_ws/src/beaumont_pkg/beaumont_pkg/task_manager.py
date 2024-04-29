@@ -44,15 +44,18 @@ class TaskManager(Node):
         taskStatus:bool = data['status']
 
         session = Session()
-        task = session.query(Task).get(taskID)
-        if task is None:
-            # The task doesn't exist, so create a new one
-            task = Task(id=taskID, status=taskStatus)
-            session.add(task)
-        else:
-            # The task exists, so update its status
-            task.status = taskStatus
-        session.commit()
+        try:
+            task = session.query(Task).get(taskID)
+            if task is None:
+                # The task doesn't exist, so create a new one
+                task = Task(id=taskID, status=taskStatus)
+                session.add(task)
+            else:
+                # The task exists, so update its status
+                task.status = taskStatus
+            session.commit()
+        finally:
+            session.close()
 
     def get_all_tasks(self, request, response):
         try:
