@@ -26,134 +26,22 @@ Additional features include:
 */
 
 export default function TabletApp() {
-    // Main-Timer: Variables
-    let milliseconds = 0;
-    let displayedMilliseconds = "";
-    let seconds = 0;
-    let displayedSeconds = "";
-    let minutes = 0;
-    let displayedMinutes = "";
-    let displayedTime = "";
-    let timerOn = 0;
-    const timerPaused = 0; // Necessary variable? Unless it's value is changed at any point, it must be kept to const
-    let timeOver = 0;
-
-    // Main Timer: Function
-    function repeat() {       
-        setTimeout(function() {
-            if (timerOn == 1) {
-                if (timerPaused == 0) {
-                    if (timeOver == 0) {
-                        milliseconds = milliseconds + 1;
-
-                        // If millesconds and/or seconds have reached their limits, increment/reset variables accordingly
-                        if (milliseconds >= 100) {
-                            seconds = seconds + 1;
-                            milliseconds = 0;
-                        }
-                        if (seconds >= 60) {
-                            minutes = minutes + 1;
-                            seconds = 0;
-                        }
-
-                        // Set displayedMilliseconds, displayedSeconds, and displayedMinutes based upon if their corresponding non-displayed values are single-digit or double-digit
-                        if (milliseconds < 10) {
-                            displayedMilliseconds = ":0" + milliseconds;
-                        }
-                        else {
-                            displayedMilliseconds = ":" + milliseconds;
-                        }
-                        if (seconds < 10) {
-                            displayedSeconds = ":0" + seconds;
-                        }
-                        else {
-                            displayedSeconds = ":" + seconds;
-                        }
-                        if (minutes < 10) {
-                            displayedMinutes = "0" + minutes; 
-                        }
-                        else {
-                            displayedMinutes = "" + minutes;
-                        }
-                             
-                        // If 15 minutes have passed within the Main Timer, break all timers
-                        if (minutes == 15) {
-                            timeOver = 1;
-                        }
-
-                        // Update and display displayedTime
-                        displayedTime = displayedMinutes + displayedSeconds + displayedMilliseconds;
-                        document.getElementById("timerDisplay")!.innerHTML = displayedTime;
-
-                        // Repeat the Main Timer's function
-                        repeat();
-                    }
-                }
-            }
-        });
-    }
-
-
 
     return (
       // Main Timer & Task 1 Timer: Control Layouts
       <FormGroup>
         {/* Main Timer: Controls */}
-        <AppBar sx={{ bgcolor: "grey", textAlign: "center" }}>
-          {/* Main Timer: Displayed Time */}
-          <Typography component="div" id="timerDisplay" fontSize={50}>
-            00:00:00
-          </Typography>
-
-          {/* Main Timer: Start Button */}
-          <Button
-            variant="contained"
-            sx={{ background: green[400], color: grey[50] }}
-            onClick={() => {
-              if (timeOver == 0) {
-                timerOn = 1;
-              }
-              repeat();
-            }}
-          >
-            <Typography fontSize={25}>START</Typography>
-          </Button>
-
-          {/* Main Timer: Pause Button */}
-          <Button
-            variant="contained"
-            sx={{ background: yellow[400], color: [grey[50]] }}
-            onClick={() => {
-              if (timeOver == 0) {
-                timerOn = 0;
-              }
-            }}
-          >
-            <Typography fontSize={25}>PAUSE</Typography>
-          </Button>
-
-          {/* Main Timer: Reset Button */}
-          <Button
-            variant="contained"
-            sx={{ background: red[400], color: grey[50] }}
-            onClick={() => {
-              if (timeOver == 0) {
-                timerOn = 0;
-                milliseconds = 0;
-                seconds = 0;
-                minutes = 0;
-                document.getElementById("timerDisplay")!.innerHTML = "00:00:00";
-              }
-            }}
-          >
-            <Typography fontSize={25}>RESET</Typography>
-          </Button>
-        </AppBar>
-        <div style={{ height: "240px" }}></div>
-        {Tasks("TASK 1 : Coastal Pioneer Array", taskJSON.task1.tasks)};
-        {Tasks("TASK 2 : Deploy SMART cables", taskJSON.task2.tasks)};
-        {Tasks("TASK 3 : From the Red Sea to Tenesse", taskJSON.task3.tasks)};
-        {Tasks("TASK 4 : MATE Floats", taskJSON.task4.tasks)};
+        <MainTimer />
+        
+        <div style={{ height: "250px" }}></div>
+            {Tasks("TASK 1 : Coastal Pioneer Array", taskJSON.task1.tasks)}
+            
+            {Tasks("TASK 2 : Deploy SMART cables", taskJSON.task2.tasks)}
+            
+            {Tasks("TASK 3 : From the Red Sea to Tenesse", taskJSON.task3.tasks)}
+            
+            {Tasks("TASK 4 : MATE Floats", taskJSON.task4.tasks)}
+            
       </FormGroup>
     );
 }  
@@ -163,22 +51,22 @@ function RenderTasks(tasks: Task[],level = 0, id = "") {
         const currentID = id ? `${id}:${index + 1}` : `${index + 1}`;
 
         return (
-          <div style={{ paddingLeft: `${level ** 0.5 * 2}em` }}>
+          <div style={{ paddingLeft: `${level ** 0.5 * 2}em`, paddingBottom: "5px"}}>
             {!task.subTasks && (
               <FormControlLabel
                 control={<Checkbox />}
-                label={<div style={{ fontSize: "1.6vw" }}>{task.name}</div>}
+                label={<div style={{ fontSize: "1.6vw", fontWeight: "lighter" }}>{task.name}</div>}
                 style={{ fontSize: 20 }}
               />
-            )}
+                )}
             {task.subTasks && (
               <div
                 style={{
                   paddingLeft: "0px",
                   wordBreak: "break-word",
                   alignItems: "flex-start",
-                  fontWeight: "bolder",
-                  fontSize: "1.9vw",
+                  fontWeight: "bold",
+                  fontSize: "1.8vw",
                 }}
               >
                 <Checkbox
@@ -207,15 +95,135 @@ function RenderTasks(tasks: Task[],level = 0, id = "") {
 
 function Tasks(name: string, tasks: Task[]) {
     return (
-      <FormGroup style={{ paddingLeft: "10vw", paddingRight: "10vw" }}>
+      <FormGroup style={{ paddingLeft: "10vw", paddingRight: "8vw" }}>
         <Row style={{ display: "flex", justifyContent: "flex-start" , alignItems: "center" , marginBottom: "1vh"}}>
                 <h1 style={{ marginTop: "0px", marginBottom: "0px" }}>{name}</h1>
                 <div style={{ width: "2vw" }}></div>
           <Timer />
         </Row>
         {RenderTasks(tasks)}
-      </FormGroup>
+        <div style={{ height: "3vh" }}></div>
+        </FormGroup>
     );
+}
+
+function MainTimer() {
+   let milliseconds = 0;
+   let displayedMilliseconds = "";
+   let seconds = 0;
+   let displayedSeconds = "";
+   let minutes = 0;
+   let displayedMinutes = "";
+   let displayedTime = "";
+   let timerOn = 0;
+   const timerPaused = 0; // Necessary variable? Unless it's value is changed at any point, it must be kept to const
+   let timeOver = 0;
+
+   // Main Timer: Function
+   function repeat() {
+     setTimeout(function () {
+       if (timerOn == 1) {
+         if (timerPaused == 0) {
+           if (timeOver == 0) {
+             milliseconds = milliseconds + 1;
+
+             // If millesconds and/or seconds have reached their limits, increment/reset variables accordingly
+             if (milliseconds >= 100) {
+               seconds = seconds + 1;
+               milliseconds = 0;
+             }
+             if (seconds >= 60) {
+               minutes = minutes + 1;
+               seconds = 0;
+             }
+
+             // Set displayedMilliseconds, displayedSeconds, and displayedMinutes based upon if their corresponding non-displayed values are single-digit or double-digit
+             if (milliseconds < 10) {
+               displayedMilliseconds = ":0" + milliseconds;
+             } else {
+               displayedMilliseconds = ":" + milliseconds;
+             }
+             if (seconds < 10) {
+               displayedSeconds = ":0" + seconds;
+             } else {
+               displayedSeconds = ":" + seconds;
+             }
+             if (minutes < 10) {
+               displayedMinutes = "0" + minutes;
+             } else {
+               displayedMinutes = "" + minutes;
+             }
+
+             // If 15 minutes have passed within the Main Timer, break all timers
+             if (minutes == 15) {
+               timeOver = 1;
+             }
+
+             // Update and display displayedTime
+             displayedTime =
+               displayedMinutes + displayedSeconds + displayedMilliseconds;
+             document.getElementById("timerDisplay")!.innerHTML = displayedTime;
+
+             // Repeat the Main Timer's function
+             repeat();
+           }
+         }
+       }
+     });
+   }
+
+  return (
+    <AppBar sx={{ bgcolor: "grey", textAlign: "center" }}>
+      {/* Main Timer: Displayed Time */}
+      <Typography component="div" id="timerDisplay" fontSize={50}>
+        00:00:00
+      </Typography>
+
+      {/* Main Timer: Start Button */}
+      <Button
+        variant="contained"
+        sx={{ background: green[400], color: grey[50] }}
+        onClick={() => {
+          if (timeOver == 0) {
+            timerOn = 1;
+          }
+          repeat();
+        }}
+      >
+        <Typography fontSize={25}>START</Typography>
+      </Button>
+
+      {/* Main Timer: Pause Button */}
+      <Button
+        variant="contained"
+        sx={{ background: yellow[400], color: [grey[50]] }}
+        onClick={() => {
+          if (timeOver == 0) {
+            timerOn = 0;
+          }
+        }}
+      >
+        <Typography fontSize={25}>PAUSE</Typography>
+      </Button>
+
+      {/* Main Timer: Reset Button */}
+      <Button
+        variant="contained"
+        sx={{ background: red[400], color: grey[50] }}
+        onClick={() => {
+          if (timeOver == 0) {
+            timerOn = 0;
+            milliseconds = 0;
+            seconds = 0;
+            minutes = 0;
+            document.getElementById("timerDisplay")!.innerHTML = "00:00:00";
+          }
+        }}
+      >
+        <Typography fontSize={25}>RESET</Typography>
+      </Button>
+    </AppBar>
+  );
 }
 
 function Timer() {
