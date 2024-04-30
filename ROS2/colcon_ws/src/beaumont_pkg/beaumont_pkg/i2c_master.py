@@ -238,12 +238,6 @@ class I2CMaster(Node):
         if self.bus is not None:
 
             self.temp_sensor_timer = self.create_timer(TEMP_SENSOR_REQUESTS_PERIOD, self.obtain_temp_sensor_data, callback_group=i2c_master_callback_group)
-
-        ###################################################
-        ###################### STM32 ######################
-        ###################################################
-
-        # TODO
         
 
     def copilot_listener_callback(self, msg):
@@ -406,7 +400,7 @@ class I2CMaster(Node):
 
             self.tick_thrusters() # Will be called at ~ 10Hz. Involves accessing i2c bus to set thruster duty cycle
 
-        # TODO Interpert input bound for STM32
+        self.stm32_communications(msg)
 
     def stm32_communications(self, controller_inputs):
         '''
