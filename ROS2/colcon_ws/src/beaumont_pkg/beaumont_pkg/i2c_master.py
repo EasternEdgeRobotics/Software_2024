@@ -146,7 +146,11 @@ class I2CMaster(Node):
         self.copilot_listener 
         self.pilot_listener
         
-        self.thrusters_detected_on_correct_channels = False
+        ###############################################################
+        ################### INITIALIZE ADAFRUIT I2C ###################
+        ###############################################################        
+
+        self.i2c = None
 
         try:
             self.i2c = board.I2C()
@@ -164,47 +168,51 @@ class I2CMaster(Node):
         self.pitch_multiplier = 0
         self.yaw_multiplier = 0
 
-           
+        self.thrusters_detected_on_correct_channels = False
+
         self.connected_channels = {}
-        
-        # Connect to PCA9685
-        try:
-            self.pwm = PCA9685(self.i2c)         
-            self.pwm.frequency = 100
-        except:
-            self.get_logger().error("CANNOT FIND PCA9685 ON I2C BUS!")
 
-        for i in range(15): # The PCA9685 can connect to up to 16 ESCs (16 thrusters). 
+        if self.i2c is not None:
+
+            # Connect to PCA9685
             try:
-                self.connected_channels[i] = Thruster(self.pwm, i)
+                self.pwm = PCA9685(self.i2c)         
+                self.pwm.frequency = 100
             except:
-                self.get_logger().info("No thruster on channel ", i)
+                self.get_logger().error("CANNOT FIND PCA9685 ON I2C BUS!")
 
-            
-        # Ensure that the connected channels are correct
-        if len(self.connected_channels) == 8:
+            for channel in range(15): # The PCA9685 can connect to up to 16 ESCs (16 thrusters). 
+                try:
+                    self.connected_channels[channel] = Thruster(self.pwm, channel)
+                except:
+                    self.get_logger().info(f"No thruster on channel {channel}")
 
-            self.thrusters_detected_on_correct_channels = True
+                
+            # Ensure that the connected channels are correct
+            if len(self.connected_channels) == 8:
 
-            for channel in self.connected_channels:
-                if channel in list(THRUSTER_CHANNELS.values()): # i.e. the thruster is on a channel that we expect
-                    continue
-                else:
-                    self.thrusters_detected_on_correct_channels = False
-                    break
+                self.thrusters_detected_on_correct_channels = True
+
+                for channel in self.connected_channels:
+                    if channel in list(THRUSTER_CHANNELS.values()): # i.e. the thruster is on a channel that we expect
+                        continue
+                    else:
+                        self.thrusters_detected_on_correct_channels = False
+                        break
 
         #################################################
         ###################### IMU ######################
         #################################################
 
-        # Connect to BNO055
-        try:
-            self.imu_sensor = BNO055_I2C(self.i2c)
-            self.last_temperature_val = 0xFFFF # per recommendation on (https://learn.adafruit.com/adafruit-bno055-absolute-orientation-sensor/python-circuitpython)
+        if self.i2c is not None:
+            # Connect to BNO055
+            try:
+                self.imu_sensor = BNO055_I2C(self.i2c)
+                self.last_temperature_val = 0xFFFF # per recommendation on (https://learn.adafruit.com/adafruit-bno055-absolute-orientation-sensor/python-circuitpython)
 
-            self.imu_timer = self.create_timer(IMU_REQUESTS_PERIOD, self.obtain_imu_data, callback_group=i2c_master_callback_group)
-        except:
-            self.get_logger().error("CANNOT FIND BNO055 ON I2C BUS!")
+                self.imu_timer = self.create_timer(IMU_REQUESTS_PERIOD, self.obtain_imu_data, callback_group=i2c_master_callback_group)
+            except:
+                self.get_logger().error("CANNOT FIND BNO055 ON I2C BUS!")
         
 
         ##############################################################
