@@ -427,27 +427,27 @@ class I2CMaster(Node):
 
         Thus, possible actions and associated registers are as follows:
 
-        0b000 - open_claw
-        0b001 - close_claw
-        0b010 - brighten_led
-        0b011 - dim_led
-        0b100 - turn_claw_cw
-        0b101 - turn_claw_ccw
-        0b110 - read_outside_temperature_probe
+        0x11 - open_claw
+        0x12 - close_claw
+        0x13 - brighten_led
+        0x14 - dim_led
+        0x15 - turn_claw_cw
+        0x16 - turn_claw_ccw
+        0x17 - read_outside_temperature_probe
         '''
         
         if self.bus is not None:
 
             possible_actions = {
-                0b00000000: controller_inputs.open_claw,
-                0b00000001: controller_inputs.close_claw,
-                0b00000010: controller_inputs.brighten_led,
-                0b00000011: controller_inputs.dim_led,
-                0b00000100: controller_inputs.turn_claw_cw,
-                0b00000101: controller_inputs.turn_claw_ccw,
+                0x11: controller_inputs.open_claw,
+                0x12: controller_inputs.close_claw,
+                0x13: controller_inputs.brighten_led,
+                0x14: controller_inputs.dim_led,
+                0x15: controller_inputs.turn_claw_cw,
+                0x16: controller_inputs.turn_claw_ccw,
             }
 
-            outside_temperature_probe_register = 0b00000110
+            outside_temperature_probe_register = 0x17
             temperature_probe_register_length_in_bytes = 2
 
             for action_address, is_desired in possible_actions:
