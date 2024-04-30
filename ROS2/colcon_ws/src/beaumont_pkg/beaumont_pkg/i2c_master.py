@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node, MutuallyExclusiveCallbackGroup
 
-from eer_messages.msg import ThrusterMultipliers, PilotInput, IMUData, ADCData
+from eer_messages.msg import ThrusterMultipliers, PilotInput, IMUData, ADCData, TempSensorData, OutsideTempProbeData
 
 import board
 from smbus2 import SMBus
@@ -31,15 +31,27 @@ THRUSTER_CHANNELS = {
     "aft-star-bot": 7
 }
 
+STM32_ADDRESS = 0x80 # Don't know yet
+
 ADC_ADDRESSES = {
     "adc_48v_bus": 0x55,
     "adc_12v_bus":0x56,
     "adc_5v_bus":0x59
 } 
 
+TEMPERATURE_SENSOR_ADDRESSES = {
+    "power_board_u8":0x48,
+    "power_board_u9":0x49,
+    "power_board_u10":0x4a,
+    "mega_board_ic2":0x4b,
+    "power_board_u11":0x4c,
+    "mega_board_ic1":0x4e,
+}
+
 # How often to read data on i2c bus
 IMU_REQUESTS_PERIOD = 1
 ADC_REQUESTS_PERIOD = 1
+TEMP_SENSOR_REQUESTS_PERIOD = 1
 
 class Thruster:
     """Thruster class."""
@@ -123,6 +135,8 @@ class I2CMaster(Node):
         # Publishers
         self.imu_data_publisher = self.create_publisher(IMUData, "imu", 10)
         self.adc_data_publisher = self.create_publisher(ADCData, "adc", 10)
+        self.temp_sensor_data_publisher = self.create_publisher(TempSensorData, "board_temp", 10)
+        self.outside_temperature_probe_data_publisher = self.create_publisher(OutsideTempProbeData, "outside_temp_probe", 10)
 
         # Debugger publisher
         # from std_msgs.msg import String
@@ -221,7 +235,9 @@ class I2CMaster(Node):
         ###################### Temperature Sensors ######################
         #################################################################
 
-        # TODO
+        if self.bus is not None:
+
+            self.temp_sensor_timer = self.create_timer(TEMP_SENSOR_REQUESTS_PERIOD, self.obtain_temp_sensor_data, callback_group=i2c_master_callback_group)
 
         ###################################################
         ###################### STM32 ######################
@@ -289,41 +305,50 @@ class I2CMaster(Node):
         the slave does not exist. This function will attempt to configure the slaves again the next time it's called.
 
         The below code does everything needed for our purposes. All ADC registers are listed below:
-        0b000 - Conversion Result (we read this for voltage)
-        0b001 - Alert Status (ignored)
-        0b010 - Configuration (we configure it for auto-conversion mode)
-        0b011 - Low Limit (We leave this as 0)
-        0b100 - High Limit (We leave this as 4096 or 2**12)
-        0b110 - Lowest Conversion to Date (ignored)
-        0b111 - Highest Conversion to Date (ignored)
+        0b000 - Conversion Result (r) (we read this for voltage)
+        0b001 - Alert Status (r/w) (ignored)
+        0b010 - Configuration (r/w) (we configure it for auto-conversion mode)
+        0b011 - Low Limit (r/w) (We leave this as 0)
+        0b100 - High Limit (r/w) (We leave this as 4096 or 2**12)
+        0b110 - Lowest Conversion to Date (r/w) (ignored)
+        0b111 - Highest Conversion to Date (r/w) (ignored)
         """
 
         adc_data = ADCData()
 
-        for key, is_configured in self.configured_adcs:
+        for key, is_configured in self.configured_adcs.items():
 
-            if is_configured:
+            if is_configured: # Assume ADC is configured. Read conversion result
 
-                # conversion_result_register = 0b00000000
-                # conversion_result_length_in_bytes = 2
+                conversion_result_register = 0b00000000
+                conversion_result_length_in_bytes = 2
                 
-                read = self.bus.read_i2c_block_data(ADC_ADDRESSES[key], 0b00000000, 2)
+                read = self.bus.read_i2c_block_data(ADC_ADDRESSES[key], conversion_result_register, conversion_result_length_in_bytes)
 
                 read_12_bit = (read[0] & 0x0F) * 256 + read[1]
 
                 setattr(adc_data, key, read_12_bit) # The read value is converted to 12 bits
 
-                # ADC is not connected. Must reconfigure it if it happens to be connected next time this function is called
                 if read_12_bit == 0:
+
+                    # Should not get a reading of 0
+                    # ADC is not connected. Must reconfigure it if it happens to be connected next time this function is called.
+
                     self.configured_adcs[key] == False
 
             else:
 
-                # configuration_address = 0b00000010
-                # configuration_value = 0b00100000 (auto conversion mode)
+                configuration_address = 0b00000010
+                configuration_value = 0b00100000 # (auto conversion mode)
 
-                self.bus.write_byte_data(ADC_ADDRESSES[key], 0b00000010, 0b00100000)
-                self.configured_adcs[key] == True
+                self.bus.write_byte_data(ADC_ADDRESSES[key], configuration_address, configuration_value)
+
+                configuration = self.bus.read_byte_data(ADC_ADDRESSES[key],configuration_address)
+                
+                if configuration == configuration_value:
+                    self.configured_adcs[key] = True
+                else:
+                    self.configured_adcs[key] = False
 
         self.adc_data_publisher.publish(adc_data)
 
@@ -331,6 +356,44 @@ class I2CMaster(Node):
         # adc_debug_data.data = str(adc_data)
         # self.debugger.publish(adc_debug_data)
 
+    def obtain_temp_sensor_data(self):
+        '''
+        The temperature sensor does not need to be configured, as the default configuration 
+        options are good. The registers are as follows:
+
+        0b00 - Temperature Reading (r) (11 MSBs of two bytes)
+        0b01 - Configuration (r/w) (ignored)
+        0b10 - Hysteresis (r/w) (ignored, used for alerts) (default 75 celcius)
+        0b11 - Overtemperature Shutdown Value (r/w) (ignored) (default 80 celcius)
+
+        The alert is indicated by a seperate pin (not an i2c register)
+        '''
+
+        temperature_reading_register = 0b00000000
+        temperature_reading_register_length_in_bytes = 2 
+
+        temp_sensor_data = TempSensorData()
+
+        for key, address in TEMPERATURE_SENSOR_ADDRESSES.items():
+
+            read = self.bus.read_i2c_block_data(address, temperature_reading_register, temperature_reading_register_length_in_bytes)
+
+            # Convert to 11 bits
+            read = ((read[0] << 8) + read[1]) >> 5 
+
+            # According to the datasheet (https://www.nxp.com/docs/en/data-sheet/LM75B.pdf), the reading is in two's complement form. 
+            # The line below obtains magnitude and assigns correct sign
+
+            read = -((0b11111111111 - read) + 1) if read >= 0b10000000000 else read
+
+            # Data sheet says to use 0.125 for conversion to celcius
+            setattr(temp_sensor_data, key, float(read * 0.125))
+
+        self.temp_sensor_data_publisher.publish(temp_sensor_data) 
+        
+        # temp_sensor_debug_data = String()
+        # temp_sensor_debug_data.data = str(temp_sensor_data)
+        # self.debugger.publish(temp_sensor_debug_data)
 
     def pilot_listener_callback(self, msg): 
 
@@ -344,6 +407,87 @@ class I2CMaster(Node):
             self.tick_thrusters() # Will be called at ~ 10Hz. Involves accessing i2c bus to set thruster duty cycle
 
         # TODO Interpert input bound for STM32
+
+    def stm32_communications(self, controller_inputs):
+        '''
+        Communications to the STM32 is required for the 12 DC motor (claw linear actuator),
+        stepper motor (claw rotation), dimmable LEDs, and outside temperature probe readings.
+
+        The eer properity communication protocol is (currently) based only on reads. Each action will be achieved through:
+
+        read = self.bus.read_byte_data(STM32_ADDRESS, action_address)
+
+        The result of the read can be interperted for a success code (ex. 0xFF) or a fail code (0xF0). A non successful transaction 
+        (where the slave doesn't respond or acknowledge) results in SMBus returning 0x00. 
+
+        An exception to the read result above is the temperature reading from the 1-wire outside probe. That will be delieved in two 
+        bytes in the same format it is recieved in the STM32 by the 1 wire protocol (https://cdn.sparkfun.com/datasheets/Sensors/Temp/DS18B20.pdf).  
+
+        Thus, possible actions and associated registers are as follows:
+
+        0b000 - open_claw
+        0b001 - close_claw
+        0b010 - brighten_led
+        0b011 - dim_led
+        0b100 - turn_claw_cw
+        0b101 - turn_claw_ccw
+        0b110 - read_outside_temperature_probe
+        '''
+        
+        if self.bus is not None:
+
+            possible_actions = {
+                0b00000000: controller_inputs.open_claw,
+                0b00000001: controller_inputs.close_claw,
+                0b00000010: controller_inputs.brighten_led,
+                0b00000011: controller_inputs.dim_led,
+                0b00000100: controller_inputs.turn_claw_cw,
+                0b00000101: controller_inputs.turn_claw_ccw,
+            }
+
+            outside_temperature_probe_register = 0b00000110
+            temperature_probe_register_length_in_bytes = 2
+
+            for action_address, is_desired in possible_actions:
+                if is_desired:
+                    read = self.bus.read_byte_data(STM32_ADDRESS, action_address)
+
+                    if read == 0xF0:
+                        self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {action_address}")
+                    elif read == 0x00:
+                        self.get_logger().error(f"COULD NOT COMMUNICATE TO STM32")
+            
+            if controller_inputs.read_outside_temperature_probe:
+                    
+                outside_temp_probe_data = OutsideTempProbeData()
+
+                # Data will arrive based on this format (https://cdn.sparkfun.com/datasheets/Sensors/Temp/DS18B20.pdf)
+
+                read = self.bus.read_i2c_block_data(STM32_ADDRESS, outside_temperature_probe_register, temperature_probe_register_length_in_bytes)
+
+                # Convert from 12 bit two's complement binary to string
+                read_12_bit_twos_complement_str = '{0:016b}'.format((read[0] << 8) + read[1])[4:]
+
+                # Convert from 12 bit two's complement string to signed binary
+
+                read_12_bit_twos_complement = int(f"0b{read_12_bit_twos_complement_str}",2)
+
+                read_12_bit_magnitude_str = '{0:016b}'.format(((0b111111111111 - read_12_bit_twos_complement) + 1) if read_12_bit_twos_complement >= 0b100000000000 else read_12_bit_twos_complement)[4:] 
+
+                # Convert to float32
+
+                outside_temp_probe_data.data = (-1 if int(read_12_bit_twos_complement_str[0]) else 1) * (int(f"0b{read_12_bit_magnitude_str[:8]}",2) + 0.5 * int(read_12_bit_magnitude_str[8]) + 0.25 * int(read_12_bit_magnitude_str[9]) + 0.125 * int(read_12_bit_magnitude_str[10]) + 0.0625 * int(read_12_bit_magnitude_str[11]))
+
+                if outside_temp_probe_data.data == 0xF0:
+                    self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {bin(outside_temperature_probe_register)}")
+                elif outside_temp_probe_data.data == 0x00:
+                    self.get_logger().error(f"COULD NOT COMMUNICATE TO STM32")
+
+                self.outside_temperature_probe_data_publisher.publish(outside_temp_probe_data)
+
+                
+                
+
 
     def rov_math(self, controller_inputs):
         '''

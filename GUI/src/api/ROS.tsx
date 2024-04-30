@@ -87,7 +87,10 @@ export function InitROS() {
             pitch_down: controllerInput[10] ? true: false,
             brighten_led: controllerInput[11] ? true: false,
             dim_led: controllerInput[12] ? true: false,
-            enter_auto_mode: controllerInput[13] ? true: false
+            turn_claw_cw: controllerInput[13] ? true: false,
+            turn_claw_ccw: controllerInput[14] ? true: false,
+            read_outside_temperature_probe: controllerInput[15] ? true: false,
+            enter_auto_mode: controllerInput[16] ? true: false
             });
         controllerInputTopic.publish(controllerInputVals);
     }

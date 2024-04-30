@@ -77,7 +77,7 @@ export function BotTab() {
         }
 
         const controllerIndexes = [controller1Index, controller2Index];
-        const controllerInput:(number|undefined)[] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]; // Current controller input from pilot
+        const controllerInput:(number|undefined)[] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]; // Current controller input from pilot. Must match length of ControllerInput defined in Atmos.tsx
 
         if (controllerIndexes[0] == -1){
             setController1Detected(false);

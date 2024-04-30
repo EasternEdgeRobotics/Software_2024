@@ -11,4 +11,7 @@ bool pitch_up
 bool pitch_down
 bool brighten_led
 bool dim_led
+bool turn_claw_cw
+bool turn_claw_ccw
+bool read_outside_temperature_probe
 bool enter_auto_mode
