@@ -126,14 +126,14 @@ export function BotTab() {
                 }
             }
         }
-        if (!controllerInput.every(item => item == 0)) {setControllerInput(controllerInput);} // The ROS.tsx script will detect changes to the global variable "controllerInput"
+        setControllerInput(controllerInput);
     }
 
     useEffect(() => { // Constantly run the input listener 
         const interval = setInterval(() => {
             reloadComponent(Math.random());
             input_listener();
-        }, 100); // 100 ms 
+        }, 100); // 100 ms or 10Hz
         return () => clearInterval(interval); // Stop listening for input when we click off the BotTab
     }, [currentProfile]);
     

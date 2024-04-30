@@ -61,7 +61,7 @@ export function InitROS() {
             sway: thrusterMultipliers[2],
             heave: thrusterMultipliers[3],
             pitch: thrusterMultipliers[4],
-            yaw: thrusterMultipliers[4]});
+            yaw: thrusterMultipliers[5]});
         if (hasRecieved) thrusterValsTopic.publish(thrusterVals);
     }
     ,[thrusterMultipliers]);
@@ -71,9 +71,8 @@ export function InitROS() {
                                         name:"/controller_input",
                                         messageType: "eer_messages/PilotInput"});
 
-    // Publish the new controller input whenever it changes
+    // Publish the new controller input whenever it changes (10 Hz)
     React.useEffect(()=>{
-        if (!controllerInput.every(item => item == 0)){
         const controllerInputVals = new ROSLIB.Message({
             surge: controllerInput[0],
             sway: controllerInput[1],
@@ -91,8 +90,7 @@ export function InitROS() {
             enter_auto_mode: controllerInput[13] ? true: false
             });
         controllerInputTopic.publish(controllerInputVals);
-        setControllerInput([0,0,0,0,0,0,0,0,0,0,0,0,0,0]);}
-        }
+    }
     ,[controllerInput]);
 
     // Create a ROS service on the "/profile_config" topic, using a custom EER service type (see eer_messages folder in ROS2/colcon_ws/src)

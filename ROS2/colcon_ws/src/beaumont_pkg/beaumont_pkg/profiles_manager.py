@@ -2,7 +2,6 @@ from eer_messages.srv import Config
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
 from sqlalchemy import ForeignKey, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column 
 import json

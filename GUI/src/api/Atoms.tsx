@@ -17,7 +17,7 @@ export const ImuData = atom<string>("");
 
 export const Mappings = atom<{[controller: number]: {[type: string]: {[index: number]: string}}}>({0: {}, 1: {}}); // Current controller mappings
 
-export const ThrusterMultipliers = atom<number[]>([20,0,0,0,0,0]); // Power:0, Surge:1, Sway:2, Heave:3, Pitch:4, Roll:5, Yaw:6
+export const ThrusterMultipliers = atom<number[]>([20,0,0,0,0,0]); // Power:0, Surge:1, Sway:2, Heave:3, Pitch:4, Yaw:5
 export const ControllerInput = atom<(number|undefined)[]>([0,0,0,0,0,0,0,0,0,0,0,0,0,0]); // Current controller input from pilot
 export const PilotActions = atom<string[]>([ // Possible pilot inputs
   "None",

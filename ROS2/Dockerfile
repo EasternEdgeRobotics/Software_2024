@@ -14,8 +14,10 @@ RUN apt-get install ros-humble-rosbridge-server -y
 
 # Install any required Python libraries
 RUN pip3 install sqlalchemy 
-RUN pip3 install adafruit-circuitpython-pca9685 
 RUN pip3 install RPi.GPIO
+RUN pip3 install smbus2
+RUN pip3 install adafruit-circuitpython-pca9685
+RUN pip3 install adafruit-circuitpython-bno055 
 
 # Modify the bash.bashrc file such that sourcing happens automatically 
 RUN echo ". /opt/ros/humble/setup.sh" >> /etc/bash.bashrc
