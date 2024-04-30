@@ -98,166 +98,6 @@ const ScreenshotVeiw = ({ urls }: { urls: string[] }) => {
   );
 };
 
-//recursive function to render the tasks
-//level is used to calculate the padding of the tasks
-function renderTasks(tasks: Task[], level = 0, id="", publisher: ROSLIB.Topic, saved?: { [key: string]: boolean }) {
-
-  const handleCheckboxChange = (task: Task, taskID:string) => {
-    //[To-do] Update the tast status globally with ROS
-    //[To-do] Listen and update the task status from ROS
-    console.log(saved, taskID, task.name, task.checked);
-
-    task.checked = !task.checked;
-    // const updatedTask = { ...task, checked: !task.checked };
-    // localStorage.setItem(task.name, JSON.stringify(updatedTask));
-
-    const message = new ROSLIB.Message({
-      data: JSON.stringify({
-        id: taskID,
-        status: task.checked,
-      }),
-    });
-    publisher.publish(message);
-  };
-
-  return tasks.map((task: Task, index) => {
-    const currentID = id ? `${id}:${index + 1}` : `${index + 1}`;
-
-    const Icon = () => {
-      if (saved && saved[currentID] === true) task.checked = true;
-      else task.checked = false;
-        
-      if (!task.subTasks && tasks.length > 1)
-        return (
-          <div>
-            <Checkbox
-              style={{ marginBottom: "10px", padding: "0px" }}
-              aria-label={task.name}
-              defaultChecked={task.checked}
-              color="success"
-              aria-checked={task.checked}
-              onChange={() => handleCheckboxChange(task, currentID)}
-              key={currentID}
-            />
-          </div>
-        );
-      else if (task.subTasks)
-        return (
-          <SquareIcon
-            style={{ marginBottom: "10px", padding: "0px" }}
-            scale={0.5}
-          />
-        );
-      else return <a></a>;
-    };
-
-    return (
-      <div style={{ paddingLeft: `${level ** 0.5 * 30}px` }}>
-        <Col style={{ minHeight: "45px" }}>
-          <div
-            style={{
-              display: "flex",
-              flex: 1,
-              minHeight: "2px",
-              alignItems: "flex-start",
-            }}
-          >
-            <Icon />
-            {!task.subTasks && (
-              <div
-                style={{
-                  marginLeft: "10px",
-                  flex: 1,
-                  wordBreak: "break-word",
-                  alignItems: "flex-start",
-                }}
-              >
-                {task.name} ({task.points})
-              </div>
-            )}
-            {task.subTasks && (
-              <div
-                style={{
-                  marginLeft: "10px",
-                  flex: 1,
-                  wordBreak: "break-word",
-                  alignItems: "flex-start",
-                  fontWeight: "bolder",
-                  paddingBottom: "10px",
-                }}
-              >
-                {task.name} :
-              </div>
-            )}
-          </div>
-          {task.subTasks && renderTasks(task.subTasks, level + 1, currentID, publisher, saved)}
-        </Col>
-      </div>
-    );
-  });
-}
-
-function SubList(props: { name: string; tasks: Task[]; max?: boolean; publisher: ROSLIB.Topic, saved?: { [key: string]: boolean}}) {
-  const [score, setScore] = useState<number>(0);
-  const [totalScore, setTotalScore] = useState<number>(0);
-
-  useEffect(() => {
-    //recursive function to calculate the total score of the tasks
-    //if max is true, return the maximum score of the tasks [used for when only 1 task needs to be completed]
-    const calculateTotalScore = (tasks: Task[], max = false): number => {
-      if (max)
-        return Math.max(
-          ...tasks.map(
-            (t) => t.points ?? calculateTotalScore(t.subTasks!, t.single)
-          )
-        );
-
-      let total = 0;
-      tasks.forEach((subtask) => {
-        if (subtask.single)
-          console.log("subtask", subtask, subtask.points ?? 0, subtask.single);
-        if (subtask.subTasks) {
-          total += calculateTotalScore(
-            subtask.subTasks,
-            subtask.single ?? false
-          );
-        } else {
-          total += subtask.points ?? 0;
-        }
-      });
-
-      return total;
-    };
-
-    setTotalScore(calculateTotalScore(props.tasks, props.max));
-  }, [props.tasks]);
-
-  return (
-    <div
-      style={{
-        paddingLeft: "20px",
-        paddingRight: "20px",
-        paddingBottom: "10px",
-      }}
-    >
-      <Row>
-        <h2>
-          {props.name} ({score}/{totalScore})
-        </h2>
-        <div>{
-          renderTasks(
-            props.tasks,
-            undefined,
-            props.name.split(":")[0].trim().replace(" ", "_"),
-            props.publisher,
-            props.saved
-          )
-        }</div>
-      </Row>
-    </div>
-  );
-}
-
 function SideBar() {
   //[To-do] acoount for mobile view
   const [collapsed, setCollapsed] = useState(false);
@@ -267,7 +107,7 @@ function SideBar() {
 
   useEffect(() => {
     const rosInstance = new ROSLIB.Ros({});
-    rosInstance.connect(`wss://${RosIP}:9090`);
+    rosInstance.connect(`ws://${RosIP}:9090`);
     setRos(rosInstance);
   }, [RosIP]);
 
@@ -289,7 +129,7 @@ function SideBar() {
         console.log("Error calling service:", error);
       }
     );
-  }, [ros,collapsed]);
+  }, [ros, collapsed]);
 
   ros.on("connection", () => console.log("Connected to ROS"));
 
@@ -383,6 +223,187 @@ function SideBar() {
       </Sidebar>
     </div>
   );
+}
+
+function SubList(props: {
+  name: string;
+  tasks: Task[];
+  max?: boolean;
+  publisher: ROSLIB.Topic;
+  saved?: { [key: string]: boolean };
+}) {
+  const [score, setScore] = useState<number>(0);
+  const [totalScore, setTotalScore] = useState<number>(0);
+
+  useEffect(() => {
+    const subscription = props.publisher.subscribe((message) => {
+      const data: { id: string; sender: string; status: boolean } = JSON.parse(
+        (message as any).data
+      );
+      console.log("Message received:", data);
+      return data;
+    });
+    // Clean up the subscription when the component unmounts
+    return () => {
+      props.publisher.unsubscribe();
+    };
+  }, [props.publisher]);
+
+  useEffect(() => {
+    //recursive function to calculate the total score of the tasks
+    //if max is true, return the maximum score of the tasks [used for when only 1 task needs to be completed]
+    const calculateTotalScore = (tasks: Task[], max = false): number => {
+      if (max)
+        return Math.max(
+          ...tasks.map(
+            (t) => t.points ?? calculateTotalScore(t.subTasks!, t.single)
+          )
+        );
+
+      let total = 0;
+      tasks.forEach((subtask) => {
+        if (subtask.single)
+          console.log("subtask", subtask, subtask.points ?? 0, subtask.single);
+        if (subtask.subTasks) {
+          total += calculateTotalScore(
+            subtask.subTasks,
+            subtask.single ?? false
+          );
+        } else {
+          total += subtask.points ?? 0;
+        }
+      });
+
+      return total;
+    };
+
+    setTotalScore(calculateTotalScore(props.tasks, props.max));
+  }, [props.tasks]);
+
+  return (
+    <div
+      style={{
+        paddingLeft: "20px",
+        paddingRight: "20px",
+        paddingBottom: "10px",
+      }}
+    >
+      <Row>
+        <h2>
+          {props.name} ({score}/{totalScore})
+        </h2>
+        <div>
+          {renderTasks(
+            props.tasks,
+            undefined,
+            props.name.split(":")[0].trim().replace(" ", "_"),
+            props.publisher,
+            props.saved
+          )}
+        </div>
+      </Row>
+    </div>
+  );
+}
+
+//recursive function to render the tasks
+//level is used to calculate the padding of the tasks
+function renderTasks(tasks: Task[], level = 0, id="", publisher: ROSLIB.Topic, saved?: { [key: string]: boolean }, subscriber?: void) {
+
+  const handleCheckboxChange = (task: Task, taskID:string) => {
+    //[To-do] Update the tast status globally with ROS
+    //[To-do] Listen and update the task status from ROS
+    console.log(saved, taskID, task.name, task.checked);
+
+    task.checked = !task.checked;
+    // const updatedTask = { ...task, checked: !task.checked };
+    // localStorage.setItem(task.name, JSON.stringify(updatedTask));
+
+    const message = new ROSLIB.Message({
+      data: JSON.stringify({
+        id: taskID,
+        status: task.checked,
+        sender: "science",
+      }),
+    });
+    publisher.publish(message);
+  };
+
+  return tasks.map((task: Task, index) => {
+    const currentID = id ? `${id}:${index + 1}` : `${index + 1}`;
+
+    const Icon = () => {
+      if (saved && saved[currentID] === true) task.checked = true;
+      else task.checked = false;
+        
+      if (!task.subTasks && tasks.length > 1)
+        return (
+          <div>
+            <Checkbox
+              style={{ marginBottom: "10px", padding: "0px" }}
+              aria-label={task.name}
+              defaultChecked={task.checked}
+              color="success"
+              aria-checked={task.checked}
+              onChange={() => handleCheckboxChange(task, currentID)}
+              key={currentID}
+            />
+          </div>
+        );
+      else if (task.subTasks)
+        return (
+          <SquareIcon
+            style={{ marginBottom: "10px", padding: "0px" }}
+            scale={0.5}
+          />
+        );
+      else return <a></a>;
+    };
+
+    return (
+      <div style={{ paddingLeft: `${level ** 0.5 * 30}px` }}>
+        <Col style={{ minHeight: "45px" }}>
+          <div
+            style={{
+              display: "flex",
+              flex: 1,
+              minHeight: "2px",
+              alignItems: "flex-start",
+            }}
+          >
+            <Icon />
+            {!task.subTasks && (
+              <div
+                style={{
+                  marginLeft: "10px",
+                  flex: 1,
+                  wordBreak: "break-word",
+                  alignItems: "flex-start",
+                }}
+              >
+                {task.name} ({task.points})
+              </div>
+            )}
+            {task.subTasks && (
+              <div
+                style={{
+                  marginLeft: "10px",
+                  flex: 1,
+                  wordBreak: "break-word",
+                  alignItems: "flex-start",
+                  fontWeight: "bolder",
+                  paddingBottom: "10px",
+                }}
+              >
+                {task.name} :
+              </div>
+            )}
+          </div>
+          {task.subTasks && renderTasks(task.subTasks, level + 1, currentID, publisher, saved, subscriber)}
+        </Col>
+      </div>
+    );
+  });
 }
 
 //
@@ -516,14 +537,16 @@ export function ControllerApp() {
   const [RosIP] = useAtom(ROSIP);
   const [urls, setURLs] = React.useState<string[]>([]);
 
-  ros.on("error", () => {0}); // to prevent page breaking
+  ros.on("error", () => {
+    0;
+  }); // to prevent page breaking
 
   React.useEffect(() => {
-    ros.connect(`wss://${RosIP}:9090`);
+    ros.connect(`ws://${RosIP}:9090`);
     setInterval(() => {
       if (!ros.isConnected) {
         setRos(new ROSLIB.Ros({}));
-        ros.connect(`wss://${RosIP}:9090`);
+        ros.connect(`ws://${RosIP}:9090`);
       }
     }, 1000);
   }, []);

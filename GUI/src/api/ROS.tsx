@@ -35,12 +35,12 @@ export function InitROS() {
     ros.on("error", () => {}); // to prevent page breaking
 
     React.useEffect(() => {
-        ros.connect(`wss://${RosIP}:9090`);
+        ros.connect(`ws://${RosIP}:9090`);
         setInterval(() => {
-            if (!ros.isConnected) {
-                setRos(new ROSLIB.Ros({}));
-                ros.connect(`wss://${RosIP}:9090`);
-            }
+          if (!ros.isConnected) {
+            setRos(new ROSLIB.Ros({}));
+            ros.connect(`ws://${RosIP}:9090`);
+          }
         }, 1000);
     }, []);
 
