@@ -161,7 +161,7 @@ This means that, in the point of view of the frontend and a large part of the ba
 
 ## Installation
 
-If the simulation environment is already installed, begin at step 3.
+This guide shows how to setup the installation environment on Ubuntu 22.04. It may work on other distributions based on compatibility with ROS2 Humble and Gazebo Classic. 
 
 ### Step 1
 Follow the Host-Side installation section.
