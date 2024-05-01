@@ -5,45 +5,27 @@ from eer_messages.msg import ThrusterMultipliers, PilotInput, IMUData, ADCData, 
 
 import board
 from smbus2 import SMBus
-from adafruit_pca9685 import PCA9685
 from adafruit_bno055 import BNO055_I2C
 
 from math import sqrt
 
-# Configure minimum, middle and maximum pulse lengths (out of 4096)
-# # Values should be adjusted so that the center arms the thrusters
-# MIN_SPEED = 1000
-# MAX_SPEED = 1500
-# CENTER_SPEED = 1250
 
-# THRUSTER_ACCELERATION = 75
-
-THRUSTER_ACCELERATION = 10
-
-
-# Thurster channels are based on Beaumont as of May 7th 2024
+# Thurster channels are based on Beaumont
 THRUSTER_CHANNELS = {
-    "for-port-top": 1,
+    "for-port-top": 5,
     "for-star-top": 0,
     "aft-port-top": 2,
     "aft-star-top": 7,
     "for-port-bot": 4,
     "for-star-bot": 6,
-    "aft-port-bot": 5,
+    "aft-port-bot": 1,
     "aft-star-bot": 3
 }
 
-RP2040_THRUSTER_PINS = {
-    "for-port-top": 28,
-    "for-star-top": 29,
-    "aft-port-top": 27,
-    "aft-star-top": 22,
-    "for-port-bot": 25,
-    "for-star-bot": 23,
-    "aft-port-bot": 24,
-    "aft-star-bot": 26
-}
+# In the thruster class, the target speed is set by the user. Each thruster accelerates towards the target speed by the acceleration below
+THRUSTER_ACCELERATION = 1 
 
+# Determines how often each thruster accelerates towards the target speed set by the user
 THRUSTER_TICK_PERIOD = 0.01
 
 RP2040_ADDRESS = 0x08
@@ -76,25 +58,27 @@ class Thruster:
         """
         Setup the thruster or servo.
 
-        :param pwm: I2C PWM driver controller object
-        :param ch: pwm channel number for the thruster or servo controller
+        :param bus: SMBus object to communicate on I2C bus
+        :param thruster position: The position of the thruster as a string 
         """
         self.bus = bus
         self.thruster_position = thruster_position
 
         self.thruster_armed = False
 
-        self.target = 0
-        self.current = 0
+        # 127 corresponds to the middle of the range (0-254), corresponding to duty cycles of (1000-2000), wher 1500 is center speed (no rotation)
+        self.target = 127
+        self.current = 127
 
-        # Arm thruster
+        # Arm thruster to center speed on initialization
         self.arm_thruster()
 
     def arm_thruster(self):
-
-        try:
-            self.bus.write_byte_data(RP2040_ADDRESS, RP2040_THRUSTER_PINS[self.thruster_position],0)
-            self.thruster_initalized = True
+        
+        # SMBus throws an OSError if it fails to communicate with RP2040
+        try: 
+            self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position],127)
+            self.thruster_armed = True 
         except OSError:
             pass
 
@@ -104,7 +88,7 @@ class Thruster:
 
         :param speed: speed of thrusters with valid range between -1.0 to 1.0
         """
-        self.target = speed*127
+        self.target = speed*127 + 127
 
     def tick(self):
         
@@ -112,25 +96,34 @@ class Thruster:
             self.arm_thruster()
             return
 
-        if(self.current != self.target):
-            if(abs(self.target - self.current) > THRUSTER_ACCELERATION):
+        if(self.current != self.target): # Must accelerate towards target speed
 
-                direction = (self.target - self.current) / abs(self.target - self.current)
+            if(abs(self.target - self.current) > THRUSTER_ACCELERATION): 
+                
+                # Determine the direction in which thruster must accelerate
+                direction = (self.target - self.current) / abs(self.target - self.current) 
 
+                # Accelerate towards desired direction by THRUSTER_ACCELERATION
                 self.current += int(direction * THRUSTER_ACCELERATION)
 
-                if abs(self.current) > 127:
-                    self.current = 127 * (-1 if self.current < 0 else 1)
+                # Ensure the current speed does not go out of range
+                if self.current > 254:
+                    self.current = 254
+                elif self.current < 0:
+                    self.current = 0
 
+                # If communication with RP2040 fails, attempt to arm the thruster again as soon as communication is reestablished
                 try:
-                    self.bus.write_byte_data(RP2040_ADDRESS, RP2040_THRUSTER_PINS[self.thruster_position], self.current)
+                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current))
                 except OSError:
                     self.thruster_armed = False
 
             else:
                 self.current = self.target
+
+                # If communication with RP2040 fails, attempt to arm the thruster again as soon as communication is reestablished
                 try:
-                    self.bus.write_byte_data(RP2040_ADDRESS, RP2040_THRUSTER_PINS[self.thruster_position], self.current)
+                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current))
                 except OSError:
                     self.thruster_armed = False
 
@@ -193,44 +186,6 @@ class I2CMaster(Node):
         except:
             self.get_logger().error("No Hardware on I2C bus")
 
-        #################################################
-        ################### THRUSTERS ###################
-        #################################################
-
-        # self.power_multiplier = 0.2
-        # self.surge_multiplier = 0
-        # self.sway_multiplier = 0
-        # self.heave_multiplier = 0
-        # self.pitch_multiplier = 0
-        # self.yaw_multiplier = 0
-
-        # self.connected_channels = []
-
-        # for thruster in THRUSTER_CHANNELS:  
-        #     self.connected_channels[THRUSTER_CHANNELS[thruster]] = Thruster(THRUSTER_CHANNELS[thruster])
-
-        # self.pca9685_detected = False
-
-        # self.connected_channels = {}
-
-        # if self.i2c is not None:
-
-        #     # Connect to PCA9685
-        #     try:
-        #         self.pwm = PCA9685(self.i2c)         
-        #         self.pwm.frequency = 100
-        #         self.get_logger().info("PCA DETECTED ON I2C BUS")
-                
-        #         for thuster in THRUSTER_CHANNELS:  
-        #             self.connected_channels[THRUSTER_CHANNELS[thuster]] = Thruster(self.pwm, THRUSTER_CHANNELS[thuster])
-
-        #         self.pca9685_detected = True 
-                
-        #         self.thruster_timer = self.create_timer(THRUSTER_TICK_PERIOD, self.tick_thrusters, callback_group=i2c_master_callback_group)
-
-        #     except:
-        #         self.get_logger().error("CANNOT FIND PCA9685 ON I2C BUS!")
-
 
         #################################################
         ###################### IMU ######################
@@ -261,6 +216,9 @@ class I2CMaster(Node):
         except:
             self.get_logger().error("COULD NOT INITIALIZE SMBUS")
 
+        if self.bus is not None:
+            self.thruster_timer = self.create_timer(THRUSTER_TICK_PERIOD, self.tick_thrusters, callback_group=i2c_master_callback_group)
+
 
         #################################################
         ################### THRUSTERS ###################
@@ -277,7 +235,7 @@ class I2CMaster(Node):
 
         if self.bus is not None:
             for thruster_position in THRUSTER_CHANNELS:  
-                self.connected_channels[thruster_position] = Thruster(self.bus, thruster_position)
+                self.connected_channels[THRUSTER_CHANNELS[thruster_position]] = Thruster(self.bus, thruster_position)
 
         ##################################################
         ###################### ADCs ######################
@@ -312,6 +270,7 @@ class I2CMaster(Node):
     def tick_thrusters(self):
         for channel in self.connected_channels:
             self.connected_channels[channel].tick()
+            self.get_logger().info(str(self.connected_channels[channel].current)) # Temporary, useful for debug
 
     def obtain_imu_data(self):
         '''
@@ -465,16 +424,16 @@ class I2CMaster(Node):
 
         thruster_values = self.rov_math(msg)
 
-        if self.pca9685_detected:
+        if self.bus is not None:
             
             for thruster_position in THRUSTER_CHANNELS:
-                #self.get_logger().info(f"{thruster_position}: {thruster_values[thruster_position]}")
                 self.connected_channels[THRUSTER_CHANNELS[thruster_position]].fly(thruster_values[thruster_position])
+
+                # Thrusters should be armed by the time the first pilot input is recieved
                 if not self.connected_channels[THRUSTER_CHANNELS[thruster_position]].thruster_armed:
                     self.get_logger().error(f"Thruster {thruster_position} not armed")
-            
 
-        # self.stm32_communications(msg)
+            # self.stm32_communications(msg)
 
     def stm32_communications(self, controller_inputs):
         '''
@@ -589,15 +548,17 @@ class I2CMaster(Node):
         combined_strafe_coefficient = strafe_scaling_coefficient * strafe_average_coefficient
         rotation_average_coefficient = sum_of_magnitudes_of_rotational_movements / (strafe_power + sum_of_magnitudes_of_rotational_movements) if strafe_power or sum_of_magnitudes_of_rotational_movements else 0
 
+        # The to decimal adjustment factor is 1.85 (max value that each thruster value can be)
+
         # Calculations below are based on thruster positions
-        thruster_values["for-port-bot"] = ((-surge)+(sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient
-        thruster_values["for-star-bot"] = ((-surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient
-        thruster_values["aft-port-bot"] = ((surge)+(sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient
-        thruster_values["aft-star-bot"] = ((surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient
-        thruster_values["for-port-top"] = ((-surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient
-        thruster_values["for-star-top"] = ((-surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient
-        thruster_values["aft-port-top"] = ((surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient
-        thruster_values["aft-star-top"] = ((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient
+        thruster_values["for-port-bot"] = (((-surge)+(sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["for-star-bot"] = (((-surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["aft-port-bot"] = (((surge)+(sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["aft-star-bot"] = (((surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["for-port-top"] = (((-surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["for-star-top"] = (((-surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["aft-port-top"] = (((surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["aft-star-top"] = (((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / 1.85
 
         ####################################################################
         ############################## DEBUG ###############################
@@ -640,10 +601,37 @@ class I2CMaster(Node):
         # net_movement_vectors.data = f"""Net Surge:{net_surge},Net Sway:{net_sway},Net Heave:{net_heave},Net Pitch:{net_pitch},Net Yaw:{net_yaw}"""
         # self.debugger.publish(net_movement_vectors)
 
+        ###########################################################################################
+        ############################## INIDIVISUAL THRUSTER TESITNG ###############################
+        ###########################################################################################
+
+        # Be sure to also uncomment the sef.current_thruster line in the __init__ function
+
+        # thruster_list = ("for-port-bot", "for-star-bot", "aft-port-bot", "aft-star-bot", "for-port-top", "for-star-top", "aft-port-top", "aft-star-top")
+
+        # if controller_inputs.open_claw:
+        #     if self.current_thruster == 0:
+        #         self.current_thruster = 7
+        #     else:
+        #         self.current_thruster -= 1
+        #     self.get_logger().info(str(self.current_thruster))
+        # elif controller_inputs.close_claw:
+        #     if self.current_thruster == 7:
+        #         self.current_thruster = 0
+        #     else:
+        #         self.current_thruster += 1
+        #     self.get_logger().info(str(self.current_thruster))
+
+        # for i in range(len(thruster_list)):
+        #     if i == self.current_thruster:
+        #         thruster_values[thruster_list[self.current_thruster]] = (((-surge)+(sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / 1.85
+        #     else:   
+        #         thruster_values[thruster_list[i]] = 0
+
         
-        ####################################################################
-        ####################################################################
-        ####################################################################
+        ###########################################################################################
+        ###########################################################################################
+        ###########################################################################################
 
         return thruster_values
 
