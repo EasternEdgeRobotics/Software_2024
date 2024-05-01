@@ -31,7 +31,19 @@ class SimulationBotControl(Node):
 
         # For claw movement, the Gazebo Planar Move Plugin is used
         self.left_claw_publisher = self.create_publisher(Twist, "/demo/left_claw", 10) 
-        self.right_claw_publisher = self.create_publisher(Twist, "/demo/right_claw", 10) 
+        self.right_claw_publisher = self.create_publisher(Twist, "/demo/right_claw", 10)
+
+        # Debugger publisher
+        # from std_msgs.msg import String
+        # self.debugger = self.create_publisher(String, 'debugger', 10) 
+
+        self.power_multiplier = 0
+        self.surge_multiplier = 0
+        self.sway_multiplier = 0
+        self.heave_multiplier = 0
+        self.pitch_multiplier = 0
+        self.yaw_multiplier = 0
+
 
         # The differnce between the planar move plugin and the force plugin is that the planar move plugin acts relative to the bot, while the force plugin acts relative to the world
         
@@ -49,7 +61,9 @@ class SimulationBotControl(Node):
 
         self.surface_area_for_drag = {"surge":0.1813,
                                         "sway":0.2035,
-                                        "heave":0.2695} 
+                                        "heave":0.2695,
+                                        "pitch":0.2,
+                                        "yaw":0.2} 
         
 
         self.bot_mass = 23 #23kg
@@ -63,16 +77,16 @@ class SimulationBotControl(Node):
         self.fluid_mass_density = 1000 # 1000kg/m^3
         
         # This value has been tuned. The higher it is, the faster the bot reaches terminal velocity
-        self.drag_coefficient = 0.025 
+        self.drag_coefficient = 0.1 
 
         # Assuming the terminal velocity of the bot in water is 0.25 m/s... the force adjustment factor should be 150
         self.gazebo_simulation_velocity_z_adjustment_factor = 150 
 
         self.gazebo_simulation_velocity_xy_adjustment_factor = 0.04
 
-        self.gazebo_simulation_velocity_pitch_adjustment_factor = 75
+        self.gazebo_simulation_velocity_pitch_adjustment_factor = 30
 
-        self.gazebo_simulation_velocity_yaw_adjustment_factor = 0.30
+        self.gazebo_simulation_velocity_yaw_adjustment_factor = 0.05
 
         self.bot_yaw_to_claw_yaw_factor = 90
 
@@ -94,40 +108,40 @@ class SimulationBotControl(Node):
         
         thruster_forces = self.simulation_rov_math(msg)
 
-        for direction in ("surge", "sway", "heave"): # Apply drag force for linear movement
+        for direction in thruster_forces: # Apply drag force 
 
-            self.velocity_array[direction] = self.velocity_array[direction]+((SIMULAITON_PERCISION*self.net_force_array[direction])/self.bot_mass) #Momentum divided by mass = velocity
+            # The pitch and yaw the velocity below is actually angular velocity, the the net force is net torque.
+            # Drag is still applied in the same way as it helps maintain smooth bot movement 
+
+            self.velocity_array[direction] = self.velocity_array[direction]+((SIMULAITON_PERCISION*self.net_force_array[direction])/self.bot_mass) 
 
             drag_force = 0.5*self.fluid_mass_density*((self.velocity_array[direction])**2)*self.drag_coefficient*self.surface_area_for_drag[direction] * (-1 if self.velocity_array[direction]>0 else 1)
 
             self.net_force_array[direction] = thruster_forces[direction] + drag_force
-
-        for direction in ("pitch", "yaw"): # Do not apply drag force for angular movement
-            
-            # The velocity below is actually angular velocity, the the net force is net torque. 
-
-            self.velocity_array[direction] = self.velocity_array[direction]+((SIMULAITON_PERCISION*self.net_force_array[direction])/self.bot_mass) 
-
-            self.net_force_array[direction] = thruster_forces["direction"]
 
 
         velocity_xy_yaw = Twist()
         velocity_z = Wrench()
         velocity_pitch = Wrench()
 
-        velocity_xy_yaw.linear.x = float(self.velocity_array["sway"] * self.gazebo_simulation_velocity_xy_adjustment_factor)  
+        velocity_xy_yaw.linear.x = float((-1)*self.velocity_array["sway"] * self.gazebo_simulation_velocity_xy_adjustment_factor)  
 
-        velocity_xy_yaw.linear.y = float(self.velocity_array["surge"] * self.gazebo_simulation_velocity_xy_adjustment_factor)
+        velocity_xy_yaw.linear.y = float((-1)*self.velocity_array["surge"] * self.gazebo_simulation_velocity_xy_adjustment_factor)
 
         velocity_z.force.z = float(self.velocity_array["heave"] * self.gazebo_simulation_velocity_z_adjustment_factor)
 
-        velocity_xy_yaw.angular.z = float(self.velocity_array["yaw"] * self.gazebo_simulation_velocity_yaw_adjustment_factor)
+        velocity_xy_yaw.angular.z = float((-1)*self.velocity_array["yaw"] * self.gazebo_simulation_velocity_yaw_adjustment_factor)
 
         velocity_pitch.force.z = float(self.velocity_array["pitch"] * self.gazebo_simulation_velocity_pitch_adjustment_factor)
 
         self.simulation_velocity_publisher_xy_yaw.publish(velocity_xy_yaw)
         self.simulation_velocity_publisher_z.publish(velocity_z)
         self.simulation_velocity_publisher_pitch.publish(velocity_pitch)
+
+        # from std_msgs.msg import String
+        # velocity = String()
+        # velocity.data = str(self.velocity_array)
+        # self.debugger.publish(velocity)
 
         self.simulation_tooling(msg)
 
@@ -140,8 +154,8 @@ class SimulationBotControl(Node):
             left_claw_velocity = Twist()
             right_claw_velocity = Twist()
 
-            left_claw_velocity.angular.z = 0
-            right_claw_velocity.angular.z = 0
+            left_claw_velocity.angular.z = float(0)
+            right_claw_velocity.angular.z = float(0)
 
             self.left_claw_publisher.publish(left_claw_velocity)
             self.right_claw_publisher.publish(right_claw_velocity)
