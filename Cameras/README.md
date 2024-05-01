@@ -8,5 +8,5 @@ bash install.sh
 ```
 ### Camera should be available at:
 ```
-http://<YOUR-PIS-IP>:8080/?action=stream
+http://<YOUR-PIS-IP>:8080/stream
 ```

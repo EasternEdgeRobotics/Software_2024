@@ -7,6 +7,9 @@ sudo apt-get install dos2unix -y
 sudo dos2unix ROS2/colcon_ws/docker_entrypoint.sh
 sudo chmod +x ROS2/colcon_ws/docker_entrypoint.sh
 
+# Install i2c tools for debug with i2c comms
+apt-get install i2c-tools
+
 # Install docker
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
