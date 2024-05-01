@@ -1,6 +1,6 @@
 # Introduction
 
-Welcome to the Eastern Edge Robotics Software 2024. For a production (non-development) installation guide, navigate to the Docker Installation (recommended) or Host-Side Installation sections. For a Simulation Environment Install, navigate Simulation Section. 
+Welcome to the Eastern Edge Robotics Software 2024. For a production installation guide, navigate to the Docker Installation section (recommended) or Host-Side Installation section. For a Simulation Environment install guide, navigate to the Simulation Section. 
 
 ### Frontend
 
