@@ -50,7 +50,7 @@ Installation is done, including backend, frontend, and the camera streamer. If t
 
 ### Step 1
 
-Intall Docker at https://www.docker.com/get-started/ and get it running. If you are doing this installation on a Raspberry Pi, ensure to also copy over the Software_2024 directory. 
+[Intall Docker](https://www.docker.com/get-started/) 
 
 ### Step 2
 
@@ -66,7 +66,7 @@ This should return a bunch of possible commands assoicated with docker, indicati
 
 Navigate to Software_2024 (main directory) in the terminal. 
 
-***Modify the compose.yaml file*** in the Software_2024 based on what you need. ***Do not run proceed to step 4 as is because the compose.yaml is intended for Raspberry Pi.*** The file if fully commented to help with this. 
+***Modify the compose.yaml file*** in the Software_2024 based on what you need. ***Do not proceed to step 4 without this because the compose.yaml is intended for Raspberry Pi.*** The file is commented to help with this. 
 
 compose.yaml files are a popular way of defining docker applications because, once they are configured to the user's liking, they only require one command to setup the whole environment.
 
