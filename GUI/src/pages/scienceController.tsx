@@ -240,8 +240,18 @@ function SubList(props: {
       const data: { id: string; sender: string; status: boolean } = JSON.parse(
         (message as any).data
       );
+
       console.log("Message received:", data);
-      return data;
+      if (!data.id.includes(props.name.split(":")[0].trim().replace(" ", "_"))) return;
+      const keyList = data.id.split(":").slice(1).map(Number);
+      let task: Task = props.tasks[0];
+      for (let i = 0; i < keyList.length; i++) {
+        const key = keyList[i] - 1;
+        if (i == 0) task = props.tasks[key];
+        else task = task!.subTasks![key];
+      }
+      task.checked = data.status;
+      setTotalScore((prev) => 0)
     });
     // Clean up the subscription when the component unmounts
     return () => {

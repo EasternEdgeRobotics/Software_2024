@@ -5,7 +5,8 @@ import { grey, green, yellow, red, blue} from "@mui/material/colors";
 import { Task } from "../types/Task";
 import taskJSON from "./tasks.json";
 import { Row } from "react-bootstrap";
-
+import { ROSIP } from "../api/Atoms";
+import ROSLIB, { Ros } from "roslib";
 
 /* 
 The purpose of the TabletApp component is to provide the deck chief with a GUI which is to be used on a tablet that:
@@ -26,85 +27,186 @@ Additional features include:
 */
 
 export default function TabletApp() {
+  const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
+  const [RosIP] = useAtom(ROSIP);
+  const [saved_tasks, setTasks] = useState<{ [key: string]: boolean }>({});
 
-    return (
-      // Main Timer & Task 1 Timer: Control Layouts
-      <FormGroup>
-        {/* Main Timer: Controls */}
-        <MainTimer />
-        
-        <div style={{ height: "250px" }}></div>
-            {Tasks("TASK 1 : Coastal Pioneer Array", taskJSON.task1.tasks)}
-            
-            {Tasks("TASK 2 : Deploy SMART cables", taskJSON.task2.tasks)}
-            
-            {Tasks("TASK 3 : From the Red Sea to Tenesse", taskJSON.task3.tasks)}
-            
-            {Tasks("TASK 4 : MATE Floats", taskJSON.task4.tasks)}
-            
-      </FormGroup>
-    );
-}  
+  ros.on("error", () => {
+    0;
+  }); // to prevent page breaking
 
-function RenderTasks(tasks: Task[],level = 0, id = "") {
-    return tasks.map((task, index) => {
-        const currentID = id ? `${id}:${index + 1}` : `${index + 1}`;
+  React.useEffect(() => {
+    ros.connect(`ws://${RosIP}:9090`);
+    setInterval(() => {
+      if (!ros.isConnected) {
+        setRos(new ROSLIB.Ros({}));
+        ros.connect(`ws://${RosIP}:9090`);
+      }
+    }, 1000);
+  }, []);
 
-        return (
-          <div style={{ paddingLeft: `${level ** 0.5 * 2}em`, paddingBottom: "5px"}}>
-            {!task.subTasks && (
-              <FormControlLabel
-                control={<Checkbox />}
-                label={<div style={{ fontSize: "1.6vw", fontWeight: "lighter" }}>{task.name}</div>}
-                style={{ fontSize: 20 }}
-              />
-                )}
-            {task.subTasks && (
-              <div
-                style={{
-                  paddingLeft: "0px",
-                  wordBreak: "break-word",
-                  alignItems: "flex-start",
-                  fontWeight: "bold",
-                  fontSize: "1.8vw",
-                }}
-              >
-                <Checkbox
-                  sx={{
-                    color: grey[900],
-                    "&.Mui-checked": { color: grey[900] },
-                  }}
-                  disabled={true}
-                  style={{ paddingLeft: "0px", opacity: 0.5 }}
-                />
-                {task.name} :
-              </div>
-            )}
-            {task.subTasks &&
-              RenderTasks(
-                task.subTasks,
-                level + 1,
-                currentID
-                // publisher,
-                // saved
-              )}
-          </div>
-        );
+  useEffect(() => {
+    const taskClient = new ROSLIB.Service({
+      ros: ros,
+      name: "/all_tasks",
+      serviceType: "eer_messages/Config",
     });
+    const request = new ROSLIB.ServiceRequest({});
+    taskClient.callService(
+      request,
+      function (result) {
+        console.log("All tasks:", result.result);
+        setTasks(JSON.parse(result.result));
+      },
+      function (error) {
+        console.log("Error calling service:", error);
+      }
+    );
+  }, [ros]);
+
+  const task_publisher = new ROSLIB.Topic({
+    ros: ros,
+    name: "task_updates",
+    messageType: "std_msgs/String",
+  });
+
+  // useEffect(() => {
+  //   const subscription = task_publisher.subscribe((message) => {
+  //     const data: { id: string; sender: string; status: boolean } = JSON.parse(
+  //       (message as any).data
+  //     );
+
+  //     console.log("Message received:", data);
+  //     (taskJSON.task1.tasks[0].subTasks[0] as any).checked = data.status;
+  //   });
+  // }, [task_publisher]);
+
+  return (
+    // Main Timer & Task 1 Timer: Control Layouts
+    <FormGroup>
+      {/* Main Timer: Controls */}
+      <MainTimer />
+
+      <div style={{ height: "250px" }}></div>
+      {Tasks({
+        name: "TASK 1 : Coastal Pioneer Array",
+        tasks: taskJSON.task1.tasks,
+        saved: saved_tasks,
+      })}
+
+      {Tasks({
+        name: "TASK 2 : Deploy SMART cables",
+        tasks: taskJSON.task2.tasks,
+      })}
+
+      {Tasks({
+        name: "TASK 3 : From the Red Sea to Tenesse",
+        tasks: taskJSON.task3.tasks,
+      })}
+
+      {Tasks({ name: "TASK 4 : MATE Floats", tasks: taskJSON.task4.tasks })}
+    </FormGroup>
+  );
 }
 
-function Tasks(name: string, tasks: Task[]) {
+function RenderTasks(
+  tasks: Task[],
+  level = 0,
+  id = "",
+  saved: { [key: string]: boolean } = {}
+) {
+  return tasks.map((task, index) => {
+    const currentID = id ? `${id}:${index + 1}` : `${index + 1}`;
+    if (saved && saved[currentID] === true) task.checked = true;
+    else task.checked = false;
+
     return (
-      <FormGroup style={{ paddingLeft: "10vw", paddingRight: "8vw" }}>
-        <Row style={{ display: "flex", justifyContent: "flex-start" , alignItems: "center" , marginBottom: "1vh"}}>
-                <h1 style={{ marginTop: "0px", marginBottom: "0px" }}>{name}</h1>
-                <div style={{ width: "2vw" }}></div>
-          <Timer />
-        </Row>
-        {RenderTasks(tasks)}
-        <div style={{ height: "3vh" }}></div>
-        </FormGroup>
+      <div
+        style={{
+          paddingLeft: `${level ** 0.5 * 2}em`,
+          paddingBottom: "5px",
+        }}
+      >
+        {`${task.checked}`}
+        {!task.subTasks && (
+          <FormControlLabel
+            control={
+              <Checkbox
+                defaultChecked={task.checked}
+                aria-checked={task.checked}
+                // checked={task.checked}
+              />
+            }
+            label={
+              <div style={{ fontSize: "1.6vw", fontWeight: "lighter" }}>
+                {task.name}
+              </div>
+            }
+            style={{ fontSize: 20 }}
+          />
+        )}
+        {task.subTasks && (
+          <div
+            style={{
+              paddingLeft: "0px",
+              wordBreak: "break-word",
+              alignItems: "flex-start",
+              fontWeight: "bold",
+              fontSize: "1.8vw",
+            }}
+          >
+            <Checkbox
+              sx={{
+                color: grey[900],
+                "&.Mui-checked": { color: grey[900] },
+              }}
+              disabled={true}
+              style={{ paddingLeft: "0px", opacity: 0.5 }}
+            />
+            {task.name} :
+          </div>
+        )}
+        {task.subTasks &&
+          RenderTasks(
+            task.subTasks,
+            level + 1,
+            currentID,
+            saved
+            // publisher,
+            // saved
+          )}
+      </div>
     );
+  });
+}
+
+function Tasks(props: {
+  name: string;
+  tasks: Task[];
+  saved?: { [key: string]: boolean };
+}) {
+  useEffect(() => {
+    0;
+  }, [props.saved]);
+
+  return (
+    <FormGroup style={{ paddingLeft: "10vw", paddingRight: "8vw" }}>
+      <Row
+        style={{
+          display: "flex",
+          justifyContent: "flex-start",
+          alignItems: "center",
+          marginBottom: "1vh",
+        }}
+      >
+        <h1 style={{ marginTop: "0px", marginBottom: "0px" }}>{props.name}</h1>
+        <div style={{ width: "2vw" }}></div>
+        <Timer />
+      </Row>
+      {RenderTasks(props.tasks, undefined, undefined, props.saved)}
+      <div style={{ height: "3vh" }}></div>
+    </FormGroup>
+  );
 }
 
 function MainTimer() {
