@@ -25,9 +25,8 @@ setup(
         'console_scripts': [
             'i2c_master = beaumont_pkg.i2c_master:main',
             'profiles_manager = beaumont_pkg.profiles_manager:main',
-            'simulation_thruster_control = beaumont_pkg.simulation_thruster_control:main',
-            'simulation_camera_subscriber = beaumont_pkg.simulation_camera_subscriber:main',
-            'simulation_tooling_control = beaumont_pkg.simulation_tooling_control:main',
+            'simulation_bot_control = beaumont_pkg.simulation_bot_control:main',
+            'simulation_camera_streamer = beaumont_pkg.simulation_camera_streamer:main',
             'simulation_autonomous_movement = beaumont_pkg.simulation_autonomous_movement:main',
         ],
     },

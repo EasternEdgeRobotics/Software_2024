@@ -9,7 +9,6 @@ import cv2
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
-import time
 
 camera_captures = {0: None, 1: None, 2: None, 3: None}
 
@@ -17,10 +16,10 @@ camera_captures = {0: None, 1: None, 2: None, 3: None}
 
 ip_address = "localhost"
 
-class SimulationCameraSubscriber(Node):
+class SimulationCameraStreamer(Node):
 	
 	def __init__(self):
-		super().__init__('simulation_camera_subscriber')
+		super().__init__('simulation_camera_streamer')
 
 		#Create a subscriber to listen to each camera on the bot
 		self.simulation_camera_listener = self.create_subscription(Image, '/demo_cam/camera0/image_raw', self.simulation_camera_0_listener_callback, 10)
@@ -116,7 +115,7 @@ def runserver(port):
 def main(args=None):
 	rclpy.init(args=args)
 
-	simulation_data_subscriber = SimulationCameraSubscriber()
+	simulation_camera_streamer = SimulationCameraStreamer()
 
 	#Create a server to publish each camera's footage
 	camera_0_server = threading.Thread(target=runserver, args=(8880,), daemon=True)
@@ -130,10 +129,10 @@ def main(args=None):
 	camera_2_server.start()
 	camera_3_server.start()
 
-	rclpy.spin(simulation_data_subscriber)
+	rclpy.spin(simulation_camera_streamer)
 	
 		
-	simulation_data_subscriber.destroy_node()
+	simulation_camera_streamer.destroy_node()
 	rclpy.shutdown()
 
 
