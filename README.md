@@ -130,7 +130,7 @@ sudo apt install ros-humble-rosbridge-server
 ### Step 5
 
 You should now be ready to launch the backend using the following command:
-``
+```
 ros2 launch beaumont_pkg beaumont_startup.xml
 ```
 This will run all required nodes. The backend is now fully running and ready to communicate with frontend without further setup.
