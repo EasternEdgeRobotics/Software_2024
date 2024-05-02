@@ -248,7 +248,7 @@ function SubList(props: {
   name: string;
   tasks: Task[];
   max?: boolean;
-  saved?: { [key: string]: boolean };
+  saved: { [key: string]: boolean };
   setTasks: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>;
 }) {
   const [score, setScore] = useState<number>(0);
@@ -286,6 +286,14 @@ function SubList(props: {
     setTotalScore(calculateTotalScore(props.tasks, props.max));
   }, [props.tasks]);
 
+  useEffect(() => {
+    setScore(
+      calculateAchivedScore(
+        props.saved,
+        props.name.split(":")[0].trim().replace(" ", "_") as 'TASK_1' | 'TASK_2' | 'TASK_3' | 'TASK_4'
+      ));
+  }, [props.saved]);
+
   return (
     <div
       style={{
@@ -305,7 +313,8 @@ function SubList(props: {
             props.name.split(":")[0].trim().replace(" ", "_"),
             // props.publisher,
             task_publisher!,
-            props.saved
+            props.saved,
+            props.setTasks
           )}
         </div>
       </Row>
@@ -325,6 +334,8 @@ function renderTasks(
 ) {
   const handleCheckboxChange = (task: Task, taskID: string) => {
     task.checked = !task.checked;
+    console.log("Task checked:", taskID, task.checked);
+    getTaskFromID(taskID)
 
     setTasks &&
       setTasks((prevSaved) => ({
@@ -637,4 +648,39 @@ export function ControllerApp() {
       </Row>
     </>
   );
+}
+
+function getTaskFromID(
+  id: string,
+  allTasks: { [key: string]: { name: string; tasks: Task[] } } = taskJSON
+) {
+  0;
+  const indexlist = id.split(":").slice(1).map(a=>Number(a)-1);
+  const parentTask = id.split(":")[0].replace("_", "").toLowerCase();
+  const mainTasks = allTasks[parentTask].tasks;
+
+  let tempTask: Task = mainTasks[indexlist[0]];
+  for (let i = 1; i < indexlist.length; i++) {
+    const index = indexlist[i];
+    tempTask = tempTask.subTasks![index];
+  }
+  return tempTask;
+}
+
+function calculateAchivedScore(stored:{ [key: string]: boolean }, filter?:'TASK_1'|'TASK_2'|'TASK_3'|'TASK_4', allTasks: { [key: string]: { name: string; tasks: Task[] } } = taskJSON) {
+  let score = 0;
+  const keys = Object.keys(stored);
+  for (let i= 0;i<keys.length;i++) {
+    const key = keys[i];
+
+    if (filter && !key.includes(filter)) continue;
+
+    if (Object.prototype.hasOwnProperty.call(stored, key)) {
+      const task = getTaskFromID(key, allTasks);
+      if (stored[key]) score += task?.points ?? 0;
+    }
+  }
+  console.log("our Score:", score)
+  return score;
+  
 }

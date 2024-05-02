@@ -80,7 +80,7 @@ export default function TabletApp() {
         (message as any).data
       );
       console.log("Received message UPDATE ", data);
-      if (data.sender === "tablet") return;
+      // if (data.sender === "tablet") return;
 
       setTasks((prevSaved) => ({
         ...prevSaved,
@@ -210,7 +210,12 @@ function RenderTasks(
               />
             }
             label={
-              <div style={{ fontSize: "1.6vw", fontWeight: "lighter" }}>
+              <div
+                style={{
+                  fontSize: `max(calc(1.6vw), 15px)`,
+                  fontWeight: "lighter",
+                }}
+              >
                 {task.name}
               </div>
             }
@@ -224,7 +229,7 @@ function RenderTasks(
               wordBreak: "break-word",
               alignItems: "flex-start",
               fontWeight: "bold",
-              fontSize: "1.8vw",
+              fontSize: `max(calc(1.8vw), 17px)`,
             }}
           >
             <Checkbox
@@ -470,3 +475,4 @@ function Timer() {
     </Box>
   );
 }
+
