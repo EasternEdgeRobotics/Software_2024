@@ -28,14 +28,14 @@ Additional features include:
 type TasksContextType = {
   task_publisher?: ROSLIB.Topic<ROSLIB.Message>;
 };
-const TasksContext = React.createContext<TasksContextType>({});
 const taskPublisherAtom = atom<ROSLIB.Topic<ROSLIB.Message> | null>(null);
 
 export default function TabletApp() {
   const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
   const [RosIP] = useAtom(ROSIP);
   const [saved_tasks, setTasks] = useState<{ [key: string]: boolean }>({});
-  
+  const [, setTaskPublisher] = useAtom(taskPublisherAtom);
+
 
   ros.on("error", () => {
     0;
@@ -69,20 +69,19 @@ export default function TabletApp() {
         console.log("Error calling service:", error);
       }
     );
-  }, [ros]);
 
-  const task_publisher = new ROSLIB.Topic({
-    ros: ros,
-    name: "task_updates",
-    messageType: "std_msgs/String",
-  });
+      const task_publisher = new ROSLIB.Topic({
+        ros: ros,
+        name: "task_updates",
+        messageType: "std_msgs/String",
+      });
 
-  useEffect(() => {
-    const subscription = task_publisher.subscribe((message) => {
+
+    task_publisher.subscribe((message) => {
       const data: { id: string; sender: string; status: boolean } = JSON.parse(
         (message as any).data
       );
-      console.log("Received message UPDATE ", data)
+      console.log("Received message UPDATE ", data);
       if (data.sender === "tablet") return;
 
       setTasks((prevSaved) => ({
@@ -90,12 +89,16 @@ export default function TabletApp() {
         [data.id]: data.status,
       }));
     });
-  }, [task_publisher]);
+
+    setTaskPublisher(task_publisher);
+  }, [ros]);
+
+
+
 
   return (
     <FormGroup>
       <MainTimer />
-      <TasksContext.Provider value={{ task_publisher }}>
         <div style={{ height: "250px" }}></div>
         {Tasks({
           name: "TASK 1 : Coastal Pioneer Array",
@@ -124,7 +127,6 @@ export default function TabletApp() {
           saved: saved_tasks,
           setTasks: setTasks,
         })}
-      </TasksContext.Provider>
     </FormGroup>
   );
 }
@@ -135,7 +137,6 @@ function Tasks(props: {
   saved?: { [key: string]: boolean };
   setTasks: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>;
 }) {
-  const { task_publisher } = React.useContext(TasksContext);
   
   return (
     <FormGroup style={{ paddingLeft: "10vw", paddingRight: "8vw" }}>
@@ -157,7 +158,6 @@ function Tasks(props: {
         props.name.split(":")[0].trim().replace(" ", "_"),
         props.saved,
         props.setTasks,
-        task_publisher
       )}
       <div style={{ height: "3vh" }}></div>
     </FormGroup>
@@ -170,15 +170,12 @@ function RenderTasks(
   id = "",
   saved?: { [key: string]: boolean },
   setTasks?: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>,
-  task_publisher?: ROSLIB.Topic<ROSLIB.Message>
 ) {
-  // const { task_publisher } = React.useContext(TasksContext);
-  const fff = React.useContext(TasksContext);
+  const [task_publisher] = useAtom(taskPublisherAtom);
 
   return tasks.map((task, index) => {
     const currentID = id ? `${id}:${index + 1}` : `${index + 1}`;
-    if (saved && saved[currentID] === true) task.checked = true;
-    else task.checked = false;
+    const currentState = saved ? (saved[currentID] ?? false) : false;
 
     return (
       <div
@@ -195,20 +192,18 @@ function RenderTasks(
                 key={currentID}
                 defaultChecked={task.checked}
                 aria-checked={task.checked}
-                checked={saved ? saved[currentID] ?? false : false}
+                checked={currentState}
                 onChange={() => {
-                  console.log("changed", fff);
                   setTasks &&
                     setTasks((prevSaved) => ({
                       ...prevSaved,
                       [currentID]: !prevSaved[currentID],
                     }));
-                  
-                 
+
                   const message = new ROSLIB.Message({
                     data: JSON.stringify({
                       id: currentID,
-                      status: task.checked,
+                      status: !currentState,
                       sender: "tablet",
                     }),
                   });
@@ -251,8 +246,8 @@ function RenderTasks(
             level + 1,
             currentID,
             saved,
-            setTasks,
-            task_publisher,
+            setTasks
+            // task_publisher,
             // saved
           )}
       </div>
