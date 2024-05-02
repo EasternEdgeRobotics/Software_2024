@@ -1,6 +1,6 @@
 import {Box, Button, Checkbox, FormGroup, FormControlLabel, Grid, Typography, AppBar, Stack} from "@mui/material";
 import React, { useState, useEffect } from "react";
-import { useAtom } from "jotai";
+import { atom, useAtom } from "jotai";
 import { grey, green, yellow, red, blue} from "@mui/material/colors";
 import { Task } from "../types/Task";
 import taskJSON from "./tasks.json";
@@ -25,11 +25,17 @@ Additional features include:
 
     2. A settings menu located underneath the checklist for debugging purposes
 */
+type TasksContextType = {
+  task_publisher?: ROSLIB.Topic<ROSLIB.Message>;
+};
+const TasksContext = React.createContext<TasksContextType>({});
+const taskPublisherAtom = atom<ROSLIB.Topic<ROSLIB.Message> | null>(null);
 
 export default function TabletApp() {
   const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
   const [RosIP] = useAtom(ROSIP);
   const [saved_tasks, setTasks] = useState<{ [key: string]: boolean }>({});
+  
 
   ros.on("error", () => {
     0;
@@ -44,6 +50,7 @@ export default function TabletApp() {
       }
     }, 1000);
   }, []);
+
 
   useEffect(() => {
     const taskClient = new ROSLIB.Service({
@@ -70,41 +77,89 @@ export default function TabletApp() {
     messageType: "std_msgs/String",
   });
 
-  // useEffect(() => {
-  //   const subscription = task_publisher.subscribe((message) => {
-  //     const data: { id: string; sender: string; status: boolean } = JSON.parse(
-  //       (message as any).data
-  //     );
+  useEffect(() => {
+    const subscription = task_publisher.subscribe((message) => {
+      const data: { id: string; sender: string; status: boolean } = JSON.parse(
+        (message as any).data
+      );
+      console.log("Received message UPDATE ", data)
+      if (data.sender === "tablet") return;
 
-  //     console.log("Message received:", data);
-  //     (taskJSON.task1.tasks[0].subTasks[0] as any).checked = data.status;
-  //   });
-  // }, [task_publisher]);
+      setTasks((prevSaved) => ({
+        ...prevSaved,
+        [data.id]: data.status,
+      }));
+    });
+  }, [task_publisher]);
 
   return (
-    // Main Timer & Task 1 Timer: Control Layouts
     <FormGroup>
-      {/* Main Timer: Controls */}
       <MainTimer />
+      <TasksContext.Provider value={{ task_publisher }}>
+        <div style={{ height: "250px" }}></div>
+        {Tasks({
+          name: "TASK 1 : Coastal Pioneer Array",
+          tasks: taskJSON.task1.tasks,
+          saved: saved_tasks,
+          setTasks: setTasks,
+        })}
 
-      <div style={{ height: "250px" }}></div>
-      {Tasks({
-        name: "TASK 1 : Coastal Pioneer Array",
-        tasks: taskJSON.task1.tasks,
-        saved: saved_tasks,
-      })}
+        {Tasks({
+          name: "TASK 2 : Deploy SMART cables",
+          tasks: taskJSON.task2.tasks,
+          saved: saved_tasks,
+          setTasks: setTasks,
+        })}
 
-      {Tasks({
-        name: "TASK 2 : Deploy SMART cables",
-        tasks: taskJSON.task2.tasks,
-      })}
+        {Tasks({
+          name: "TASK 3 : From the Red Sea to Tenesse",
+          tasks: taskJSON.task3.tasks,
+          saved: saved_tasks,
+          setTasks: setTasks,
+        })}
 
-      {Tasks({
-        name: "TASK 3 : From the Red Sea to Tenesse",
-        tasks: taskJSON.task3.tasks,
-      })}
+        {Tasks({
+          name: "TASK 4 : MATE Floats",
+          tasks: taskJSON.task4.tasks,
+          saved: saved_tasks,
+          setTasks: setTasks,
+        })}
+      </TasksContext.Provider>
+    </FormGroup>
+  );
+}
 
-      {Tasks({ name: "TASK 4 : MATE Floats", tasks: taskJSON.task4.tasks })}
+function Tasks(props: {
+  name: string;
+  tasks: Task[];
+  saved?: { [key: string]: boolean };
+  setTasks: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>;
+}) {
+  const { task_publisher } = React.useContext(TasksContext);
+  
+  return (
+    <FormGroup style={{ paddingLeft: "10vw", paddingRight: "8vw" }}>
+      <Row
+        style={{
+          display: "flex",
+          justifyContent: "flex-start",
+          alignItems: "center",
+          marginBottom: "1vh",
+        }}
+      >
+        <h1 style={{ marginTop: "0px", marginBottom: "0px" }}>{props.name}</h1>
+        <div style={{ width: "2vw" }}></div>
+        <Timer />
+      </Row>
+      {RenderTasks(
+        props.tasks,
+        undefined,
+        props.name.split(":")[0].trim().replace(" ", "_"),
+        props.saved,
+        props.setTasks,
+        task_publisher
+      )}
+      <div style={{ height: "3vh" }}></div>
     </FormGroup>
   );
 }
@@ -113,8 +168,13 @@ function RenderTasks(
   tasks: Task[],
   level = 0,
   id = "",
-  saved: { [key: string]: boolean } = {}
+  saved?: { [key: string]: boolean },
+  setTasks?: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>,
+  task_publisher?: ROSLIB.Topic<ROSLIB.Message>
 ) {
+  // const { task_publisher } = React.useContext(TasksContext);
+  const fff = React.useContext(TasksContext);
+
   return tasks.map((task, index) => {
     const currentID = id ? `${id}:${index + 1}` : `${index + 1}`;
     if (saved && saved[currentID] === true) task.checked = true;
@@ -122,19 +182,38 @@ function RenderTasks(
 
     return (
       <div
+        key={currentID}
         style={{
           paddingLeft: `${level ** 0.5 * 2}em`,
           paddingBottom: "5px",
         }}
       >
-        {`${task.checked}`}
         {!task.subTasks && (
           <FormControlLabel
             control={
               <Checkbox
+                key={currentID}
                 defaultChecked={task.checked}
                 aria-checked={task.checked}
-                // checked={task.checked}
+                checked={saved ? saved[currentID] ?? false : false}
+                onChange={() => {
+                  console.log("changed", fff);
+                  setTasks &&
+                    setTasks((prevSaved) => ({
+                      ...prevSaved,
+                      [currentID]: !prevSaved[currentID],
+                    }));
+                  
+                 
+                  const message = new ROSLIB.Message({
+                    data: JSON.stringify({
+                      id: currentID,
+                      status: task.checked,
+                      sender: "tablet",
+                    }),
+                  });
+                  task_publisher?.publish(message);
+                }}
               />
             }
             label={
@@ -171,8 +250,9 @@ function RenderTasks(
             task.subTasks,
             level + 1,
             currentID,
-            saved
-            // publisher,
+            saved,
+            setTasks,
+            task_publisher,
             // saved
           )}
       </div>
@@ -180,34 +260,6 @@ function RenderTasks(
   });
 }
 
-function Tasks(props: {
-  name: string;
-  tasks: Task[];
-  saved?: { [key: string]: boolean };
-}) {
-  useEffect(() => {
-    0;
-  }, [props.saved]);
-
-  return (
-    <FormGroup style={{ paddingLeft: "10vw", paddingRight: "8vw" }}>
-      <Row
-        style={{
-          display: "flex",
-          justifyContent: "flex-start",
-          alignItems: "center",
-          marginBottom: "1vh",
-        }}
-      >
-        <h1 style={{ marginTop: "0px", marginBottom: "0px" }}>{props.name}</h1>
-        <div style={{ width: "2vw" }}></div>
-        <Timer />
-      </Row>
-      {RenderTasks(props.tasks, undefined, undefined, props.saved)}
-      <div style={{ height: "3vh" }}></div>
-    </FormGroup>
-  );
-}
 
 function MainTimer() {
    let milliseconds = 0;
