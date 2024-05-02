@@ -25,9 +25,7 @@ Additional features include:
 
     2. A settings menu located underneath the checklist for debugging purposes
 */
-type TasksContextType = {
-  task_publisher?: ROSLIB.Topic<ROSLIB.Message>;
-};
+
 const taskPublisherAtom = atom<ROSLIB.Topic<ROSLIB.Message> | null>(null);
 
 export default function TabletApp() {
@@ -104,28 +102,28 @@ export default function TabletApp() {
           name: "TASK 1 : Coastal Pioneer Array",
           tasks: taskJSON.task1.tasks,
           saved: saved_tasks,
-          setTasks: setTasks,
+          setTasks,
         })}
 
         {Tasks({
           name: "TASK 2 : Deploy SMART cables",
           tasks: taskJSON.task2.tasks,
           saved: saved_tasks,
-          setTasks: setTasks,
+          setTasks
         })}
 
         {Tasks({
           name: "TASK 3 : From the Red Sea to Tenesse",
           tasks: taskJSON.task3.tasks,
           saved: saved_tasks,
-          setTasks: setTasks,
+          setTasks
         })}
 
         {Tasks({
           name: "TASK 4 : MATE Floats",
           tasks: taskJSON.task4.tasks,
           saved: saved_tasks,
-          setTasks: setTasks,
+          setTasks
         })}
     </FormGroup>
   );

@@ -1,5 +1,5 @@
 import { Checkbox, IconButton } from "@mui/material";
-import { useAtom } from "jotai";
+import { atom, useAtom } from "jotai";
 //fonts
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
@@ -35,6 +35,8 @@ import {
 import ROSLIB, { Ros } from "roslib";
 import React from "react";
 import { ROSIP } from "../api/Atoms";
+const taskPublisherAtom = atom<ROSLIB.Topic<ROSLIB.Message> | null>(null);
+
 
 const redirectToScreenshot = async (urls: string[], i: 0 | 1 | 2 | 3) => {
   //open a new tab with the stream url
@@ -104,6 +106,7 @@ function SideBar() {
   const [RosIP] = useAtom(ROSIP);
   const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
   const [saved_tasks, setTasks] = useState<{ [key: string]: boolean }>({});
+  const [, setTaskPublisher] = useAtom(taskPublisherAtom);
 
   useEffect(() => {
     const rosInstance = new ROSLIB.Ros({});
@@ -118,7 +121,7 @@ function SideBar() {
   });
   const request = new ROSLIB.ServiceRequest({});
 
-  useEffect(() => {
+  useEffect(() => { 
     taskClient.callService(
       request,
       function (result) {
@@ -129,15 +132,31 @@ function SideBar() {
         console.log("Error calling service:", error);
       }
     );
+
+    const task_publisher = new ROSLIB.Topic({
+      ros: ros,
+      name: "task_updates",
+      messageType: "std_msgs/String",
+    });
+
+    task_publisher.subscribe((message) => {
+      const data: { id: string; sender: string; status: boolean } = JSON.parse(
+        (message as any).data
+      );
+      console.log("Received message UPDATE ", data);
+      if (data.sender === "science") return;
+
+      setTasks((prevSaved) => ({
+        ...prevSaved,
+        [data.id]: data.status,
+      }));
+    });
+
+    setTaskPublisher(task_publisher);
   }, [ros, collapsed]);
 
   ros.on("connection", () => console.log("Connected to ROS"));
 
-  const task_publisher = new ROSLIB.Topic({
-    ros: ros,
-    name: "task_updates",
-    messageType: "std_msgs/String",
-  });
 
   const handleToggleSidebar = () => {
     setCollapsed(!collapsed);
@@ -196,27 +215,27 @@ function SideBar() {
           <SubList
             name="TASK 1 : Coastal Pioneer Array"
             tasks={taskJSON.task1.tasks}
-            publisher={task_publisher}
             saved={saved_tasks}
+            setTasks={setTasks}
           />
           <SubList
             name="TASK 2 : Deploy SMART cables"
             tasks={taskJSON.task2.tasks}
-            publisher={task_publisher}
             saved={saved_tasks}
+            setTasks={setTasks}
           />
           <SubList
             name="TASK 3 : From the Red Sea to Tenesse"
             tasks={taskJSON.task3.tasks}
-            publisher={task_publisher}
             saved={saved_tasks}
+            setTasks={setTasks}
           />
           <SubList
             name="TASK 4 : MATE Floats"
             tasks={taskJSON.task4.tasks}
             max={taskJSON.task4.single}
-            publisher={task_publisher}
             saved={saved_tasks}
+            setTasks={setTasks}
           />
           {/* More menu items... */}
         </Menu>
@@ -229,35 +248,12 @@ function SubList(props: {
   name: string;
   tasks: Task[];
   max?: boolean;
-  publisher: ROSLIB.Topic;
   saved?: { [key: string]: boolean };
+  setTasks: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>;
 }) {
   const [score, setScore] = useState<number>(0);
   const [totalScore, setTotalScore] = useState<number>(0);
-
-  useEffect(() => {
-    const subscription = props.publisher.subscribe((message) => {
-      const data: { id: string; sender: string; status: boolean } = JSON.parse(
-        (message as any).data
-      );
-
-      console.log("Message received:", data);
-      if (!data.id.includes(props.name.split(":")[0].trim().replace(" ", "_"))) return;
-      const keyList = data.id.split(":").slice(1).map(Number);
-      let task: Task = props.tasks[0];
-      for (let i = 0; i < keyList.length; i++) {
-        const key = keyList[i] - 1;
-        if (i == 0) task = props.tasks[key];
-        else task = task!.subTasks![key];
-      }
-      task.checked = data.status;
-      setTotalScore((prev) => 0)
-    });
-    // Clean up the subscription when the component unmounts
-    return () => {
-      props.publisher.unsubscribe();
-    };
-  }, [props.publisher]);
+  const [task_publisher] = useAtom(taskPublisherAtom);
 
   useEffect(() => {
     //recursive function to calculate the total score of the tasks
@@ -307,7 +303,8 @@ function SubList(props: {
             props.tasks,
             undefined,
             props.name.split(":")[0].trim().replace(" ", "_"),
-            props.publisher,
+            // props.publisher,
+            task_publisher!,
             props.saved
           )}
         </div>
@@ -318,16 +315,22 @@ function SubList(props: {
 
 //recursive function to render the tasks
 //level is used to calculate the padding of the tasks
-function renderTasks(tasks: Task[], level = 0, id="", publisher: ROSLIB.Topic, saved?: { [key: string]: boolean }, subscriber?: void) {
-
-  const handleCheckboxChange = (task: Task, taskID:string) => {
-    //[To-do] Update the tast status globally with ROS
-    //[To-do] Listen and update the task status from ROS
-    console.log(saved, taskID, task.name, task.checked);
-
+function renderTasks(
+  tasks: Task[],
+  level = 0,
+  id = "",
+  publisher: ROSLIB.Topic,
+  saved?: { [key: string]: boolean },
+  setTasks?: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>
+) {
+  const handleCheckboxChange = (task: Task, taskID: string) => {
     task.checked = !task.checked;
-    // const updatedTask = { ...task, checked: !task.checked };
-    // localStorage.setItem(task.name, JSON.stringify(updatedTask));
+
+    setTasks &&
+      setTasks((prevSaved) => ({
+        ...prevSaved,
+        [taskID]: !prevSaved[taskID],
+      }));
 
     const message = new ROSLIB.Message({
       data: JSON.stringify({
@@ -341,20 +344,22 @@ function renderTasks(tasks: Task[], level = 0, id="", publisher: ROSLIB.Topic, s
 
   return tasks.map((task: Task, index) => {
     const currentID = id ? `${id}:${index + 1}` : `${index + 1}`;
+    const currentState = saved ? saved[currentID] ?? false : false;
 
     const Icon = () => {
       if (saved && saved[currentID] === true) task.checked = true;
       else task.checked = false;
-        
+
       if (!task.subTasks && tasks.length > 1)
         return (
           <div>
             <Checkbox
               style={{ marginBottom: "10px", padding: "0px" }}
               aria-label={task.name}
-              defaultChecked={task.checked}
+              defaultChecked={currentState}
               color="success"
-              aria-checked={task.checked}
+              aria-checked={currentState}
+              checked={currentState}
               onChange={() => handleCheckboxChange(task, currentID)}
               key={currentID}
             />
@@ -409,7 +414,15 @@ function renderTasks(tasks: Task[], level = 0, id="", publisher: ROSLIB.Topic, s
               </div>
             )}
           </div>
-          {task.subTasks && renderTasks(task.subTasks, level + 1, currentID, publisher, saved, subscriber)}
+          {task.subTasks &&
+            renderTasks(
+              task.subTasks,
+              level + 1,
+              currentID,
+              publisher,
+              saved,
+              setTasks
+            )}
         </Col>
       </div>
     );
