@@ -17,17 +17,17 @@ MIN_SPEED = 3000
 MAX_SPEED = 15000
 CENTER_SPEED = 9000
 
-THUSTER_ACCELERATION = 10
+THUSTER_ACCELERATION = 500
 
 
 THRUSTER_CHANNELS = {
-    "for-port-top": 0,
+    "for-port-top": 8,
     "for-star-top": 1,
-    "aft-port-top": 2,
+    "aft-port-top": 9,
     "aft-star-top": 3,
-    "for-port-bot": 4,
+    "for-port-bot": 10,
     "for-star-bot": 5,
-    "aft-port-bot": 6,
+    "aft-port-bot": 11,
     "aft-star-bot": 7
 }
 
@@ -168,7 +168,7 @@ class I2CMaster(Node):
         self.pitch_multiplier = 0
         self.yaw_multiplier = 0
 
-        self.thrusters_detected_on_correct_channels = False
+        self.pca9685_detected = False
 
         self.connected_channels = {}
 
@@ -178,27 +178,16 @@ class I2CMaster(Node):
             try:
                 self.pwm = PCA9685(self.i2c)         
                 self.pwm.frequency = 100
+                self.get_logger().info("PCA DETECTED ON I2C BUS")
+                
+                for thuster in THRUSTER_CHANNELS:  
+                    self.connected_channels[THRUSTER_CHANNELS[thuster]] = Thruster(self.pwm, THRUSTER_CHANNELS[thuster])
+
+                self.pca9685_detected = True 
+
             except:
                 self.get_logger().error("CANNOT FIND PCA9685 ON I2C BUS!")
 
-            for channel in range(15): # The PCA9685 can connect to up to 16 ESCs (16 thrusters). 
-                try:
-                    self.connected_channels[channel] = Thruster(self.pwm, channel)
-                except:
-                    self.get_logger().info(f"No thruster on channel {channel}")
-
-                
-            # Ensure that the connected channels are correct
-            if len(self.connected_channels) == 8:
-
-                self.thrusters_detected_on_correct_channels = True
-
-                for channel in self.connected_channels:
-                    if channel in list(THRUSTER_CHANNELS.values()): # i.e. the thruster is on a channel that we expect
-                        continue
-                    else:
-                        self.thrusters_detected_on_correct_channels = False
-                        break
 
         #################################################
         ###################### IMU ######################
@@ -211,6 +200,8 @@ class I2CMaster(Node):
                 self.last_temperature_val = 0xFFFF # per recommendation on (https://learn.adafruit.com/adafruit-bno055-absolute-orientation-sensor/python-circuitpython)
 
                 self.imu_timer = self.create_timer(IMU_REQUESTS_PERIOD, self.obtain_imu_data, callback_group=i2c_master_callback_group)
+
+                self.get_logger().info("BNO055 DETECTED ON I2C BUS")
             except:
                 self.get_logger().error("CANNOT FIND BNO055 ON I2C BUS!")
         
@@ -223,6 +214,7 @@ class I2CMaster(Node):
 
         try:
             self.bus = SMBus(1)
+            self.get_logger().info("INITIALIZED SMBUS!")
         except:
             self.get_logger().error("COULD NOT INITIALIZE SMBUS")
 
@@ -237,7 +229,7 @@ class I2CMaster(Node):
             for key in ADC_ADDRESSES:
                 self.configured_adcs[key] = False
 
-            self.adc_timer = self.create_timer(ADC_REQUESTS_PERIOD, self.obtain_imu_data, callback_group=i2c_master_callback_group)
+            self.adc_timer = self.create_timer(ADC_REQUESTS_PERIOD, self.obtain_adc_data, callback_group=i2c_master_callback_group)
 
         #################################################################
         ###################### Temperature Sensors ######################
@@ -321,36 +313,43 @@ class I2CMaster(Node):
         for key, is_configured in self.configured_adcs.items():
 
             if is_configured: # Assume ADC is configured. Read conversion result
+                try:
 
-                conversion_result_register = 0b00000000
-                conversion_result_length_in_bytes = 2
-                
-                read = self.bus.read_i2c_block_data(ADC_ADDRESSES[key], conversion_result_register, conversion_result_length_in_bytes)
+                    conversion_result_register = 0b00000000
+                    conversion_result_length_in_bytes = 2
+                    
+                    read = self.bus.read_i2c_block_data(ADC_ADDRESSES[key], conversion_result_register, conversion_result_length_in_bytes)
 
-                read_12_bit = (read[0] & 0x0F) * 256 + read[1]
+                    read_12_bit = int("0b" + bin(read[0])[6:] + bin(read[1])[2:8],2)
+                    
+                except OSError:
 
-                setattr(adc_data, key, read_12_bit) # The read value is converted to 12 bits
-
-                if read_12_bit == 0:
-
-                    # Should not get a reading of 0
-                    # ADC is not connected. Must reconfigure it if it happens to be connected next time this function is called.
-
+                    read_12_bit = 0
                     self.configured_adcs[key] == False
+
+                
+                setattr(adc_data, key, read_12_bit) # The read value is converted to 12 bits
 
             else:
 
                 configuration_address = 0b00000010
                 configuration_value = 0b00100000 # (auto conversion mode)
 
-                self.bus.write_byte_data(ADC_ADDRESSES[key], configuration_address, configuration_value)
+                try:
 
-                configuration = self.bus.read_byte_data(ADC_ADDRESSES[key],configuration_address)
-                
-                if configuration == configuration_value:
-                    self.configured_adcs[key] = True
-                else:
+                    self.bus.write_byte_data(ADC_ADDRESSES[key], configuration_address, configuration_value)
+                    configuration = self.bus.read_byte_data(ADC_ADDRESSES[key],configuration_address)
+
+                    if configuration == configuration_value:
+                        self.get_logger().info(f"CONFIGURED ADC {key}")
+                        self.configured_adcs[key] = True
+                    else:
+                        raise OSError
+                    
+                except OSError:
+
                     self.configured_adcs[key] = False
+                
 
         self.adc_data_publisher.publish(adc_data)
 
@@ -377,16 +376,20 @@ class I2CMaster(Node):
         temp_sensor_data = TempSensorData()
 
         for key, address in TEMPERATURE_SENSOR_ADDRESSES.items():
+            try:
+                read = self.bus.read_i2c_block_data(address, temperature_reading_register, temperature_reading_register_length_in_bytes)
 
-            read = self.bus.read_i2c_block_data(address, temperature_reading_register, temperature_reading_register_length_in_bytes)
+                # Convert to 11 bits
+                read = ((read[0] << 8) + read[1]) >> 5 
 
-            # Convert to 11 bits
-            read = ((read[0] << 8) + read[1]) >> 5 
+                # According to the datasheet (https://www.nxp.com/docs/en/data-sheet/LM75B.pdf), the reading is in two's complement form. 
+                # The line below obtains magnitude and assigns correct sign
 
-            # According to the datasheet (https://www.nxp.com/docs/en/data-sheet/LM75B.pdf), the reading is in two's complement form. 
-            # The line below obtains magnitude and assigns correct sign
+                read = -((0b11111111111 - read) + 1) if read >= 0b10000000000 else read
 
-            read = -((0b11111111111 - read) + 1) if read >= 0b10000000000 else read
+            except OSError:
+
+                read = 0
 
             # Data sheet says to use 0.125 for conversion to celcius
             setattr(temp_sensor_data, key, float(read * 0.125))
@@ -401,10 +404,11 @@ class I2CMaster(Node):
 
         thruster_values = self.rov_math(msg)
 
-        if self.thrusters_detected_on_correct_channels:
+        if self.pca9685_detected:
             
             for thruster_position in THRUSTER_CHANNELS:
-                self.connected_channels(THRUSTER_CHANNELS[thruster_position]).fly(thruster_values[thruster_position])
+                self.get_logger().info(f"{thruster_position}: {thruster_values[thruster_position]}")
+                self.connected_channels[THRUSTER_CHANNELS[thruster_position]].fly(thruster_values[thruster_position])
 
             self.tick_thrusters() # Will be called at ~ 10Hz. Involves accessing i2c bus to set thruster duty cycle
 
@@ -450,7 +454,7 @@ class I2CMaster(Node):
             outside_temperature_probe_register = 0x17
             temperature_probe_register_length_in_bytes = 2
 
-            for action_address, is_desired in possible_actions:
+            for action_address, is_desired in possible_actions.items():
                 if is_desired:
                     read = self.bus.read_byte_data(STM32_ADDRESS, action_address)
 
@@ -554,6 +558,8 @@ class I2CMaster(Node):
         # coefficients = String()
         # coefficients.data = f"""Srfe Pow: {strafe_power}, Strfe scal: {strafe_scaling_coefficient}, Strfe avg: {strafe_average_coefficient}, rot avg: {rotation_average_coefficient}"""
         # self.debugger.publish(coefficients)
+
+        # from std_msgs.msg import String
 
         # thruster_values_debug = String()
         # thruster_values_debug.data = f"""
