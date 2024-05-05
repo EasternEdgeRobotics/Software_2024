@@ -260,87 +260,64 @@ function RenderTasks(
 
 
 function MainTimer() {
-   let milliseconds = 0;
-   let displayedMilliseconds = "";
-   let seconds = 0;
-   let displayedSeconds = "";
-   let minutes = 0;
-   let displayedMinutes = "";
-   let displayedTime = "";
-   let timerOn = 0;
-   const timerPaused = 0; // Necessary variable? Unless it's value is changed at any point, it must be kept to const
-   let timeOver = 0;
+  //  let timerOn = 0;
+  //  const timerPaused = 0; // Necessary variable? Unless it's value is changed at any point, it must be kept to const
+  // let timeOver = 0;
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [time, setTime] = useState(0);
 
-   // Main Timer: Function
-   function repeat() {
-     setTimeout(function () {
-       if (timerOn == 1) {
-         if (timerPaused == 0) {
-           if (timeOver == 0) {
-             milliseconds = milliseconds + 1;
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
 
-             // If millesconds and/or seconds have reached their limits, increment/reset variables accordingly
-             if (milliseconds >= 100) {
-               seconds = seconds + 1;
-               milliseconds = 0;
-             }
-             if (seconds >= 60) {
-               minutes = minutes + 1;
-               seconds = 0;
-             }
+    if (startTime) {
+      interval = setInterval(() => {
+        const now = new Date();
+        const elapsed = now.getTime() - startTime.getTime();
+        setTime(elapsed);
+      }, 60);
+    }
 
-             // Set displayedMilliseconds, displayedSeconds, and displayedMinutes based upon if their corresponding non-displayed values are single-digit or double-digit
-             if (milliseconds < 10) {
-               displayedMilliseconds = ":0" + milliseconds;
-             } else {
-               displayedMilliseconds = ":" + milliseconds;
-             }
-             if (seconds < 10) {
-               displayedSeconds = ":0" + seconds;
-             } else {
-               displayedSeconds = ":" + seconds;
-             }
-             if (minutes < 10) {
-               displayedMinutes = "0" + minutes;
-             } else {
-               displayedMinutes = "" + minutes;
-             }
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [startTime]);
 
-             // If 15 minutes have passed within the Main Timer, break all timers
-             if (minutes == 15) {
-               timeOver = 1;
-             }
+  const start = () => {
+    if (startTime) return;
+    setStartTime(new Date());
+  };
 
-             // Update and display displayedTime
-             displayedTime =
-               displayedMinutes + displayedSeconds + displayedMilliseconds;
-             document.getElementById("timerDisplay")!.innerHTML = displayedTime;
+  const pause = () => {
+    setStartTime(null);
+  };
 
-             // Repeat the Main Timer's function
-             repeat();
-           }
-         }
-       }
-     });
-   }
+  const reset = () => {
+    setStartTime(null);
+    setTime(0);
+  };
+
+  const minutes = Math.floor(time / 60000);
+  const seconds = Math.floor((time % 60000) / 1000);
+  const milliseconds = Math.floor((time % 1000) / 10);
+
+  const displayedMinutes = String(minutes).padStart(2, "0");
+  const displayedSeconds = String(seconds).padStart(2, "0");
+  const displayedMilliseconds = String(milliseconds).padStart(2, "0");
 
   return (
     <AppBar sx={{ bgcolor: "grey", textAlign: "center" }}>
       {/* Main Timer: Displayed Time */}
       <Typography component="div" id="timerDisplay" fontSize={50}>
-        00:00:00
+        {`${displayedMinutes}:${displayedSeconds}:${displayedMilliseconds}`}
       </Typography>
 
       {/* Main Timer: Start Button */}
       <Button
         variant="contained"
         sx={{ background: green[400], color: grey[50] }}
-        onClick={() => {
-          if (timeOver == 0) {
-            timerOn = 1;
-          }
-          repeat();
-        }}
+        onClick={() => start()}
       >
         <Typography fontSize={25}>START</Typography>
       </Button>
@@ -349,11 +326,7 @@ function MainTimer() {
       <Button
         variant="contained"
         sx={{ background: yellow[400], color: [grey[50]] }}
-        onClick={() => {
-          if (timeOver == 0) {
-            timerOn = 0;
-          }
-        }}
+        onClick={() => pause()}
       >
         <Typography fontSize={25}>PAUSE</Typography>
       </Button>
@@ -362,15 +335,7 @@ function MainTimer() {
       <Button
         variant="contained"
         sx={{ background: red[400], color: grey[50] }}
-        onClick={() => {
-          if (timeOver == 0) {
-            timerOn = 0;
-            milliseconds = 0;
-            seconds = 0;
-            minutes = 0;
-            document.getElementById("timerDisplay")!.innerHTML = "00:00:00";
-          }
-        }}
+        onClick={() => reset()}
       >
         <Typography fontSize={25}>RESET</Typography>
       </Button>
@@ -379,55 +344,48 @@ function MainTimer() {
 }
 
 function Timer() {
-  const [milliseconds, setMilliseconds] = useState(0);
-  const [seconds, setSeconds] = useState(0);
-  const [minutes, setMinutes] = useState(0);
-  const [timerOn, setTimerOn] = useState(false);
-  const [timeOver, setTimeOver] = useState(false);
+ const [startTime, setStartTime] = useState<Date | null>(null);
+ const [time, setTime] = useState(0);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
+ useEffect(() => {
+   let interval: NodeJS.Timeout;
 
-    if (timerOn && !timeOver) {
-      interval = setInterval(() => {
-        setMilliseconds((prevMilliseconds) => {
-          if (prevMilliseconds >= 99) {
-            setSeconds((prevSeconds) => prevSeconds + 1);
-            return 0;
-          }
-          return prevMilliseconds + 1;
-        });
+   if (startTime) {
+     interval = setInterval(() => {
+       const now = new Date();
+       const elapsed = now.getTime() - startTime.getTime();
+       setTime(elapsed);
+     }, 60);
+   }
 
-        setSeconds((prevSeconds) => {
-          if (prevSeconds >= 59) {
-            setMinutes((prevMinutes) => prevMinutes + 1);
-            return 0;
-          }
-          return prevSeconds;
-        });
+   return () => {
+     if (interval) {
+       clearInterval(interval);
+     }
+   };
+ }, [startTime]);
 
-        if (minutes >= 15) {
-          setTimeOver(true);
-          setTimerOn(false);
-        }
-      }, 10);
-    }
+ const start = () => {
+   if (startTime) return;
+   setStartTime(new Date());
+ };
 
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [timerOn, timeOver, minutes]);
+ const pause = () => {
+   setStartTime(null);
+ };
 
-  const resetTimer = () => {
-    setMilliseconds(0);
-    setSeconds(0);
-    setMinutes(0);
-    setTimeOver(false);
-  };
+ const reset = () => {
+   setStartTime(null);
+   setTime(0);
+ };
 
-  const formatTime = (time: number) => (time < 10 ? `0${time}` : `${time}`);
+ const minutes = Math.floor(time / 60000);
+ const seconds = Math.floor((time % 60000) / 1000);
+ const milliseconds = Math.floor((time % 1000) / 10);
+
+ const displayedMinutes = String(minutes).padStart(2, "0");
+ const displayedSeconds = String(seconds).padStart(2, "0");
+ const displayedMilliseconds = String(milliseconds).padStart(2, "0");
 
   return (
     <Box sx={{ width: [400], textAlign: "left" }}>
@@ -435,11 +393,7 @@ function Timer() {
         <Button
           variant="outlined"
           sx={{ borderColor: green[900], color: green[900] }}
-          onClick={() => {
-            if (!timeOver) {
-              setTimerOn(true);
-            }
-          }}
+          onClick={() => start()}
         >
           START
         </Button>
@@ -447,27 +401,21 @@ function Timer() {
         <Button
           variant="outlined"
           sx={{ borderColor: yellow[900], color: yellow[900] }}
-          onClick={() => {
-            if (!timeOver) {
-              setTimerOn(false);
-            }
-          }}
+          onClick={() => pause()}
         >
           PAUSE
         </Button>
 
         <Box textAlign="center" sx={{ width: [80] }}>
           <Typography component="div" fontSize={20} sx={{ color: grey[400] }}>
-            {`${formatTime(minutes)}:${formatTime(seconds)}:${formatTime(
-              milliseconds
-            )}`}
+            {`${displayedMinutes}:${displayedSeconds}:${displayedMilliseconds}`}
           </Typography>
         </Box>
 
         <Button
           variant="outlined"
           sx={{ borderColor: red[900], color: red[900] }}
-          onClick={resetTimer}
+          onClick={reset}
         >
           RESET
         </Button>
