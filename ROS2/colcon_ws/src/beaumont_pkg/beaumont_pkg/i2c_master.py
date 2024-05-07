@@ -12,24 +12,26 @@ from math import sqrt
 
 # Configure minimum, middle and maximum pulse lengths (out of 4096)
 # Values should be adjusted so that the center arms the thrusters
-# Currently setup for servos
-MIN_SPEED = 3000
-MAX_SPEED = 15000
-CENTER_SPEED = 9000
+MIN_SPEED = 1000
+MAX_SPEED = 1500
+CENTER_SPEED = 1250
 
-THUSTER_ACCELERATION = 500
+THUSTER_ACCELERATION = 75
 
 
+# Thurster channels are based on Beaumont as of May 7th 2024
 THRUSTER_CHANNELS = {
-    "for-port-top": 8,
-    "for-star-top": 1,
-    "aft-port-top": 9,
-    "aft-star-top": 3,
-    "for-port-bot": 10,
-    "for-star-bot": 5,
-    "aft-port-bot": 11,
-    "aft-star-bot": 7
+    "for-port-top": 1,
+    "for-star-top": 0,
+    "aft-port-top": 2,
+    "aft-star-top": 7,
+    "for-port-bot": 4,
+    "for-star-bot": 6,
+    "aft-port-bot": 5,
+    "aft-star-bot": 3
 }
+
+THRUSTER_TICK_RATE = 0.01
 
 STM32_ADDRESS = 0x80 # Don't know yet
 
@@ -142,6 +144,10 @@ class I2CMaster(Node):
         # from std_msgs.msg import String
         # self.debugger = self.create_publisher(String, 'debugger', 10)
 
+        # For finiding center speed and testing indivisual thrusters
+    
+        self.current_thruster = 0
+
         # prevent unused variable warning
         self.copilot_listener 
         self.pilot_listener
@@ -184,6 +190,8 @@ class I2CMaster(Node):
                     self.connected_channels[THRUSTER_CHANNELS[thuster]] = Thruster(self.pwm, THRUSTER_CHANNELS[thuster])
 
                 self.pca9685_detected = True 
+                
+                self.thruster_timer = self.create_timer(THRUSTER_TICK_RATE, self.tick_thrusters, callback_group=i2c_master_callback_group)
 
             except:
                 self.get_logger().error("CANNOT FIND PCA9685 ON I2C BUS!")
@@ -407,12 +415,11 @@ class I2CMaster(Node):
         if self.pca9685_detected:
             
             for thruster_position in THRUSTER_CHANNELS:
-                self.get_logger().info(f"{thruster_position}: {thruster_values[thruster_position]}")
+                #self.get_logger().info(f"{thruster_position}: {thruster_values[thruster_position]}")
                 self.connected_channels[THRUSTER_CHANNELS[thruster_position]].fly(thruster_values[thruster_position])
+            
 
-            self.tick_thrusters() # Will be called at ~ 10Hz. Involves accessing i2c bus to set thruster duty cycle
-
-        self.stm32_communications(msg)
+        # self.stm32_communications(msg)
 
     def stm32_communications(self, controller_inputs):
         '''
@@ -536,6 +543,41 @@ class I2CMaster(Node):
         thruster_values["for-star-top"] = ((-surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient
         thruster_values["aft-port-top"] = ((surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient
         thruster_values["aft-star-top"] = ((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient
+
+        ##################################################################################################################
+        ############################## FINIDING CENTER SPEED, TESTING INDIVISUAL THRUSTERS ###############################
+        ##################################################################################################################
+
+        global MAX_SPEED, CENTER_SPEED, MIN_SPEED
+
+        thrusters = ("for-port-bot", "for-star-bot", "aft-port-bot","aft-star-bot", "for-port-top","for-star-top","aft-port-top","aft-star-top")
+
+        if controller_inputs.brighten_led:
+            MAX_SPEED += 100
+            CENTER_SPEED += 100
+            MIN_SPEED += 100
+            self.get_logger().info(str([MIN_SPEED, CENTER_SPEED, MAX_SPEED]))
+        
+        if controller_inputs.dim_led:
+            MAX_SPEED -= 100
+            CENTER_SPEED -= 100
+            MIN_SPEED -= 100
+            self.get_logger().info(str([MIN_SPEED, CENTER_SPEED, MAX_SPEED]))
+
+        if controller_inputs.open_claw:
+            if self.current_thruster == 7:
+                self.current_thruster = 0
+            else:
+                self.current_thruster += 1
+
+        if controller_inputs.close_claw:
+            if self.current_thruster == 0:
+                self.current_thruster = 7
+            else:
+                self.current_thruster -= 1
+
+        thruster_values[thrusters[self.current_thruster]] = ((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient
+
 
         ####################################################################
         ############################## DEBUG ###############################
