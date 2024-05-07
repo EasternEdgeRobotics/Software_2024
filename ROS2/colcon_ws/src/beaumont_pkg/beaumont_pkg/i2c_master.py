@@ -145,8 +145,7 @@ class I2CMaster(Node):
         # self.debugger = self.create_publisher(String, 'debugger', 10)
 
         # For finiding center speed and testing indivisual thrusters
-    
-        self.current_thruster = 0
+        # self.current_thruster = 0
 
         # prevent unused variable warning
         self.copilot_listener 
@@ -548,35 +547,35 @@ class I2CMaster(Node):
         ############################## FINIDING CENTER SPEED, TESTING INDIVISUAL THRUSTERS ###############################
         ##################################################################################################################
 
-        global MAX_SPEED, CENTER_SPEED, MIN_SPEED
+        # global MAX_SPEED, CENTER_SPEED, MIN_SPEED
 
-        thrusters = ("for-port-bot", "for-star-bot", "aft-port-bot","aft-star-bot", "for-port-top","for-star-top","aft-port-top","aft-star-top")
+        # thrusters = ("for-port-bot", "for-star-bot", "aft-port-bot","aft-star-bot", "for-port-top","for-star-top","aft-port-top","aft-star-top")
 
-        if controller_inputs.brighten_led:
-            MAX_SPEED += 100
-            CENTER_SPEED += 100
-            MIN_SPEED += 100
-            self.get_logger().info(str([MIN_SPEED, CENTER_SPEED, MAX_SPEED]))
+        # if controller_inputs.brighten_led:
+        #     MAX_SPEED += 100
+        #     CENTER_SPEED += 100
+        #     MIN_SPEED += 100
+        #     self.get_logger().info(str([MIN_SPEED, CENTER_SPEED, MAX_SPEED]))
         
-        if controller_inputs.dim_led:
-            MAX_SPEED -= 100
-            CENTER_SPEED -= 100
-            MIN_SPEED -= 100
-            self.get_logger().info(str([MIN_SPEED, CENTER_SPEED, MAX_SPEED]))
+        # if controller_inputs.dim_led:
+        #     MAX_SPEED -= 100
+        #     CENTER_SPEED -= 100
+        #     MIN_SPEED -= 100
+        #     self.get_logger().info(str([MIN_SPEED, CENTER_SPEED, MAX_SPEED]))
 
-        if controller_inputs.open_claw:
-            if self.current_thruster == 7:
-                self.current_thruster = 0
-            else:
-                self.current_thruster += 1
+        # if controller_inputs.open_claw:
+        #     if self.current_thruster == 7:
+        #         self.current_thruster = 0
+        #     else:
+        #         self.current_thruster += 1
 
-        if controller_inputs.close_claw:
-            if self.current_thruster == 0:
-                self.current_thruster = 7
-            else:
-                self.current_thruster -= 1
+        # if controller_inputs.close_claw:
+        #     if self.current_thruster == 0:
+        #         self.current_thruster = 7
+        #     else:
+        #         self.current_thruster -= 1
 
-        thruster_values[thrusters[self.current_thruster]] = ((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient
+        # thruster_values[thrusters[self.current_thruster]] = ((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient
 
 
         ####################################################################
