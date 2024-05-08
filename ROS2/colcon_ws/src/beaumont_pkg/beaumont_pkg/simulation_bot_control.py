@@ -9,6 +9,17 @@ from math import sqrt, cos, pi
 
 SIMULAITON_PERCISION = 0.1 # 10 Hz
 
+MAX_VALUE = {
+    "for-port-top": 0,
+    "for-star-top": 0,
+    "aft-port-top": 0,
+    "aft-star-top": 0,
+    "for-port-bot": 0,
+    "for-star-bot": 0,
+    "aft-port-bot": 0,
+    "aft-star-bot": 0
+}
+
 class SimulationBotControl(Node):
 
     def __init__(self):
@@ -34,8 +45,8 @@ class SimulationBotControl(Node):
         self.right_claw_publisher = self.create_publisher(Twist, "/demo/right_claw", 10)
 
         # Debugger publisher
-        # from std_msgs.msg import String
-        # self.debugger = self.create_publisher(String, 'debugger', 10) 
+        from std_msgs.msg import String
+        self.debugger = self.create_publisher(String, 'debugger', 10) 
 
         self.power_multiplier = 0
         self.surge_multiplier = 0
@@ -212,15 +223,32 @@ class SimulationBotControl(Node):
         combined_strafe_coefficient = strafe_scaling_coefficient * strafe_average_coefficient
         rotation_average_coefficient = sum_of_magnitudes_of_rotational_movements / (strafe_power + sum_of_magnitudes_of_rotational_movements) if strafe_power or sum_of_magnitudes_of_rotational_movements else 0
 
+        # The to decimal adjustment factor is 1.85 (max value that each thruster value can be)
+
         # Calculations below are based on thruster positions
-        thruster_values["for-port-bot"] = ((-surge)+(sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient
-        thruster_values["for-star-bot"] = ((-surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient
-        thruster_values["aft-port-bot"] = ((surge)+(sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient
-        thruster_values["aft-star-bot"] = ((surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient
-        thruster_values["for-port-top"] = ((-surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient
-        thruster_values["for-star-top"] = ((-surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient
-        thruster_values["aft-port-top"] = ((surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient
-        thruster_values["aft-star-top"] = ((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient
+        thruster_values["for-port-bot"] = (((-surge)+(sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["for-star-bot"] = (((-surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["aft-port-bot"] = (((surge)+(sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["aft-star-bot"] = (((surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["for-port-top"] = (((-surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["for-star-top"] = (((-surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["aft-port-top"] = (((surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["aft-star-top"] = (((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / 1.85
+
+
+        ####################################################################
+        ############################## DEBUG ###############################
+        ####################################################################
+
+        for thruster_position in MAX_VALUE:
+            if MAX_VALUE[thruster_position] < thruster_values[thruster_position]:
+                MAX_VALUE[thruster_position] = thruster_values[thruster_position]
+
+        
+        from std_msgs.msg import String
+        msg = String()
+        msg.data = str(list(MAX_VALUE.values()))
+        self.debugger.publish(msg) 
 
         #################################################################################
         ############################## SIMULATION PORTION ###############################
