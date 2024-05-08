@@ -1,162 +1,199 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, 
-    TableRow, Slider, Box, Typography, Button, Menu} from "@mui/material";
+import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Slider, Box, Button } from "@mui/material";
 import { useAtom } from "jotai";
-import { IsROSConnected, PowerMultipliers, Profiles, ProfilesService } from "../api/Atoms";
-import React from "react";
-import { useState } from "react";
+import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput } from "../api/Atoms";
+import { useState, useEffect } from "react";
 
-var sliderLabels: {[key: number]: string} = {
-    0: "Power",
-    1: "Surge",
-    2: "Sway",
-    3: "Heave",
-    4: "Pitch",
-    5: "Roll",
-    6: "Yaw"
-}
-
-//Function to return vertical slider component
-export function VerticalSlider(props: {sliderIndex: number, defaultValue:number, height:number, sliderChangedCallback:(sliderIndex: number, value: number) => void}){
-        const sliderLabel = sliderLabels[props.sliderIndex];
-        let currentValue = props.defaultValue;
-    
-        const [width, setWidth] = React.useState<number>(window.innerWidth);
-    
-        React.useEffect(() => {window.addEventListener("resize", () => {setWidth(window.innerWidth)});}, []);
-    
-        return(
-            <Box height={(0.65)*props.height} justifyContent={"right"}>
-                <Slider sx={{'& input[type="range"]': {WebkitAppearance: 'slider-vertical',},}}
-                        orientation="vertical" defaultValue={props.defaultValue}
-                        onChange={(e,val)=>{props.sliderChangedCallback(props.sliderIndex, val as number);
-                                                                        currentValue=(val as number);}}
-                        onKeyDown={preventHorizontalKeyboardNavigation} min={0} max={100} step={5}/>
-                <Typography fontFamily={"monospace"} fontSize={0.015*(width)}>{sliderLabel}={currentValue}</Typography>
-            </Box>
-        )
-    }
-
-// Function to prevent control of slider using left and right arrow
-function preventHorizontalKeyboardNavigation(event: React.KeyboardEvent) {
-    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-      event.preventDefault(); 
-    }
-  }
-
-export function StatusIndicator(props: {statement: any}) {
-    if (props.statement) return <CheckCircle2 color="lime" />
-    else return (<AlertCircle color="red" />)
+export function StatusIndicator(props: {statement: boolean}) {
+    if (props.statement) return <CheckCircle2 color="lime" />;
+    else return <AlertCircle color="red" />;
 }
 
 export function BotTab() {
     const [isRosConnected] = useAtom(IsROSConnected);
-    const [height, setHeight] = useState<number>(window.innerHeight);
-    const [powerMultipliers, setPowerMultipliers] = useAtom(PowerMultipliers);
-    const [currentProfile, setCurrentProfile] = useState<string>("Pick Profile"); //Stores the current selected profile 
-    const [, setProfilesService] = useAtom(ProfilesService); //If ProfilesService == 0, tell the ROS client to overwrite it's stored profiles with what is here. If ProfilesService == 1, tell the ROS client to send its stored profiles. 
-    const [profiles,] = useAtom(Profiles);
-    const [currentPowerMultiplierPreset, setCurrentPowerMultiplierPreset] = useState<string>("Pick Power Multiplier Preset");
-    React.useEffect(() => {window.addEventListener("resize", () => {setHeight(window.innerHeight)});}, []);
 
-    const [anchorElement, setAnchorEL] = React.useState(null);
+    const [thrusterMultipliers, setThrusterMultipliers] = useAtom(ThrusterMultipliers);
 
-    const [mouseAnchoredOnProfilePicker, setMouseAnchoredOnProfilePicker] = React.useState<boolean>(false);
-    const [mouseAnchoredOnPresetPicker, setMouseAnchoredOnPresetPicker] = React.useState<boolean>(false);
+    const [profilesList] = useAtom(ProfilesList);
+    const [currentProfile] = useAtom(CurrentProfile);
+    const [mappings] = useAtom(Mappings);
+    const [,setControllerInput] = useAtom(ControllerInput);
 
-    const setMouseAnchor = (currentTarget:any, anchor:string) =>{
-        if (anchor=="profile picker"){
-            if (mouseAnchoredOnProfilePicker){
-                setAnchorEL(null);
-                setMouseAnchoredOnProfilePicker(false);
-            }
-            else {
-                setAnchorEL(currentTarget);
-                setMouseAnchoredOnProfilePicker(true);
-            }
-        }
-        else if (anchor=="power multiplier picker"){
-            if (mouseAnchoredOnPresetPicker){
-                setAnchorEL(null);
-                setMouseAnchoredOnPresetPicker(false);
-            }
-            else {
-                setAnchorEL(currentTarget);
-                setMouseAnchoredOnPresetPicker(true);
-            }
-        }
-        
-    }
+    const [controller1Detected, setController1Detected] = useState(false);
+    const [controller2Detected, setController2Detected] = useState(false);
+
+    const [controller1Name, setController1Name] = useState("Not Assigned");
+    const [controller2Name, setController2Name] = useState("Not Assigned");
+
+    let initialPageLoad = true;
 
     const status = [
-        {"name": "ROS", "status": isRosConnected}
-    ]
+        {"name": "ROS", "status": isRosConnected},
+        {"name":"Controller 1 Detected", "status": controller1Detected},
+        {"name":"Controller 2 Detected", "status": controller2Detected}
+    ];
+      
+    const [, reloadComponent] = useState<number>(0);
 
-    // Function to handle changing slider value
-    const sliderChanged = (sliderIndex: number, value: number) => {
-        setPowerMultipliers(powerMultipliers.map((item, index) => index === sliderIndex ? value : item));
-    } 
+    // All inputs will be in the format of a list, where the first element is input value (1 for button and between (-1,1) for axis) 
+    // and the second element is the action
+
+    // Likely one of the most important functions in the software package
+    // This function listens to the controller input and updates the ControllerInput global state. When this state is changed, 
+    // ROS.tsx recognizes this and publishes the input to the device running the rosbridge server (RPi4 inside the enclosure) 
+    const input_listener = () => {
+
+        let controller1 = "null";
+        let controller2 = "null";
+
+        let controller1Index = -1;
+        let controller2Index = -1;
+
+        let controller1Set = false;
+
+        // Find out the controller names, stored in both a normal javascript variable for this function and as a react state to be displayed in GUI
+        for (let i = 0; i < profilesList.length;i++){
+            if (currentProfile == profilesList[i].name){
+
+                controller1 = profilesList[i].controller1;
+                setController1Name(controller1);
+
+                controller2 = (profilesList[i].controller2 != null) ? profilesList[i].controller2 : "null";
+                setController2Name(controller2);
+        }} 
+        
+        // Find out the controller index in navigator
+        for (let controllerIndex = 0; controllerIndex < navigator.getGamepads().length;controllerIndex++){
+            if (navigator.getGamepads()[controllerIndex]?.id == controller1 && !controller1Set){
+                controller1Set = true; // This is in case controller 1 and controller 2 have the same name
+                controller1Index = controllerIndex;
+                setController1Detected(true);
+            }
+            else if (navigator.getGamepads()[controllerIndex]?.id == controller2){
+                controller2Index = controllerIndex;
+                setController2Detected(true);
+            }
+        }
+
+        const controllerIndexes = [controller1Index, controller2Index];
+        const controller_input_list:(string|number|undefined)[][] = [];
+
+        if (controllerIndexes[0] == -1){
+            setController1Detected(false);
+        }
+        if (controllerIndexes[1] == -1){
+            setController2Detected(false);
+        }
+
+        // Iterate through controller 1 and controller 2
+        for (let i = 0; i<2; i++){
+            if (Object.keys(mappings[i]).length == 0) { // This indicates that no mappings have been loaded for this controller.
+                if (initialPageLoad){
+                    console.log("No mappings have been loaded. Go to the settings and load a profile.");
+                    initialPageLoad = false;
+                }
+                continue; 
+            } 
+
+            // The below for loop is quick, so it will detect a button press on any button even if it was for a short time
+            
+            const gamepadInstance = navigator.getGamepads()[controllerIndexes[i]]; 
+
+            for (let j = 0; j<(gamepadInstance?.buttons.length as number);j++){
+                if (gamepadInstance?.buttons[j].pressed){ //Button press detected
+                    if (mappings[i]["buttons"][j] != "None"){
+                        const controller_input = [];
+                        controller_input.push(1);
+                        controller_input.push(mappings[i]["buttons"][j]);
+                        controller_input_list.push(controller_input);
+                    }
+                }
+            }
+            for (let j = 0; j<(gamepadInstance?.axes.length as number);j++){
+                const deadzone = Number(mappings[i]["deadzones"][j]) > 0.05 ? Number(mappings[i]["deadzones"][j]): 0.05;
+                if (Math.abs(gamepadInstance?.axes[j] as number) >= deadzone){ // The axis has been moved beyond it's "deadzone", which means that this is actual pilot input and not controller drift
+                    if (mappings[i]["axes"][j] != "None"){
+                        const controller_input = [];
+                        controller_input.push(gamepadInstance?.axes[j]);
+                        controller_input.push(mappings[i]["axes"][j]);
+                        controller_input_list.push(controller_input);  
+                    }
+                }
+            }
+        }
+        if (controller_input_list.length > 0) {setControllerInput(JSON.stringify(controller_input_list));} // The ROS.tsx script will detect changes to the global variable "ControllerInput"
+    }
+
+    useEffect(() => { // Constantly run the input listener 
+        const interval = setInterval(() => {
+            reloadComponent(Math.random());
+            input_listener();
+        }, 100); // 100 ms 
+        return () => clearInterval(interval); // Stop listening for input when we click off the BotTab
+    }, [currentProfile]);
     
-    return(
+    return (
         <Box flexGrow={1}>
             <Grid container justifyContent={"center"} spacing={1}>
-                {[0,1,2,3,4,5,6].map((index) => {
-                    return(
-                        <Grid item xs={1}>
-                            <VerticalSlider sliderIndex={index} height={height} defaultValue={powerMultipliers[index]} sliderChangedCallback={sliderChanged}/>
-                        </Grid>)})
+                {["Power", "Surge", "Sway", "Heave", "Pitch", "Roll", "Yaw"].map((label, index) => {
+                        return (
+                            <Grid item xs={1} key={index} display="flex" justifyContent="center" alignItems="center" flexWrap="wrap" height="300px">
+                                <Slider orientation="vertical" valueLabelDisplay="auto" step={5} defaultValue={thrusterMultipliers[index]} onChange={(_,value) => setThrusterMultipliers(thrusterMultipliers.map((v, i) => {if (i == index) return value as number; else return v;}))} />
+                                <Box flexBasis="100%" height="0" />
+                                <h2>{label}: {thrusterMultipliers[index]}</h2>
+                            </Grid>
+                        );})
                 }
                 <Grid item xs={3}>
                     <Grid container justifyContent={"center"} rowSpacing={2}>
                         <Grid item xs={12}>
-                        <TableContainer component={Paper}>
-                            <Table>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell align="center">Service</TableCell>
-                                        <TableCell align="center">Status</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                {status.map((data) => {
-                                    return(
-                                        <TableRow key={data.name} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                            <TableCell align="center">{data.name}</TableCell>
-                                            <TableCell align="center"><StatusIndicator statement={data.status} /></TableCell>
+                            <TableContainer component={Paper}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell align="center">Service</TableCell>
+                                            <TableCell align="center">Status</TableCell>
                                         </TableRow>
-                                    )
-                                })}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                        </Grid>
-                        <Grid item xs={4}>
-                            <Button variant={"outlined"} aria-controls={"multipliers-preset-menu"} aria-haspopup={"true"} aria-expanded={mouseAnchoredOnPresetPicker} onClick={(e)=>{setMouseAnchor(e.currentTarget, "power multiplier picker")}}>
-                                {currentPowerMultiplierPreset}      
-                                <Menu id={"multipliers-preset-menu"} open={mouseAnchoredOnPresetPicker} anchorEl={anchorElement} onClick={(e)=>{setMouseAnchor(e.currentTarget, "power multiplier picker")}}>
-                                    {[currentPowerMultiplierPreset].map((preset) => { //The mapped list here should be changed to a list of available presets
-                                        return(
-                                            <Button onClick={()=>{setCurrentPowerMultiplierPreset(preset)}}>{preset}</Button>
-                                        )
+                                    </TableHead>
+                                    <TableBody>
+                                    {status.map((data) => {
+                                        return (
+                                            <TableRow key={data.name} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                                                <TableCell align="center">{data.name}</TableCell>
+                                                <TableCell align="center"><StatusIndicator statement={data.status} /></TableCell>
+                                            </TableRow>
+                                        );
                                     })}
-                                </Menu>
-                            </Button>
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
                         </Grid>
                     </Grid>
                 </Grid>
             </Grid>
-            <Grid container item margin={6} justifyContent={"center"}>
-                <Button variant={"outlined"} aria-controls={"profile-menu"} aria-haspopup={"true"} aria-expanded={mouseAnchoredOnProfilePicker} onClick={(e)=>{setMouseAnchor(e.currentTarget, "profile picker");
-                                                                                                                                                                setProfilesService(1);}}>
-                    {currentProfile}
-                    <Menu id={"multipliers-preset-menu"} open={mouseAnchoredOnProfilePicker} anchorEl={anchorElement} onClick={(e)=>{setMouseAnchor(e.currentTarget, "profile picker")}}>
-                        {JSON.parse(profiles || '[{"info":{"name":"No Profile Selected"}}]').map((profile: { info: { name: string; }; })=>{ //If profiles is an empty string, replace it by a placeholder dictionary in the JSON.parse() argument
-                            return(
-                                <Button onClick={()=>{setCurrentProfile(profile.info.name)}}>{profile.info.name}</Button>
-                            )
-                        })}
-                    </Menu>
-                </Button>
+            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
+                <Grid item xs={3.5}>
+                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Load Power Preset</Button>
+                </Grid>
+                <Grid item xs={3.5}>
+                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Save Power Preset</Button>
+                </Grid>
+                <Grid item xs={3} />
+            </Grid>
+            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
+                <Grid item xs="auto">
+                    Current Profile: {currentProfile}
+                </Grid>
+            </Grid>
+            <Grid container justifyContent={"center"} spacing={1}>
+                <Grid item xs="auto">
+                    Controller 1: {controller1Name}
+                </Grid>
+            </Grid>
+            <Grid container justifyContent={"center"} spacing={1}>
+                <Grid item xs="auto">
+                    Controller 2: {controller2Name}
+                </Grid>
             </Grid>
         </Box>
     );

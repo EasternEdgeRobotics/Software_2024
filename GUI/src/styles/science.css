@@ -1,0 +1,130 @@
+.desktop1-container {
+    width: 100%;
+    display: flex;
+    overflow: auto;
+    min-height: 100vh;
+    align-items: center;
+    flex-direction: column;
+}
+
+.desktop1-desktop1 {
+    gap: 10px;
+    width: 100%;
+    height: 1003px;
+    display: flex;
+    padding: 43px 55px;
+    overflow: hidden;
+    align-items: flex-start;
+    flex-shrink: 0;
+    flex-direction: column;
+    background-color: #202020;
+}
+
+.desktop1-rectangle1 {
+    width: 654px;
+    height: 159px;
+    display: flex;
+    position: relative;
+    align-items: flex-start;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background-color: #D9D9D9;
+    padding: 5 14px;
+}
+
+.desktop1-frame1 {
+    gap: 32px;
+    flex: 0;
+    width: 649px;
+    height: 128px;
+    display: flex;
+    opacity: 0.9;
+    padding: 0 14px;
+    z-index: 100;
+    align-self: flex-end;
+    align-items: center;
+    flex-shrink: 0;
+    border-radius: var(--dl-radius-radius-radius4);
+    animation-name: none;
+    flex-direction: row;
+    animation-delay: 0s;
+    justify-content: center;
+    background-color: rgba(208, 208, 208, 0);
+    animation-duration: 300ms;
+    animation-direction: normal;
+    animation-iteration-count: 1;
+    animation-timing-function: ease;
+}
+
+.desktop1-button {
+    color: #e8e8e8;
+    width: 143px;
+    height: 45px;
+    border-radius: var(--dl-radius-radius-radius8);
+    background-color: #252525;
+}
+
+.desktop1-text {
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 600;
+}
+
+.desktop1-button1 {
+    color: #e8e8e8;
+    width: 143px;
+    height: 45px;
+    border-radius: var(--dl-radius-radius-radius8);
+    background-color: #252525;
+}
+
+.desktop1-text03 {
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 600;
+}
+
+.desktop1-button2 {
+    color: #e8e8e8;
+    width: 143px;
+    height: 45px;
+    border-radius: var(--dl-radius-radius-radius8);
+    background-color: #252525;
+}
+
+.desktop1-text06 {
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 600;
+}
+
+.desktop1-button3 {
+    color: #e8e8e8;
+    width: 143px;
+    height: 45px;
+    border-radius: var(--dl-radius-radius-radius8);
+    background-color: #252525;
+}
+
+.desktop1-text09 {
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 600;
+}
+
+.desktop1-text12 {
+    top: 18px;
+    left: 218px;
+    color: rgba(0, 0, 0, 1);
+    width: 229px;
+    height: auto;
+    position: absolute;
+    font-size: 28px;
+    font-style: Bold;
+    text-align: center;
+    font-family: Inter;
+    font-weight: 700;
+    line-height: normal;
+    font-stretch: normal;
+    text-decoration: none;
+}
