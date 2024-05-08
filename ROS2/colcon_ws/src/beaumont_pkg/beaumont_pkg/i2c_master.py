@@ -11,12 +11,14 @@ from adafruit_bno055 import BNO055_I2C
 from math import sqrt
 
 # Configure minimum, middle and maximum pulse lengths (out of 4096)
-# Values should be adjusted so that the center arms the thrusters
-MIN_SPEED = 1000
-MAX_SPEED = 1500
-CENTER_SPEED = 1250
+# # Values should be adjusted so that the center arms the thrusters
+# MIN_SPEED = 1000
+# MAX_SPEED = 1500
+# CENTER_SPEED = 1250
 
-THUSTER_ACCELERATION = 75
+# THRUSTER_ACCELERATION = 75
+
+THRUSTER_ACCELERATION = 10
 
 
 # Thurster channels are based on Beaumont as of May 7th 2024
@@ -31,7 +33,20 @@ THRUSTER_CHANNELS = {
     "aft-star-bot": 3
 }
 
-THRUSTER_TICK_RATE = 0.01
+RP2040_THRUSTER_PINS = {
+    "for-port-top": 28,
+    "for-star-top": 29,
+    "aft-port-top": 27,
+    "aft-star-top": 22,
+    "for-port-bot": 25,
+    "for-star-bot": 23,
+    "aft-port-bot": 24,
+    "aft-star-bot": 26
+}
+
+THRUSTER_TICK_PERIOD = 0.01
+
+RP2040_ADDRESS = 0x08
 
 STM32_ADDRESS = 0x80 # Don't know yet
 
@@ -57,33 +72,31 @@ TEMP_SENSOR_REQUESTS_PERIOD = 1
 
 class Thruster:
     """Thruster class."""
-    def __init__(self, pwm, ch):
+    def __init__(self, bus, thruster_position):
         """
         Setup the thruster or servo.
 
         :param pwm: I2C PWM driver controller object
         :param ch: pwm channel number for the thruster or servo controller
         """
-        self.pwm = pwm
-        self.ch = ch
+        self.bus = bus
+        self.thruster_position = thruster_position
 
-        self.target = CENTER_SPEED
-        self.current = CENTER_SPEED
+        self.thruster_armed = False
+
+        self.target = 0
+        self.current = 0
 
         # Arm thruster
-        pwm.channels[ch].duty_cycle = CENTER_SPEED
+        self.arm_thruster()
 
-    def thruster_scale(self, thruster):
-        """
-        Scale thruster speed(-1.0 to 1.0) to pwm min/center/max limits.
+    def arm_thruster(self):
 
-        :param thruster: thruster to scale
-        """
-        if thruster >= 0:
-            t = int(CENTER_SPEED + (MAX_SPEED - CENTER_SPEED) * thruster)
-        else:
-            t = int(CENTER_SPEED + (CENTER_SPEED - MIN_SPEED) * thruster)
-        return t
+        try:
+            self.bus.write_byte_data(RP2040_ADDRESS, RP2040_THRUSTER_PINS[self.thruster_position],0)
+            self.thruster_initalized = True
+        except OSError:
+            pass
 
     def fly(self, speed):
         """
@@ -91,17 +104,35 @@ class Thruster:
 
         :param speed: speed of thrusters with valid range between -1.0 to 1.0
         """
-        self.target = self.thruster_scale(speed)
+        self.target = speed*127
 
     def tick(self):
+        
+        if not self.thruster_armed:
+            self.arm_thruster()
+            return
+
         if(self.current != self.target):
-            if(abs(self.target - self.current) > THUSTER_ACCELERATION):
+            if(abs(self.target - self.current) > THRUSTER_ACCELERATION):
+
                 direction = (self.target - self.current) / abs(self.target - self.current)
-                self.current += int(direction * THUSTER_ACCELERATION)
-                self.pwm.channels[self.ch].duty_cycle = self.current
+
+                self.current += int(direction * THRUSTER_ACCELERATION)
+
+                if abs(self.current) > 127:
+                    self.current = 127 * (-1 if self.current < 0 else 1)
+
+                try:
+                    self.bus.write_byte_data(RP2040_ADDRESS, RP2040_THRUSTER_PINS[self.thruster_position], self.current)
+                except OSError:
+                    self.thruster_armed = False
+
             else:
                 self.current = self.target
-                self.pwm.channels[self.ch].duty_cycle = self.current
+                try:
+                    self.bus.write_byte_data(RP2040_ADDRESS, RP2040_THRUSTER_PINS[self.thruster_position], self.current)
+                except OSError:
+                    self.thruster_armed = False
 
 class I2CMaster(Node):
     '''
@@ -166,34 +197,39 @@ class I2CMaster(Node):
         ################### THRUSTERS ###################
         #################################################
 
-        self.power_multiplier = 0.2
-        self.surge_multiplier = 0
-        self.sway_multiplier = 0
-        self.heave_multiplier = 0
-        self.pitch_multiplier = 0
-        self.yaw_multiplier = 0
+        # self.power_multiplier = 0.2
+        # self.surge_multiplier = 0
+        # self.sway_multiplier = 0
+        # self.heave_multiplier = 0
+        # self.pitch_multiplier = 0
+        # self.yaw_multiplier = 0
 
-        self.pca9685_detected = False
+        # self.connected_channels = []
 
-        self.connected_channels = {}
+        # for thruster in THRUSTER_CHANNELS:  
+        #     self.connected_channels[THRUSTER_CHANNELS[thruster]] = Thruster(THRUSTER_CHANNELS[thruster])
 
-        if self.i2c is not None:
+        # self.pca9685_detected = False
 
-            # Connect to PCA9685
-            try:
-                self.pwm = PCA9685(self.i2c)         
-                self.pwm.frequency = 100
-                self.get_logger().info("PCA DETECTED ON I2C BUS")
+        # self.connected_channels = {}
+
+        # if self.i2c is not None:
+
+        #     # Connect to PCA9685
+        #     try:
+        #         self.pwm = PCA9685(self.i2c)         
+        #         self.pwm.frequency = 100
+        #         self.get_logger().info("PCA DETECTED ON I2C BUS")
                 
-                for thuster in THRUSTER_CHANNELS:  
-                    self.connected_channels[THRUSTER_CHANNELS[thuster]] = Thruster(self.pwm, THRUSTER_CHANNELS[thuster])
+        #         for thuster in THRUSTER_CHANNELS:  
+        #             self.connected_channels[THRUSTER_CHANNELS[thuster]] = Thruster(self.pwm, THRUSTER_CHANNELS[thuster])
 
-                self.pca9685_detected = True 
+        #         self.pca9685_detected = True 
                 
-                self.thruster_timer = self.create_timer(THRUSTER_TICK_RATE, self.tick_thrusters, callback_group=i2c_master_callback_group)
+        #         self.thruster_timer = self.create_timer(THRUSTER_TICK_PERIOD, self.tick_thrusters, callback_group=i2c_master_callback_group)
 
-            except:
-                self.get_logger().error("CANNOT FIND PCA9685 ON I2C BUS!")
+        #     except:
+        #         self.get_logger().error("CANNOT FIND PCA9685 ON I2C BUS!")
 
 
         #################################################
@@ -224,6 +260,24 @@ class I2CMaster(Node):
             self.get_logger().info("INITIALIZED SMBUS!")
         except:
             self.get_logger().error("COULD NOT INITIALIZE SMBUS")
+
+
+        #################################################
+        ################### THRUSTERS ###################
+        #################################################
+
+        self.power_multiplier = 0.2
+        self.surge_multiplier = 0
+        self.sway_multiplier = 0
+        self.heave_multiplier = 0
+        self.pitch_multiplier = 0
+        self.yaw_multiplier = 0
+
+        self.connected_channels = {}
+
+        if self.bus is not None:
+            for thruster_position in THRUSTER_CHANNELS:  
+                self.connected_channels[thruster_position] = Thruster(self.bus, thruster_position)
 
         ##################################################
         ###################### ADCs ######################
@@ -416,6 +470,8 @@ class I2CMaster(Node):
             for thruster_position in THRUSTER_CHANNELS:
                 #self.get_logger().info(f"{thruster_position}: {thruster_values[thruster_position]}")
                 self.connected_channels[THRUSTER_CHANNELS[thruster_position]].fly(thruster_values[thruster_position])
+                if not self.connected_channels[THRUSTER_CHANNELS[thruster_position]].thruster_armed:
+                    self.get_logger().error(f"Thruster {thruster_position} not armed")
             
 
         # self.stm32_communications(msg)
@@ -542,41 +598,6 @@ class I2CMaster(Node):
         thruster_values["for-star-top"] = ((-surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient
         thruster_values["aft-port-top"] = ((surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient
         thruster_values["aft-star-top"] = ((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient
-
-        ##################################################################################################################
-        ############################## FINIDING CENTER SPEED, TESTING INDIVISUAL THRUSTERS ###############################
-        ##################################################################################################################
-
-        # global MAX_SPEED, CENTER_SPEED, MIN_SPEED
-
-        # thrusters = ("for-port-bot", "for-star-bot", "aft-port-bot","aft-star-bot", "for-port-top","for-star-top","aft-port-top","aft-star-top")
-
-        # if controller_inputs.brighten_led:
-        #     MAX_SPEED += 100
-        #     CENTER_SPEED += 100
-        #     MIN_SPEED += 100
-        #     self.get_logger().info(str([MIN_SPEED, CENTER_SPEED, MAX_SPEED]))
-        
-        # if controller_inputs.dim_led:
-        #     MAX_SPEED -= 100
-        #     CENTER_SPEED -= 100
-        #     MIN_SPEED -= 100
-        #     self.get_logger().info(str([MIN_SPEED, CENTER_SPEED, MAX_SPEED]))
-
-        # if controller_inputs.open_claw:
-        #     if self.current_thruster == 7:
-        #         self.current_thruster = 0
-        #     else:
-        #         self.current_thruster += 1
-
-        # if controller_inputs.close_claw:
-        #     if self.current_thruster == 0:
-        #         self.current_thruster = 7
-        #     else:
-        #         self.current_thruster -= 1
-
-        # thruster_values[thrusters[self.current_thruster]] = ((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient
-
 
         ####################################################################
         ############################## DEBUG ###############################
