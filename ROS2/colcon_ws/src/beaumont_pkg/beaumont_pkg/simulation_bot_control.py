@@ -45,8 +45,8 @@ class SimulationBotControl(Node):
         self.right_claw_publisher = self.create_publisher(Twist, "/demo/right_claw", 10)
 
         # Debugger publisher
-        from std_msgs.msg import String
-        self.debugger = self.create_publisher(String, 'debugger', 10) 
+        # from std_msgs.msg import String
+        # self.debugger = self.create_publisher(String, 'debugger', 10) 
 
         self.power_multiplier = 0
         self.surge_multiplier = 0
@@ -240,15 +240,15 @@ class SimulationBotControl(Node):
         ############################## DEBUG ###############################
         ####################################################################
 
-        for thruster_position in MAX_VALUE:
-            if MAX_VALUE[thruster_position] < thruster_values[thruster_position]:
-                MAX_VALUE[thruster_position] = thruster_values[thruster_position]
+        # for thruster_position in MAX_VALUE:
+        #     if MAX_VALUE[thruster_position] < thruster_values[thruster_position]:
+        #         MAX_VALUE[thruster_position] = thruster_values[thruster_position]
 
         
-        from std_msgs.msg import String
-        msg = String()
-        msg.data = str(list(MAX_VALUE.values()))
-        self.debugger.publish(msg) 
+        # from std_msgs.msg import String
+        # msg = String()
+        # msg.data = str(list(MAX_VALUE.values()))
+        # self.debugger.publish(msg) 
 
         #################################################################################
         ############################## SIMULATION PORTION ###############################
