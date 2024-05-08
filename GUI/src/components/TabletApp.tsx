@@ -11,8 +11,6 @@ The purpose of the TabletApp component is to provide the deck chief with a GUI w
 
     2. Provides a main timer, which can be started, paused and reset, permanently displayed as bar at the top of the screen
 
-    TIMERS TOO FAST!
-
     3. Provides secondary timers, one for each task, which can be started paused and reset independently of the main timers and other task-specific timers
 
 Additional features include:
@@ -20,6 +18,12 @@ Additional features include:
     1. Should any timer reach 15 minutes, all timers "break". That is, all timers are paused and are no longer interactive
 
     2. A settings menu located underneath the checklist for debugging purposes
+
+Notes:
+
+    2. Timers are too fast; for ever actual minute that passes, unfixed timers are approximately 2 seconds ahead
+
+    1. Testing the usage device  will be necessary as to ensure correct formatting and appropriate timer delay
 */
 
 export default function TabletApp() {
@@ -34,23 +38,37 @@ export default function TabletApp() {
     var timerOn = 0
     var timerPaused = 0 // Necessary variable?
     var timeOver = 0
+    var doubleNextSecond = false
+    var tripleNextSecond = false
 
-    // Main Timer: Function
+    // Main Timer: Function (FIXED)
     function repeat() {       
         setTimeout(function() {
             if (timerOn == 1) {
                 if (timerPaused == 0) {
                     if (timeOver == 0) {
                         milliseconds = milliseconds + 1
-
-                        // If millesconds and/or seconds have reached their limits, increment/reset variables accordingly
+ 
+                        // If millesconds and/or seconds have reached their limits, increment/reset variables accordingly. tirpleNextSecond and doubleNextSecond are used reduce the discrepancy between the displayed time elapsed and total time elapsed
                         if (milliseconds >= 100) {
+                            if (tripleNextSecond == false && doubleNextSecond == false) {
                             seconds = seconds + 1
                             milliseconds = 0
+                            }
+                            else if (tripleNextSecond == true) {
+                                milliseconds = 0
+                                tripleNextSecond = false
+                            }
+                            else {
+                                milliseconds = 0
+                                doubleNextSecond = false
+                            }
                         }
                         if (seconds >= 60) {
                             minutes = minutes + 1
                             seconds = 0
+                            tripleNextSecond = true
+                            doubleNextSecond = true
                         }
 
                         // Set displayedMilliseconds, displayedSeconds, and displayedMinutes based upon if their corresponding non-displayed values are single-digit or double-digit
@@ -87,7 +105,7 @@ export default function TabletApp() {
                     }
                 }
             }
-        })
+        }, 9)
     }
 
 
@@ -151,7 +169,7 @@ export default function TabletApp() {
                     repeat1()
                 }
             }
-        })
+        }, 9)
     }
 
     // Task 2 Timer: Variables 
