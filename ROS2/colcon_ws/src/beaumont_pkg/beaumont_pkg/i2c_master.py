@@ -77,7 +77,7 @@ class Thruster:
         
         # SMBus throws an OSError if it fails to communicate with RP2040
         try: 
-            self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position],0)
+            self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position],127)
             self.thruster_armed = True 
         except OSError:
             pass
