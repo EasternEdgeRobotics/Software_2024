@@ -18,7 +18,7 @@ from math import sqrt
 
 # THRUSTER_ACCELERATION = 75
 
-THRUSTER_ACCELERATION = 10
+THRUSTER_ACCELERATION = 1
 
 
 # Thurster channels are based on Beaumont as of May 7th 2024
@@ -31,17 +31,6 @@ THRUSTER_CHANNELS = {
     "for-star-bot": 6,
     "aft-port-bot": 5,
     "aft-star-bot": 3
-}
-
-RP2040_THRUSTER_PINS = {
-    "for-port-top": 28,
-    "for-star-top": 29,
-    "aft-port-top": 27,
-    "aft-star-top": 22,
-    "for-port-bot": 25,
-    "for-star-bot": 23,
-    "aft-port-bot": 24,
-    "aft-star-bot": 26
 }
 
 THRUSTER_TICK_PERIOD = 0.01
@@ -93,8 +82,8 @@ class Thruster:
     def arm_thruster(self):
 
         try:
-            self.bus.write_byte_data(RP2040_ADDRESS, RP2040_THRUSTER_PINS[self.thruster_position],0)
-            self.thruster_initalized = True
+            self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position],0)
+            self.thruster_armed = True
         except OSError:
             pass
 
@@ -123,14 +112,14 @@ class Thruster:
                     self.current = 127 * (-1 if self.current < 0 else 1)
 
                 try:
-                    self.bus.write_byte_data(RP2040_ADDRESS, RP2040_THRUSTER_PINS[self.thruster_position], self.current)
+                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current))
                 except OSError:
                     self.thruster_armed = False
 
             else:
                 self.current = self.target
                 try:
-                    self.bus.write_byte_data(RP2040_ADDRESS, RP2040_THRUSTER_PINS[self.thruster_position], self.current)
+                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current))
                 except OSError:
                     self.thruster_armed = False
 
@@ -226,7 +215,6 @@ class I2CMaster(Node):
 
         #         self.pca9685_detected = True 
                 
-        #         self.thruster_timer = self.create_timer(THRUSTER_TICK_PERIOD, self.tick_thrusters, callback_group=i2c_master_callback_group)
 
         #     except:
         #         self.get_logger().error("CANNOT FIND PCA9685 ON I2C BUS!")
@@ -261,6 +249,9 @@ class I2CMaster(Node):
         except:
             self.get_logger().error("COULD NOT INITIALIZE SMBUS")
 
+        if self.bus is not None:
+            self.thruster_timer = self.create_timer(THRUSTER_TICK_PERIOD, self.tick_thrusters, callback_group=i2c_master_callback_group)
+
 
         #################################################
         ################### THRUSTERS ###################
@@ -277,7 +268,7 @@ class I2CMaster(Node):
 
         if self.bus is not None:
             for thruster_position in THRUSTER_CHANNELS:  
-                self.connected_channels[thruster_position] = Thruster(self.bus, thruster_position)
+                self.connected_channels[THRUSTER_CHANNELS[thruster_position]] = Thruster(self.bus, thruster_position)
 
         ##################################################
         ###################### ADCs ######################
@@ -312,6 +303,7 @@ class I2CMaster(Node):
     def tick_thrusters(self):
         for channel in self.connected_channels:
             self.connected_channels[channel].tick()
+            self.get_logger().info(f"{channel}:{self.connected_channels[channel].current}") 
 
     def obtain_imu_data(self):
         '''
