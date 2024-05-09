@@ -465,7 +465,7 @@ class I2CMaster(Node):
 
         thruster_values = self.rov_math(msg)
 
-        if self.pca9685_detected:
+        if self.bus is not None:
             
             for thruster_position in THRUSTER_CHANNELS:
                 #self.get_logger().info(f"{thruster_position}: {thruster_values[thruster_position]}")
