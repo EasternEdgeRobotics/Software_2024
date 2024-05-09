@@ -23,13 +23,13 @@ THRUSTER_ACCELERATION = 1
 
 # Thurster channels are based on Beaumont as of May 7th 2024
 THRUSTER_CHANNELS = {
-    "for-port-top": 1,
+    "for-port-top": 5,
     "for-star-top": 0,
     "aft-port-top": 2,
     "aft-star-top": 7,
     "for-port-bot": 4,
     "for-star-bot": 6,
-    "aft-port-bot": 5,
+    "aft-port-bot": 1,
     "aft-star-bot": 3
 }
 
@@ -73,8 +73,8 @@ class Thruster:
 
         self.thruster_armed = False
 
-        self.target = 0
-        self.current = 0
+        self.target = 127
+        self.current = 127
 
         # Arm thruster
         self.arm_thruster()
@@ -93,7 +93,7 @@ class Thruster:
 
         :param speed: speed of thrusters with valid range between -1.0 to 1.0
         """
-        self.target = speed*127
+        self.target = speed*127 + 127
 
     def tick(self):
         
@@ -108,8 +108,10 @@ class Thruster:
 
                 self.current += int(direction * THRUSTER_ACCELERATION)
 
-                if abs(self.current) > 127:
-                    self.current = 127 * (-1 if self.current < 0 else 1)
+                if self.current > 254:
+                    self.current = 254
+                elif self.current < 0:
+                    self.current = 0
 
                 try:
                     self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current))
@@ -303,7 +305,7 @@ class I2CMaster(Node):
     def tick_thrusters(self):
         for channel in self.connected_channels:
             self.connected_channels[channel].tick()
-            self.get_logger().info(f"{channel}:{self.connected_channels[channel].current}") 
+            self.get_logger().info(str(self.connected_channels[channel].current))
 
     def obtain_imu_data(self):
         '''
@@ -464,9 +466,8 @@ class I2CMaster(Node):
                 self.connected_channels[THRUSTER_CHANNELS[thruster_position]].fly(thruster_values[thruster_position])
                 if not self.connected_channels[THRUSTER_CHANNELS[thruster_position]].thruster_armed:
                     self.get_logger().error(f"Thruster {thruster_position} not armed")
-            
 
-        # self.stm32_communications(msg)
+            # self.stm32_communications(msg)
 
     def stm32_communications(self, controller_inputs):
         '''
@@ -596,6 +597,28 @@ class I2CMaster(Node):
         ####################################################################
         ############################## DEBUG ###############################
         ####################################################################
+
+        # idk = ("for-port-bot", "for-star-bot", "aft-port-bot", "aft-star-bot", "for-port-top", "for-star-top", "aft-port-top", "aft-star-top")
+
+        # if controller_inputs.open_claw:
+        #     if self.current_thruster == 0:
+        #         self.current_thruster = 7
+        #     else:
+        #         self.current_thruster -= 1
+        #     self.get_logger().info(str(self.current_thruster))
+        # elif controller_inputs.close_claw:
+        #     if self.current_thruster == 7:
+        #         self.current_thruster = 0
+        #     else:
+        #         self.current_thruster += 1
+        #     self.get_logger().info(str(self.current_thruster))
+
+        # for i in range(len(idk)):
+        #     if i == self.current_thruster:
+        #         thruster_values[idk[self.current_thruster]] = (((-surge)+(sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / 1.85
+        #     else:   
+        #         thruster_values[idk[i]] = 0
+
 
         # Calculations below will calculate and display the net movement in all directions based on vector analysis
         # Ensure to also uncomment the debugger attribute in the init method
