@@ -355,7 +355,7 @@ class I2CMaster(Node):
             else:
 
                 configuration_address = 0b00000010
-                configuration_value = 0b00100000 # (auto conversion mode)
+                configuration_value = 0b10100000 # (1.7 kilo samples per second)
 
                 try:
 
