@@ -24,6 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'i2c_master = beaumont_pkg.i2c_master:main',
+            'task_manager = beaumont_pkg.task_manager:main',
             'profiles_manager = beaumont_pkg.profiles_manager:main',
             'simulation_bot_control = beaumont_pkg.simulation_bot_control:main',
             'simulation_camera_streamer = beaumont_pkg.simulation_camera_streamer:main',

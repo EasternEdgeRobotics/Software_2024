@@ -1,13 +1,15 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Slider, Box, Button } from "@mui/material";
 import { useAtom } from "jotai";
-import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput, PilotActions } from "../api/Atoms";
+import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput, PilotActions, ADCArray, TemperatureArray } from "../api/Atoms";
 import { useState, useEffect } from "react";
 
 export function StatusIndicator(props: {statement: boolean}) {
     if (props.statement) return <CheckCircle2 color="lime" />;
     else return <AlertCircle color="red" />;
 }
+
+
 
 export function BotTab() {
     const [isRosConnected] = useAtom(IsROSConnected);
@@ -26,12 +28,23 @@ export function BotTab() {
     const [controller1Name, setController1Name] = useState("Not Assigned");
     const [controller2Name, setController2Name] = useState("Not Assigned");
 
+    // ADC and TEMP data
+    const [read_ADCArray, ] = useAtom(ADCArray);
+    const [read_TemperatureArray, ] = useAtom(TemperatureArray); 
+
+
     let initialPageLoad = true;
 
     const status = [
         {"name": "ROS", "status": isRosConnected},
         {"name":"Controller 1 Detected", "status": controller1Detected},
         {"name":"Controller 2 Detected", "status": controller2Detected}
+    ];
+
+    const Arrays = [
+        {"name": "ADC", "status": JSON.stringify(read_ADCArray)},
+        {"name":"TEMPERATURE", "status": JSON.stringify(read_TemperatureArray)}
+        
     ];
       
     const [, reloadComponent] = useState<number>(0);
@@ -139,6 +152,7 @@ export function BotTab() {
     
     return (
         <Box flexGrow={1}>
+            
             <Grid container justifyContent={"center"} spacing={1}>
                 {["Power", "Surge", "Sway", "Heave", "Pitch", "Yaw"].map((label, index) => {
                         return (
@@ -147,11 +161,16 @@ export function BotTab() {
                                 <Box flexBasis="100%" height="0" />
                                 <h2>{label}: {thrusterMultipliers[index]}</h2>
                             </Grid>
+
                         );})
                 }
+                
                 <Grid item xs={3}>
+                    
                     <Grid container justifyContent={"center"} rowSpacing={2}>
+                        
                         <Grid item xs={12}>
+                            
                             <TableContainer component={Paper}>
                                 <Table>
                                     <TableHead>
@@ -173,33 +192,72 @@ export function BotTab() {
                                 </Table>
                             </TableContainer>
                         </Grid>
-                    </Grid>
-                </Grid>
+                        <Grid item xs={3} />
             </Grid>
-            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
-                <Grid item xs={3.5}>
-                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Load Power Preset</Button>
-                </Grid>
-                <Grid item xs={3.5}>
-                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Save Power Preset</Button>
-                </Grid>
-                <Grid item xs={3} />
-            </Grid>
-            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
+            <Grid container justifyContent={"top"}  sx={{marginTop: "-18px"}}>
                 <Grid item xs="auto">
                     Current Profile: {currentProfile}
                 </Grid>
-            </Grid>
-            <Grid container justifyContent={"center"} spacing={1}>
+
                 <Grid item xs="auto">
                     Controller 1: {controller1Name}
                 </Grid>
-            </Grid>
-            <Grid container justifyContent={"center"} spacing={1}>
+            
                 <Grid item xs="auto">
                     Controller 2: {controller2Name}
                 </Grid>
+                    </Grid>
+                    
+                </Grid>
+                
             </Grid>
+            
+
+            
+
+            
+
+           
+            <Grid container justifyContent={"left"} spacing={250} sx={{marginTop: "64px"}}>
+            <Grid container justifyContent={"right"} spacing={17}>
+             <Grid item xs={5}>
+                 <Grid container justifyContent={"center"} rowSpacing={3}>
+                     <Grid item xs={10}>  
+                     
+                            <TableContainer component={Paper}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell align="center">Items</TableCell>
+                                            <TableCell align="center">Values</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                    {Arrays.map((data) => {
+                                        return (
+                                            <TableRow key={data.name} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                                                <TableCell align="center">{data.name}</TableCell>
+                                                <TableCell align="center">{data.status}</TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                            
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Grid>
+
+            </Grid>
+
+
+           
+         
+                
+           
+
         </Box>
     );
 }
