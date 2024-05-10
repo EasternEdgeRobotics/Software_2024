@@ -497,7 +497,7 @@ class I2CMaster(Node):
                 try:
                     self.bus.write_byte_data(STM32_ADDRESS, 0x02, stepper_value)
                 except OSError:
-                    self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {(0x10,claw_value)}")
+                    self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {(0x02,stepper_value)}")
             else:
                 try:
                     self.bus.write_byte_data(STM32_ADDRESS, 0x02, 0xaa) # Send stop signal
