@@ -12,13 +12,13 @@ from math import sqrt
 
 # Thurster channels are based on Beaumont
 THRUSTER_CHANNELS = {
-    "for-port-top": 5,
-    "for-star-top": 0,
-    "aft-port-top": 2,
+    "for-port-top": 1, 
+    "for-star-top": 0, 
+    "aft-port-top": 4,
     "aft-star-top": 7,
-    "for-port-bot": 4,
+    "for-port-bot": 2,
     "for-star-bot": 6,
-    "aft-port-bot": 1,
+    "aft-port-bot": 5,
     "aft-star-bot": 3
 }
 
@@ -270,7 +270,7 @@ class I2CMaster(Node):
     def tick_thrusters(self):
         for channel in self.connected_channels:
             self.connected_channels[channel].tick()
-            self.get_logger().info(str(self.connected_channels[channel].current)) # Temporary, useful for debug
+            # self.get_logger().info(str(self.connected_channels[channel].current)) # Temporary, useful for debug
 
     def obtain_imu_data(self):
         '''
@@ -553,12 +553,12 @@ class I2CMaster(Node):
         # Calculations below are based on thruster positions
         thruster_values["for-port-bot"] = (((-surge)+(sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / 1.85
         thruster_values["for-star-bot"] = (((-surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
-        thruster_values["aft-port-bot"] = (((surge)+(sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["aft-port-bot"] = (((surge)+(sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / -1.85
         thruster_values["aft-star-bot"] = (((surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / 1.85
-        thruster_values["for-port-top"] = (((-surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / 1.85
-        thruster_values["for-star-top"] = (((-surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
-        thruster_values["aft-port-top"] = (((surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
-        thruster_values["aft-star-top"] = (((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / 1.85
+        thruster_values["for-port-top"] = (((-surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / -1.85
+        thruster_values["for-star-top"] = (((-surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / -1.85
+        thruster_values["aft-port-top"] = (((surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / -1.85
+        thruster_values["aft-star-top"] = (((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / -1.85
 
         ####################################################################
         ############################## DEBUG ###############################
@@ -615,24 +615,25 @@ class I2CMaster(Node):
         #     else:
         #         self.current_thruster -= 1
         #     self.get_logger().info(str(self.current_thruster))
+        #     self.get_logger().info(str(surge))
         # elif controller_inputs.close_claw:
         #     if self.current_thruster == 7:
         #         self.current_thruster = 0
         #     else:
         #         self.current_thruster += 1
         #     self.get_logger().info(str(self.current_thruster))
+        #     self.get_logger().info(str(surge))
 
-        # for i in range(len(thruster_list)):
-        #     if i == self.current_thruster:
-        #         thruster_values[thruster_list[self.current_thruster]] = (((-surge)+(sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / 1.85
+        # for thruster_idk, channel in THRUSTER_CHANNELS.items():
+        #     if channel == self.current_thruster:
+        #         thruster_values[thruster_idk] = surge
         #     else:   
-        #         thruster_values[thruster_list[i]] = 0
+        #         thruster_values[thruster_idk] = 0
 
         
         ###########################################################################################
         ###########################################################################################
         ###########################################################################################
-
         return thruster_values
 
 def main(args=None):
