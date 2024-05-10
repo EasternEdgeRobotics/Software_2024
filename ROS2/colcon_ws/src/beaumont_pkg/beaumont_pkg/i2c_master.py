@@ -36,7 +36,13 @@ ADC_ADDRESSES = {
     "adc_48v_bus": 0x55,
     "adc_12v_bus":0x56,
     "adc_5v_bus":0x59
-} 
+}
+
+ADC_VOLTAGE_DIVIDER_VALUES = {
+    "adc_48v_bus": (20000,1000),
+    "adc_12v_bus":(5000,1000),
+    "adc_5v_bus":(2000,1000)
+}
 
 TEMPERATURE_SENSOR_ADDRESSES = {
     "power_board_u8":0x48,
@@ -343,14 +349,17 @@ class I2CMaster(Node):
                     read = self.bus.read_i2c_block_data(ADC_ADDRESSES[key], conversion_result_register, conversion_result_length_in_bytes)
 
                     read_12_bit = int("0b" + bin(read[0])[6:] + bin(read[1])[2:8],2)
+                    adc_read_voltage = (read_12_bit/0b1111111111) * 3.3
+
+                    voltage = ((sum(ADC_VOLTAGE_DIVIDER_VALUES[key]))/ADC_VOLTAGE_DIVIDER_VALUES[key][1]) * adc_read_voltage
                     
                 except OSError:
 
-                    read_12_bit = 0
+                    voltage = 0
                     self.configured_adcs[key] == False
 
                 
-                setattr(adc_data, key, read_12_bit) # The read value is converted to 12 bits
+                setattr(adc_data, key, voltage) # The read value is converted to 12 bits
 
             else:
 
