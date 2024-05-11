@@ -2,5 +2,5 @@
 	<include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml"/>
 	<node pkg="beaumont_pkg" exec="profiles_manager"/>
 	<node pkg="beaumont_pkg" exec="task_manager"/>
-	<node pkg="beaumont_pkg" exec="i2c_manager"/>
+	<node pkg="beaumont_pkg" exec="i2c_master"/>
 </launch>
