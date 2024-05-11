@@ -8,10 +8,8 @@ import "@fontsource/roboto/700.css";
 
 import { useEffect, useState } from "react";
 
-import "../styles/science.css";
 import { Sidebar, Menu, MenuItem } from "react-pro-sidebar";
 import { Home } from "@mui/icons-material";
-import "../styles/science.css";
 import { Col, Row } from "react-bootstrap";
 import taskJSON from "./tasks.json";
 import { Task } from "../types/Task";
@@ -40,11 +38,18 @@ const redirectToScreenshot = async (urls: string[], i: 0 | 1 | 2 | 3) => {
   //open a new tab with the stream url
   let streamUrl = urls[i];
   streamUrl = streamUrl.replace("/stream", "/snapshot");
+  if (!streamUrl) {
+    alert("The selected camera is not connected.");
+    return;
+  }
   window.open(streamUrl, "_blank");
 };
 
 const ScreenshotView = ({ urls }: { urls: string[] }) => {
   if (urls.length === 0) urls = ["", "", "", ""];
+  for (let i = 0; i < 4; i++) {
+    if (!urls[i]) urls[i] = "";
+  }
   return (
     <Box
       sx={{
