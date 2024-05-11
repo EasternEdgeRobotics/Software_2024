@@ -33,10 +33,11 @@ export default function TabletApp() {
   const [RosIP] = useAtom(ROSIP);
   const [saved_tasks, setTasks] = useState<{ [key: string]: boolean }>({});
   const [, setTaskPublisher] = useAtom(taskPublisherAtom);
+  const [rosConnected, setRosConnected] = React.useState(true);
 
 
   ros.on("error", () => {
-    0;
+    setRosConnected(false);
   }); // to prevent page breaking
 
   React.useEffect(() => {
@@ -45,6 +46,8 @@ export default function TabletApp() {
       if (!ros.isConnected) {
         setRos(new ROSLIB.Ros({}));
         ros.connect(`ws://${RosIP}:9090`);
+      } else {
+        setRosConnected(true);
       }
     }, 1000);
   }, []);
@@ -97,34 +100,45 @@ export default function TabletApp() {
   return (
     <FormGroup>
       <MainTimer />
-        <div style={{ height: "250px" }}></div>
-        {Tasks({
-          name: "TASK 1 : Coastal Pioneer Array",
-          tasks: taskJSON.task1.tasks,
-          saved: saved_tasks,
-          setTasks,
-        })}
+      <div style={{ height: "260px" }}></div>
+      {!rosConnected && ( // Add this block
+        <div
+          style={{
+            backgroundColor: "red",
+            color: "white",
+            textAlign: "center",
+          }}
+        >
+          ROS not connected
+        </div>
+      )}
+      {Tasks({
+        name: "TASK 1 : Coastal Pioneer Array",
+        tasks: taskJSON.task1.tasks,
+        saved: saved_tasks,
+        setTasks,
+      })}
 
-        {Tasks({
-          name: "TASK 2 : Deploy SMART cables",
-          tasks: taskJSON.task2.tasks,
-          saved: saved_tasks,
-          setTasks
-        })}
+      {Tasks({
+        name: "TASK 2 : Deploy SMART cables",
+        tasks: taskJSON.task2.tasks,
+        saved: saved_tasks,
+        setTasks,
+      })}
 
-        {Tasks({
-          name: "TASK 3 : From the Red Sea to Tenesse",
-          tasks: taskJSON.task3.tasks,
-          saved: saved_tasks,
-          setTasks
-        })}
+      {Tasks({
+        name: "TASK 3 : From the Red Sea to Tenesse",
+        tasks: taskJSON.task3.tasks,
+        saved: saved_tasks,
+        setTasks,
+      })}
 
-        {Tasks({
-          name: "TASK 4 : MATE Floats",
-          tasks: taskJSON.task4.tasks,
-          saved: saved_tasks,
-          setTasks
-        })}
+      {Tasks({
+        name: "TASK 4 : MATE Floats",
+        tasks: taskJSON.task4.tasks,
+        saved: saved_tasks,
+        setTasks,
+      })}
     </FormGroup>
   );
 }

@@ -1,4 +1,4 @@
-import { Checkbox, IconButton } from "@mui/material";
+import { Checkbox, IconButton, Button, Box, Typography } from "@mui/material";
 import { atom, useAtom } from "jotai";
 //fonts
 import "@fontsource/roboto/300.css";
@@ -8,10 +8,8 @@ import "@fontsource/roboto/700.css";
 
 import { useEffect, useState } from "react";
 
-import "../styles/science.css";
 import { Sidebar, Menu, MenuItem } from "react-pro-sidebar";
 import { Home } from "@mui/icons-material";
-import "../styles/science.css";
 import { Col, Row } from "react-bootstrap";
 import taskJSON from "./tasks.json";
 import { Task } from "../types/Task";
@@ -31,72 +29,99 @@ import {
   ChartData,
   BarElement,
 } from "chart.js";
-
 import ROSLIB, { Ros } from "roslib";
 import React from "react";
 import { ROSIP } from "../api/Atoms";
 const taskPublisherAtom = atom<ROSLIB.Topic<ROSLIB.Message> | null>(null);
 
-
 const redirectToScreenshot = async (urls: string[], i: 0 | 1 | 2 | 3) => {
   //open a new tab with the stream url
   let streamUrl = urls[i];
   streamUrl = streamUrl.replace("/stream", "/snapshot");
+  if (!streamUrl) {
+    alert("The selected camera is not connected.");
+    return;
+  }
   window.open(streamUrl, "_blank");
 };
 
-const ScreenshotVeiw = ({ urls }: { urls: string[] }) => {
-  //[To-do] handle the case when ROS not connected / urls are not available
-  //[To-do] better styling for the components
-  console.log(urls, "URLS");
+const ScreenshotView = ({ urls }: { urls: string[] }) => {
+  if (urls.length === 0) urls = ["", "", "", ""];
+  for (let i = 0; i < 4; i++) {
+    if (!urls[i]) urls[i] = "";
+  }
   return (
-    <div className="desktop1-rectangle1">
-      <div className="desktop1-frame1">
-        <button
-          type="button"
-          className="desktop1-button button"
-          onClick={() => redirectToScreenshot(urls, 0)}
+    <Box
+      sx={{
+        width: "68vw",
+        minWidth: 350,
+        height: 159,
+        display: "flex",
+        position: "relative",
+        alignItems: "flex-start",
+        borderRadius: 8,
+        backgroundColor: "#D9D9D9",
+        padding: "5px 14px",
+      }}
+    >
+      <Box
+        sx={{
+          gap: 3,
+          flex: 0,
+          width: "65vw",
+          // minWidth: 320,
+          height: 128,
+          display: "flex",
+          opacity: 0.9,
+          padding: "0 14px",
+          zIndex: 100,
+          alignSelf: "flex-end",
+          alignItems: "center",
+          borderRadius: 3,
+          justifyContent: "center",
+          backgroundColor: "rgba(208, 208, 208, 0)",
+          position: "relative", // add this line
+        }}
+      >
+        {urls.map((url, index) => (
+          <Button
+            sx={{
+              color: "#e8e8e8",
+              width: "20vw", // adjust this value as needed
+              height: 60, // adjust this value as needed
+              borderRadius: 3.5, // adjust this value as needed
+              backgroundColor: "#252525",
+            }}
+            onClick={() => redirectToScreenshot(urls, index as 0 | 1 | 2 | 3)}
+          >
+            <Typography
+              sx={{
+                fontSize: 20,
+                fontStyle: "normal",
+                fontWeight: 600,
+              }}
+            >{`Camera ${index + 1}`}</Typography>
+          </Button>
+        ))}
+        <Typography
+          sx={{
+            position: "absolute",
+            top: 0,
+            bottom: 10,
+            marginTop: "-10px",
+            color: "rgba(0, 0, 0, 1)",
+            fontSize: 28,
+            fontStyle: "bold",
+            textAlign: "center",
+            fontFamily: "Inter",
+            fontWeight: 700,
+            textDecoration: "none",
+          }}
         >
-          <span className="desktop1-text">
-            <span>Camera 1</span>
-            <br></br>
-          </span>
-        </button>
-        <button
-          type="button"
-          className="desktop1-button1 button"
-          onClick={() => redirectToScreenshot(urls, 1)}
-        >
-          <span className="desktop1-text03">
-            <span>Camera 2</span>
-            <br></br>
-          </span>
-        </button>
-        <button
-          type="button"
-          className="desktop1-button2 button"
-          onClick={() => redirectToScreenshot(urls, 2)}
-        >
-          <span className="desktop1-text06">
-            <span>Camera 3</span>
-            <br></br>
-          </span>
-        </button>
-        <button
-          type="button"
-          className="desktop1-button3 button"
-          onClick={() => redirectToScreenshot(urls, 3)}
-        >
-          <span className="desktop1-text09">
-            <span>Camera 4</span>
-            <br></br>
-          </span>
-        </button>
-      </div>
-      <span className="desktop1-text12">
-        <span>Screenshot</span>
-      </span>
-    </div>
+          Screenshot
+        </Typography>
+      </Box>
+    </Box>
   );
 };
 
@@ -107,6 +132,7 @@ function SideBar() {
   const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
   const [saved_tasks, setTasks] = useState<{ [key: string]: boolean }>({});
   const [, setTaskPublisher] = useAtom(taskPublisherAtom);
+  const [score, setScore] = useState<number>(0);
 
   useEffect(() => {
     const rosInstance = new ROSLIB.Ros({});
@@ -121,7 +147,7 @@ function SideBar() {
   });
   const request = new ROSLIB.ServiceRequest({});
 
-  useEffect(() => { 
+  useEffect(() => {
     taskClient.callService(
       request,
       function (result) {
@@ -155,8 +181,14 @@ function SideBar() {
     setTaskPublisher(task_publisher);
   }, [ros, collapsed]);
 
-  ros.on("connection", () => console.log("Connected to ROS"));
+    useEffect(() => {
+      setScore(
+        calculateAchivedScore(
+          saved_tasks)
+      );
+    }, [saved_tasks]);
 
+  ros.on("connection", () => console.log("Connected to ROS"));
 
   const handleToggleSidebar = () => {
     setCollapsed(!collapsed);
@@ -165,7 +197,8 @@ function SideBar() {
 
   const styles = {
     sideBarHeight: {
-      height: "145vh",
+      height: "100vh",
+      overflow: "auto",
     },
     menuIcon: {
       float: "right",
@@ -203,15 +236,38 @@ function SideBar() {
         <MenuSquareIcon />
       </IconButton>
       <Sidebar
-        style={styles.sideBarHeight}
+        style={{
+          ...styles.sideBarHeight,
+          backdropFilter: "blur(10px)",
+        }}
         collapsed={collapsed}
         rtl={false}
         width="700px"
         collapsedWidth="0px"
-        backgroundColor="rgb(0, 0, 69, 0.7)"
+        backgroundColor="rgb(0, 0, 60, 0.8)"
       >
         <Menu>
-          <MenuItem icon={<Home />}>Home</MenuItem>
+          <MenuItem>
+            <Box
+              sx={{
+                marginTop: "25px",
+                display: "inline-block",
+                backgroundColor: "rgba(20, 255, 255, 0.4)", // white, 50% transparent
+                borderRadius: "10px", // rounded edges
+                padding: "10px", // some padding
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 30,
+                  fontStyle: "normal",
+                  fontWeight: 600,
+                }}
+              >
+                Total: {score}/{350}
+              </Typography>
+            </Box>
+          </MenuItem>
           <SubList
             name="TASK 1 : Coastal Pioneer Array"
             tasks={taskJSON.task1.tasks}
@@ -290,8 +346,13 @@ function SubList(props: {
     setScore(
       calculateAchivedScore(
         props.saved,
-        props.name.split(":")[0].trim().replace(" ", "_") as 'TASK_1' | 'TASK_2' | 'TASK_3' | 'TASK_4'
-      ));
+        props.name.split(":")[0].trim().replace(" ", "_") as
+          | "TASK_1"
+          | "TASK_2"
+          | "TASK_3"
+          | "TASK_4"
+      )
+    );
   }, [props.saved]);
 
   return (
@@ -335,7 +396,7 @@ function renderTasks(
   const handleCheckboxChange = (task: Task, taskID: string) => {
     task.checked = !task.checked;
     console.log("Task checked:", taskID, task.checked);
-    getTaskFromID(taskID)
+    getTaskFromID(taskID);
 
     setTasks &&
       setTasks((prevSaved) => ({
@@ -570,9 +631,10 @@ export function ControllerApp() {
   const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
   const [RosIP] = useAtom(ROSIP);
   const [urls, setURLs] = React.useState<string[]>([]);
+  const [rosConnected, setRosConnected] = React.useState(true);
 
   ros.on("error", () => {
-    0;
+   setRosConnected(false);
   }); // to prevent page breaking
 
   React.useEffect(() => {
@@ -581,6 +643,8 @@ export function ControllerApp() {
       if (!ros.isConnected) {
         setRos(new ROSLIB.Ros({}));
         ros.connect(`ws://${RosIP}:9090`);
+      } else {
+        setRosConnected(true);
       }
     }, 1000);
   }, []);
@@ -627,6 +691,17 @@ export function ControllerApp() {
 
   return (
     <>
+      {!rosConnected && ( // Add this block
+        <div
+          style={{
+            backgroundColor: "red",
+            color: "white",
+            textAlign: "center",
+          }}
+        >
+          ROS not connected
+        </div>
+      )}
       <div
         style={{
           ...styles.contentDiv,
@@ -641,7 +716,7 @@ export function ControllerApp() {
       <Row className="justify-content-center">
         <Col lg={3}>
           <div style={styles.contentDiv}>
-            <ScreenshotVeiw urls={urls} />
+            <ScreenshotView urls={urls} />
           </div>
           <CSVHandler />
         </Col>
@@ -655,7 +730,10 @@ function getTaskFromID(
   allTasks: { [key: string]: { name: string; tasks: Task[] } } = taskJSON
 ) {
   0;
-  const indexlist = id.split(":").slice(1).map(a=>Number(a)-1);
+  const indexlist = id
+    .split(":")
+    .slice(1)
+    .map((a) => Number(a) - 1);
   const parentTask = id.split(":")[0].replace("_", "").toLowerCase();
   const mainTasks = allTasks[parentTask].tasks;
 
@@ -667,10 +745,14 @@ function getTaskFromID(
   return tempTask;
 }
 
-function calculateAchivedScore(stored:{ [key: string]: boolean }, filter?:'TASK_1'|'TASK_2'|'TASK_3'|'TASK_4', allTasks: { [key: string]: { name: string; tasks: Task[] } } = taskJSON) {
+function calculateAchivedScore(
+  stored: { [key: string]: boolean },
+  filter?: "TASK_1" | "TASK_2" | "TASK_3" | "TASK_4",
+  allTasks: { [key: string]: { name: string; tasks: Task[] } } = taskJSON
+) {
   let score = 0;
   const keys = Object.keys(stored);
-  for (let i= 0;i<keys.length;i++) {
+  for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
 
     if (filter && !key.includes(filter)) continue;
@@ -680,7 +762,6 @@ function calculateAchivedScore(stored:{ [key: string]: boolean }, filter?:'TASK_
       if (stored[key]) score += task?.points ?? 0;
     }
   }
-  console.log("our Score:", score)
+  console.log("our Score:", score);
   return score;
-  
 }
