@@ -61,11 +61,11 @@
                         "single": true,
                         "subTasks": [
                             {
-                                "name": "Within 1oC",
+                                "name": "Within 1°C",
                                 "points": 15
                             },
                             {
-                                "name": "Within 2oC",
+                                "name": "Within 2°C",
                                 "points": 5
                             }
                         ]
