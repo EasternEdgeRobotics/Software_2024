@@ -11,19 +11,21 @@ import ROSLIB, { Ros } from "roslib";
 /* 
 The purpose of the TabletApp component is to provide the deck chief with a GUI which is to be used on a tablet that:
 
-    1. Provides a checklist of tasks and subtasks that can be ticked/unticked 
+  1. Provides a checklist of tasks and subtasks that can be ticked/unticked 
 
-    2. Provides a main timer, which can be started, paused and reset, permanently displayed as bar at the top of the screen
+  2. Provides a main timer, which can be started, paused and reset, permanently displayed as bar at the top of the screen
 
-    TIMERS TOO FAST!
-
-    3. Provides secondary timers, one for each task, which can be started paused and reset independently of the main timers and other task-specific timers
+  3. Provides secondary timers, one for each task, which can be started paused and reset independently of the main timers and other task-specific timers
 
 Additional features include:
 
-    1. Should any timer reach 15 minutes, all timers "break". That is, all timers are paused and are no longer interactive
+  1. Should any timer reach 15 minutes, all timers "break". That is, all timers are paused and are no longer interactive
 
-    2. A settings menu located underneath the checklist for debugging purposes
+Notes:
+
+  1. Testing on the usage device will be necessary to confirm expected behaviour
+  
+  2. It may be worthwhile to indicate point values within 'subTask' text ('tasks.json'), e.g., " - 10 points" at the end of "Trigger the release of the multi-function node's recovery float - 10 points"
 */
 
 const taskPublisherAtom = atom<ROSLIB.Topic<ROSLIB.Message> | null>(null);
