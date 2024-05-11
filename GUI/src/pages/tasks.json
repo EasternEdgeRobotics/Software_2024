@@ -61,11 +61,11 @@
                         "single": true,
                         "subTasks": [
                             {
-                                "name": "Within 1°C",
+                                "name": "(A) Within 1°C",
                                 "points": 15
                             },
                             {
-                                "name": "Within 2°C",
+                                "name": "(B) Within 2°C",
                                 "points": 5
                             }
                         ]
@@ -122,11 +122,11 @@
                                 "single": true,
                                 "subTasks": [
                                     {
-                                        "name": "Autonomously",
+                                        "name": "(A) Autonomously",
                                         "points": 30
                                     },
                                     {
-                                        "name": "Manually",
+                                        "name": "(B) Manually",
                                         "points": 10
                                     }
                                 ]
@@ -138,7 +138,7 @@
                         "single": true,
                         "subTasks": [
                             {
-                                "name": "Via photogrammetry, autonomously create a scaled 3D model of the coral restoration area",
+                                "name": "(A) Via photogrammetry, autonomously create a scaled 3D model of the coral restoration area",
                                 "points": 40,
                                 "subTasks": [
                                     {
@@ -160,7 +160,7 @@
                                 ]
                             },
                             {
-                                "name": "Manually (CAD) create a scaled 3D model of the coral restoration area",
+                                "name": "(B) Manually (CAD) create a scaled 3D model of the coral restoration area",
                                 "points": 30,
                                 "subTasks": [
                                     {
@@ -225,7 +225,7 @@
         "single" :true,
         "tasks": [
             {
-                "name": "Design and construct an operational vertical profiling float",
+                "name": "(A) Design and construct an operational vertical profiling float",
                 "subTasks": [
                     {
                         "name": "Prior to the competition, design and construct a vertical profiling float",
@@ -281,7 +281,7 @@
                 ]
             },
             {
-                "name": "Company does not design and construct a vertical profiling float or float does not communicate data to the mission station",
+                "name": "(B) Company does not design and construct a vertical profiling float or float does not communicate data to the mission station",
                 "subTasks": [
                     {
                         "name": "MATE-provided data is used to graph depth over time",
