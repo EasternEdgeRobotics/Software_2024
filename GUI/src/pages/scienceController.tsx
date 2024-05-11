@@ -599,9 +599,10 @@ export function ControllerApp() {
   const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
   const [RosIP] = useAtom(ROSIP);
   const [urls, setURLs] = React.useState<string[]>([]);
+  const [rosConnected, setRosConnected] = React.useState(true);
 
   ros.on("error", () => {
-    0;
+   setRosConnected(false);
   }); // to prevent page breaking
 
   React.useEffect(() => {
@@ -610,6 +611,8 @@ export function ControllerApp() {
       if (!ros.isConnected) {
         setRos(new ROSLIB.Ros({}));
         ros.connect(`ws://${RosIP}:9090`);
+      } else {
+        setRosConnected(true);
       }
     }, 1000);
   }, []);
@@ -656,6 +659,17 @@ export function ControllerApp() {
 
   return (
     <>
+      {!rosConnected && ( // Add this block
+        <div
+          style={{
+            backgroundColor: "red",
+            color: "white",
+            textAlign: "center",
+          }}
+        >
+          ROS not connected
+        </div>
+      )}
       <div
         style={{
           ...styles.contentDiv,
