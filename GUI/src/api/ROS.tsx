@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import ROSLIB, { Ros } from "roslib";
-import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs } from "./Atoms";
+import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs, ADCArray, TemperatureArray } from "./Atoms";
 import React from "react";
 
 export function InitROS() {
@@ -43,6 +43,18 @@ export function InitROS() {
           }
         }, 1000);
     }, []);
+
+    // ADC and TEMP data
+    const [, setADCArray] = useAtom(ADCArray);
+    const [, setTemperatureArray] = useAtom(TemperatureArray); 
+
+    // React.useEffect(() => { // Constantly run the input listener 
+    //     setInterval(() => {
+    //         set_ADCARRAY(JSON.stringify([Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2)]));
+    //         set_TEMPERATUREARRAY(JSON.stringify([Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2)]));
+    //     }, 1000); // 100 ms 
+    // }, []);
+
 
     // Create a publisher on the "/thruster_multipliers" ros2 topic, using a custom EER message type (see eer_messages folder in ROS2/colcon_ws/src)
     const thrusterValsTopic = new ROSLIB.Topic({ros:ros,
@@ -206,6 +218,29 @@ export function InitROS() {
         setRequestingCameraURLs(2);
         }
     ,[requestingCameraURLs]);
+
+    const ADCDataListener = new ROSLIB.Topic({ros:ros,
+        name:"/adc",
+        messageType: "eer_messages/ADCData"
+    })
+
+    ADCDataListener.subscribe(function(message){
+        setADCArray(
+            {adc_48v_bus:(message as any).adc_48v_bus,
+                adc_12v_bus:0,
+                adc_5v_bus:0});
+    })
+
+    const TempratureDataListener = new ROSLIB.Topic({ros:ros,
+        name:"/board_temp",
+        messageType: "eer_messages/TempSensorData"
+    })
+
+    TempratureDataListener.subscribe(function(message){
+        setTemperatureArray(
+            {power_board_u8:(message as any).power_board_u8,power_board_u9:0,power_board_u10:0,
+                mega_board_ic2:0,power_board_u11:0,mega_board_ic1:0}); 
+    })
 
 
     // const ImuDataListener = new ROSLIB.Topic({ros:ros,
