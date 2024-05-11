@@ -2,7 +2,6 @@ from eer_messages.srv import Config
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
 from sqlalchemy import ForeignKey, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column 
 import json
@@ -208,6 +207,8 @@ class ProfilesManager(Node):
             return response
         
         elif request.state == 1: # We are looking to fetch camera URLs form database into GUI
+
+            outgoing_camera_urls = []
 
             for row in range(session.query(Camera).count()): # There will only be one "row"
                 stored_camera_urls = session.query(Camera).all()[row].dict()

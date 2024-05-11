@@ -1,0 +1,17 @@
+int8 surge
+int8 sway
+int8 heave
+int8 pitch
+int8 yaw
+bool open_claw
+bool close_claw
+bool heave_up
+bool heave_down
+bool pitch_up
+bool pitch_down
+bool brighten_led
+bool dim_led
+bool turn_claw_cw
+bool turn_claw_ccw
+bool read_outside_temperature_probe
+bool enter_auto_mode
