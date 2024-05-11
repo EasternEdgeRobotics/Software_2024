@@ -549,6 +549,13 @@ function CSVHandler() {
           .split("\n")
           .map((line) => line.split(",").slice(1).map(Number));
 
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].length === 0 || headers[i].length === 0) {
+            lines.splice(i, 1);
+            headers.splice(i, 1);
+            i--;
+          }
+        }
         console.log("Headers:", headers, "Lines:", lines);
 
         const datasets: ChartData["datasets"] = [];
@@ -568,7 +575,7 @@ function CSVHandler() {
 
           datasets.push({
             label: key,
-            data: lines[i - 1],
+            data: lines[i],
             borderColor: `${color.slice(0, -1)}, 0.75)`,
             backgroundColor: `${color.slice(0, -1)}, 0.95)`,
           });
@@ -701,7 +708,7 @@ export function ControllerApp() {
         >
           ROS not connected
         </div>
-      )}
+      )}`
       <div
         style={{
           ...styles.contentDiv,
@@ -716,7 +723,9 @@ export function ControllerApp() {
       <Row className="justify-content-center">
         <Col lg={3}>
           <div style={styles.contentDiv}>
-            <ScreenshotView urls={urls} />
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <ScreenshotView urls={urls} />
+            </div>
           </div>
           <CSVHandler />
         </Col>
