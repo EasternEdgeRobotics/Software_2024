@@ -17,10 +17,6 @@ The purpose of the TabletApp component is to provide the deck chief with a GUI w
 
   3. Provides secondary timers, one for each task, which can be started paused and reset independently of the main timers and other task-specific timers
 
-Additional features include:
-
-  1. Should any timer reach 15 minutes, all timers "break". That is, all timers are paused and are no longer interactive
-
 Notes:
 
   1. Testing on the usage device will be necessary to confirm expected behaviour
