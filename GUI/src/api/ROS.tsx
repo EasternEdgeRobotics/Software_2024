@@ -224,8 +224,11 @@ export function InitROS() {
         messageType: "eer_messages/ADCData"
     })
 
-    ADCDataListener.subcribe(function(message:{adc_48v_bus:number,adc_12v_bus:number,adc_5v_bus:number}){
-        setADCArray(message);
+    ADCDataListener.subscribe(function(message){
+        setADCArray(
+            {adc_48v_bus:(message as any).adc_48v_bus,
+                adc_12v_bus:0,
+                adc_5v_bus:0});
     })
 
     const TempratureDataListener = new ROSLIB.Topic({ros:ros,
@@ -233,9 +236,10 @@ export function InitROS() {
         messageType: "eer_messages/TempSensorData"
     })
 
-    TempratureDataListener.subcribe(function(message:{power_board_u8:number,power_board_u9:number,power_board_u10:number,
-        mega_board_ic2:number,power_board_u11:number,mega_board_ic1:number}){
-        setTemperatureArray(message);
+    TempratureDataListener.subscribe(function(message){
+        setTemperatureArray(
+            {power_board_u8:(message as any).power_board_u8,power_board_u9:0,power_board_u10:0,
+                mega_board_ic2:0,power_board_u11:0,mega_board_ic1:0}); 
     })
 
 

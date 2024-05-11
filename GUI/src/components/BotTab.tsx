@@ -152,6 +152,7 @@ export function BotTab() {
     
     return (
         <Box flexGrow={1}>
+            
             <Grid container justifyContent={"center"} spacing={1}>
                 {["Power", "Surge", "Sway", "Heave", "Pitch", "Yaw"].map((label, index) => {
                         return (
@@ -160,11 +161,16 @@ export function BotTab() {
                                 <Box flexBasis="100%" height="0" />
                                 <h2>{label}: {thrusterMultipliers[index]}</h2>
                             </Grid>
+
                         );})
                 }
+                
                 <Grid item xs={3}>
+                    
                     <Grid container justifyContent={"center"} rowSpacing={2}>
+                        
                         <Grid item xs={12}>
+                            
                             <TableContainer component={Paper}>
                                 <Table>
                                     <TableHead>
@@ -186,14 +192,37 @@ export function BotTab() {
                                 </Table>
                             </TableContainer>
                         </Grid>
-                    </Grid>
-                </Grid>
+                        <Grid item xs={3} />
             </Grid>
+            <Grid container justifyContent={"top"}  sx={{marginTop: "-18px"}}>
+                <Grid item xs="auto">
+                    Current Profile: {currentProfile}
+                </Grid>
 
+                <Grid item xs="auto">
+                    Controller 1: {controller1Name}
+                </Grid>
+            
+                <Grid item xs="auto">
+                    Controller 2: {controller2Name}
+                </Grid>
+                    </Grid>
+                    
+                </Grid>
+                
+            </Grid>
+            
+
+            
+
+            
+
+           
+            <Grid container justifyContent={"left"} spacing={250} sx={{marginTop: "64px"}}>
             <Grid container justifyContent={"right"} spacing={17}>
              <Grid item xs={5}>
                  <Grid container justifyContent={"center"} rowSpacing={3}>
-                     <Grid item xs={10}>
+                     <Grid item xs={10}>  
                      
                             <TableContainer component={Paper}>
                                 <Table>
@@ -221,29 +250,6 @@ export function BotTab() {
                 </Grid>
             </Grid>
 
-            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
-                <Grid item xs={3.5}>
-                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Load Power Preset</Button>
-                </Grid>
-                <Grid item xs={3.5}>
-                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Save Power Preset</Button>
-                </Grid>
-                <Grid item xs={3} />
-            </Grid>
-            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
-                <Grid item xs="auto">
-                    Current Profile: {currentProfile}
-                </Grid>
-            </Grid>
-            <Grid container justifyContent={"center"} spacing={1}>
-                <Grid item xs="auto">
-                    Controller 1: {controller1Name}
-                </Grid>
-            </Grid>
-            <Grid container justifyContent={"center"} spacing={1}>
-                <Grid item xs="auto">
-                    Controller 2: {controller2Name}
-                </Grid>
             </Grid>
 
 
