@@ -30,7 +30,7 @@ THRUSTER_TICK_PERIOD = 0.01
 
 RP2040_ADDRESS = 0x08
 
-STM32_ADDRESS = 0x80 # Don't know yet
+STM32_ADDRESS = 0x69 
 
 ADC_ADDRESSES = {
     "adc_48v_bus": 0x55,
@@ -131,7 +131,7 @@ class I2CMaster(Node):
     '''
     This class will communicate to multiple devices on the same I2C bus. These include the following:
 
-        1. PCA9685: Talks to the 8 Thrusters connected to the bot. Uses the adafruit_pca9685 library.
+        1. RP2040: Talks to the 8 Thrusters connected to the bot. Communication will be achieved by the SMBUS library using a eer proprietary i2c protocol.
         2. STM32: Talks to claw, stepper motor, dimmable LEDs, and outside temperature probe. Programmed by the electrical team, 
            thus communication will be achieved by the SMBUS library using a eer proprietary i2c protocol
         3. 3 Analog digital converters (ADCs) on the 48v, 12v, and 5v buses to mesure board health. Communication will be achieved with 
@@ -174,6 +174,8 @@ class I2CMaster(Node):
         # prevent unused variable warning
         self.copilot_listener 
         self.pilot_listener
+
+        self.headlight_led_brightness = 50
         
         ###############################################################
         ################### INITIALIZE ADAFRUIT I2C ###################
@@ -433,84 +435,106 @@ class I2CMaster(Node):
                 if not self.connected_channels[THRUSTER_CHANNELS[thruster_position]].thruster_armed:
                     self.get_logger().error(f"Thruster {thruster_position} not armed")
 
-            # self.stm32_communications(msg)
+            self.stm32_communications(msg)
 
     def stm32_communications(self, controller_inputs):
         '''
         Communications to the STM32 is required for the 12 DC motor (claw linear actuator),
         stepper motor (claw rotation), dimmable LEDs, and outside temperature probe readings.
 
-        The eer properity communication protocol is (currently) based only on reads. Each action will be achieved through:
+        The eer properity communication protocol is (currently) based only on writes. Each action will be achieved through:
 
-        read = self.bus.read_byte_data(STM32_ADDRESS, action_address)
+        self.bus.write_byte_data(STM32_ADDRESS, action_register, value)
 
-        The result of the read can be interperted for a success code (ex. 0xFF) or a fail code (0xF0). A non successful transaction 
-        (where the slave doesn't respond or acknowledge) results in SMBus returning 0x00. 
+        Possible actions and associated registers are as follows:
 
-        An exception to the read result above is the temperature reading from the 1-wire outside probe. That will be delieved in two 
-        bytes in the same format it is recieved in the STM32 by the 1 wire protocol (https://cdn.sparkfun.com/datasheets/Sensors/Temp/DS18B20.pdf).  
+        STM32 Address: 0x69
 
-        Thus, possible actions and associated registers are as follows:
+        DC Motor Structure (Bytes listed from left to right): 
+        Byte 1: Command and Motor Selection
+        -- Command: 0 (Hex)
+        -- Motor Number: 1 or 2 (Hex)
+        -- Example Byte: 0x01 (DC Motor 1)
+        Byte 2: Motor Direction and Speed (UNUSED)
+        -- Motor Direction: 0 or 1 (will figure out which is forward when we test)
+        -- Speed: Unused right now so set to 0
+        -- Example Byte: 0x10 (Direction = 1)
 
-        0x11 - open_claw
-        0x12 - close_claw
-        0x13 - brighten_led
-        0x14 - dim_led
-        0x15 - turn_claw_cw
-        0x16 - turn_claw_ccw
-        0x17 - read_outside_temperature_probe
+        STEPPER Structure:
+        Byte 1: Command and Stepper Selection
+        -- Command: 1 (hex)
+        -- Stepper Selection: 1 or 2
+        -- Example: 0x12 (Stepper 2)
+        Byte 2: Direction and Speed
+        -- Direction: 0 or 1
+        -- Speed: Unused right now
+        -- Example: 0x10 (Go in direction 1)
+
+        LED Structure:
+        Byte 1: Command and LED Selection
+        -- Command: 2 (Hex)
+        -- LED Selection: 1-4
+        -- Example: 0x24 (LED 4)
+        Byte 2: Brightness (0-99)
         '''
         
         if self.bus is not None:
 
             possible_actions = {
-                0x11: controller_inputs.open_claw,
-                0x12: controller_inputs.close_claw,
-                0x13: controller_inputs.brighten_led,
-                0x14: controller_inputs.dim_led,
-                0x15: controller_inputs.turn_claw_cw,
-                0x16: controller_inputs.turn_claw_ccw,
+                (0x01,0x10): controller_inputs.open_claw,
+                (0x01,0x00): controller_inputs.close_claw,
+                (0x11,0x10): controller_inputs.turn_stepper_cw,
+                (0x11,0x00): controller_inputs.turn_stepper_ccw,
             }
-
-            outside_temperature_probe_register = 0x17
-            temperature_probe_register_length_in_bytes = 2
 
             for action_address, is_desired in possible_actions.items():
                 if is_desired:
-                    read = self.bus.read_byte_data(STM32_ADDRESS, action_address)
-
-                    if read == 0xF0:
+                    try:
+                        self.bus.write_byte_data(STM32_ADDRESS, action_address[0] , action_address[1])
+                    except:
                         self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {action_address}")
-                    elif read == 0x00:
-                        self.get_logger().error(f"COULD NOT COMMUNICATE TO STM32")
+                        
+
+            led_addresses = (0x21,0x22,0x23,0x24)
+
+            if controller_inputs.brighten_led or controller_inputs.dim_led:
+                self.headlight_led_brightness += 10 if controller_inputs.brighten_led else -10
+                for led_address in led_addresses:
+                    try:
+                        self.bus.write_byte_data(STM32_ADDRESS, led_address, self.headlight_led_brightness)
+                    except:
+                        self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {(led_address,self.headlight_led_brightness)}")
             
-            if controller_inputs.read_outside_temperature_probe:
+            # outside_temperature_probe_register = 0x17
+            # temperature_probe_register_length_in_bytes = 2
+            
+            # if controller_inputs.read_outside_temperature_probe:
                     
-                outside_temp_probe_data = OutsideTempProbeData()
+            #     outside_temp_probe_data = OutsideTempProbeData()
 
-                # Data will arrive based on this format (https://cdn.sparkfun.com/datasheets/Sensors/Temp/DS18B20.pdf)
+            #     # Data will arrive based on this format (https://cdn.sparkfun.com/datasheets/Sensors/Temp/DS18B20.pdf)
 
-                read = self.bus.read_i2c_block_data(STM32_ADDRESS, outside_temperature_probe_register, temperature_probe_register_length_in_bytes)
+            #     read = self.bus.read_i2c_block_data(STM32_ADDRESS, outside_temperature_probe_register, temperature_probe_register_length_in_bytes)
 
-                # Convert from 12 bit two's complement binary to string
-                read_12_bit_twos_complement_str = '{0:016b}'.format((read[0] << 8) + read[1])[4:]
+            #     # Convert from 12 bit two's complement binary to string
+            #     read_12_bit_twos_complement_str = '{0:016b}'.format((read[0] << 8) + read[1])[4:]
 
-                # Convert from 12 bit two's complement string to signed binary
+            #     # Convert from 12 bit two's complement string to signed binary
 
-                read_12_bit_twos_complement = int(f"0b{read_12_bit_twos_complement_str}",2)
+            #     read_12_bit_twos_complement = int(f"0b{read_12_bit_twos_complement_str}",2)
 
-                read_12_bit_magnitude_str = '{0:016b}'.format(((0b111111111111 - read_12_bit_twos_complement) + 1) if read_12_bit_twos_complement >= 0b100000000000 else read_12_bit_twos_complement)[4:] 
+            #     read_12_bit_magnitude_str = '{0:016b}'.format(((0b111111111111 - read_12_bit_twos_complement) + 1) if read_12_bit_twos_complement >= 0b100000000000 else read_12_bit_twos_complement)[4:] 
 
-                # Convert to float32
+            #     # Convert to float32
 
-                outside_temp_probe_data.data = (-1 if int(read_12_bit_twos_complement_str[0]) else 1) * (int(f"0b{read_12_bit_magnitude_str[:8]}",2) + 0.5 * int(read_12_bit_magnitude_str[8]) + 0.25 * int(read_12_bit_magnitude_str[9]) + 0.125 * int(read_12_bit_magnitude_str[10]) + 0.0625 * int(read_12_bit_magnitude_str[11]))
+            #     outside_temp_probe_data.data = (-1 if int(read_12_bit_twos_complement_str[0]) else 1) * (int(f"0b{read_12_bit_magnitude_str[:8]}",2) + 0.5 * int(read_12_bit_magnitude_str[8]) + 0.25 * int(read_12_bit_magnitude_str[9]) + 0.125 * int(read_12_bit_magnitude_str[10]) + 0.0625 * int(read_12_bit_magnitude_str[11]))
 
-                if outside_temp_probe_data.data == 0xF0:
-                    self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {bin(outside_temperature_probe_register)}")
-                elif outside_temp_probe_data.data == 0x00:
-                    self.get_logger().error(f"COULD NOT COMMUNICATE TO STM32")
+            #     if outside_temp_probe_data.data == 0xF0:
+            #         self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {bin(outside_temperature_probe_register)}")
+            #     elif outside_temp_probe_data.data == 0x00:
+            #         self.get_logger().error(f"COULD NOT COMMUNICATE TO STM32")
 
-                self.outside_temperature_probe_data_publisher.publish(outside_temp_probe_data)
+            #     self.outside_temperature_probe_data_publisher.publish(outside_temp_probe_data)
 
                 
                 

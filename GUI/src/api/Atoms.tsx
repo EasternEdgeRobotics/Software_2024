@@ -34,8 +34,8 @@ export const PilotActions = atom<string[]>([ // Possible pilot inputs
   "pitch_down",
   "brighten_led",
   "dim_led",
-  "turn_claw_cw",
-  "turn_claw_ccw",
+  "turn_stepper_cw",
+  "turn_stepper_ccw",
   "read_outside_temperature_probe",
   "enter_auto_mode"
 ])
