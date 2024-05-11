@@ -640,7 +640,7 @@ export default function TabletApp() {
             <Grid>
                 {/* Rows of darkened checkboxes are used to simulate indentation */}
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
-                <FormControlLabel control = {<Checkbox />} label = " (A) Design and construct an opeartational vetical porfiling float - 5 points " />
+                <FormControlLabel control = {<Checkbox />} label = " (A) Design and construct an operational vertical profiling float - 5 points " />
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
                 <FormControlLabel control = {<Checkbox />} label = "Prior to the competition, design a construct and vertical profiling float - 5 points" />
                 <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} /> <Checkbox sx = {{color: grey[900], '&.Mui-checked': {color: grey[900]}}} />
