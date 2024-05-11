@@ -132,6 +132,7 @@ function SideBar() {
   const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
   const [saved_tasks, setTasks] = useState<{ [key: string]: boolean }>({});
   const [, setTaskPublisher] = useAtom(taskPublisherAtom);
+  const [score, setScore] = useState<number>(0);
 
   useEffect(() => {
     const rosInstance = new ROSLIB.Ros({});
@@ -180,6 +181,13 @@ function SideBar() {
     setTaskPublisher(task_publisher);
   }, [ros, collapsed]);
 
+    useEffect(() => {
+      setScore(
+        calculateAchivedScore(
+          saved_tasks)
+      );
+    }, [saved_tasks]);
+
   ros.on("connection", () => console.log("Connected to ROS"));
 
   const handleToggleSidebar = () => {
@@ -189,7 +197,8 @@ function SideBar() {
 
   const styles = {
     sideBarHeight: {
-      height: "145vh",
+      height: "100vh",
+      overflow: "auto",
     },
     menuIcon: {
       float: "right",
@@ -227,15 +236,38 @@ function SideBar() {
         <MenuSquareIcon />
       </IconButton>
       <Sidebar
-        style={styles.sideBarHeight}
+        style={{
+          ...styles.sideBarHeight,
+          backdropFilter: "blur(10px)",
+        }}
         collapsed={collapsed}
         rtl={false}
         width="700px"
         collapsedWidth="0px"
-        backgroundColor="rgb(0, 0, 69, 0.7)"
+        backgroundColor="rgb(0, 0, 60, 0.8)"
       >
         <Menu>
-          <MenuItem icon={<Home />}>Home</MenuItem>
+          <MenuItem>
+            <Box
+              sx={{
+                marginTop: "25px",
+                display: "inline-block",
+                backgroundColor: "rgba(20, 255, 255, 0.4)", // white, 50% transparent
+                borderRadius: "10px", // rounded edges
+                padding: "10px", // some padding
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 30,
+                  fontStyle: "normal",
+                  fontWeight: 600,
+                }}
+              >
+                Total: {score}/{350}
+              </Typography>
+            </Box>
+          </MenuItem>
           <SubList
             name="TASK 1 : Coastal Pioneer Array"
             tasks={taskJSON.task1.tasks}
