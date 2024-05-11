@@ -24,6 +24,8 @@ Notes:
   2. It may be worthwhile to indicate point values within 'subTask' text ('tasks.json'), e.g., " - 10 points" at the end of "Trigger the release of the multi-function node's recovery float - 10 points"
 
   3. For the Deploy SMART cable through two waypoints located on the bottom of the seafloor subtask, the SMART cable may also be deployed through only one waypoint for 5 points, but this is not represented in the checklist
+
+  4. Some imports are declared but never used
   */
 
 const taskPublisherAtom = atom<ROSLIB.Topic<ROSLIB.Message> | null>(null);
