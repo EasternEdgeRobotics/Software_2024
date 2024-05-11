@@ -37,10 +37,10 @@ export function InitROS() {
     React.useEffect(() => {
         ros.connect(`ws://${RosIP}:9090`);
         setInterval(() => {
-            if (!ros.isConnected) {
-                setRos(new ROSLIB.Ros({}));
-                ros.connect(`ws://${RosIP}:9090`);
-            }
+          if (!ros.isConnected) {
+            setRos(new ROSLIB.Ros({}));
+            ros.connect(`ws://${RosIP}:9090`);
+          }
         }, 1000);
     }, []);
 
