@@ -48,5 +48,7 @@ export const RequestingProfilesList = atom<number>(2); // Used for deleting a ce
 export const RequestingCameraURLs = atom<number>(2); // Used for requesting/saving camera URLs from/to the database.
 // See the ROS.tsx script for how the above three Atom states are used
 
-export const ADC_ARRAY = atom<string>("43, 22, 32, 22, 10"); // ADC DATA
-export const TEMPERATURE_ARRAY = atom<string>("43, 22, 32, 22, 10, 15"); // TEMP DATA
+export const ADCArray = atom<{adc_48v_bus:number,adc_12v_bus:number,adc_5v_bus:number}>({adc_48v_bus:0,adc_12v_bus:0,adc_5v_bus:0}); // ADC DATA
+export const TemperatureArray = atom<{power_board_u8:number,power_board_u9:number,power_board_u10:number,
+  mega_board_ic2:number,power_board_u11:number,mega_board_ic1:number}>({power_board_u8:0,power_board_u9:0,power_board_u10:0,
+    mega_board_ic2:0,power_board_u11:0,mega_board_ic1:0}); // TEMP DATA

@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import ROSLIB, { Ros } from "roslib";
-import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs, ADC_ARRAY, TEMPERATURE_ARRAY } from "./Atoms";
+import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs, ADCArray, TemperatureArray } from "./Atoms";
 import React from "react";
 
 export function InitROS() {
@@ -45,15 +45,15 @@ export function InitROS() {
     }, []);
 
     // ADC and TEMP data
-    const [, set_ADCARRAY] = useAtom(ADC_ARRAY);
-    const [, set_TEMPERATUREARRAY] = useAtom(TEMPERATURE_ARRAY); 
+    const [, setADCArray] = useAtom(ADCArray);
+    const [, setTemperatureArray] = useAtom(TemperatureArray); 
 
-    React.useEffect(() => { // Constantly run the input listener 
-        setInterval(() => {
-            set_ADCARRAY(JSON.stringify([Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2)]));
-            set_TEMPERATUREARRAY(JSON.stringify([Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2)]));
-        }, 1000); // 100 ms 
-    }, []);
+    // React.useEffect(() => { // Constantly run the input listener 
+    //     setInterval(() => {
+    //         set_ADCARRAY(JSON.stringify([Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2)]));
+    //         set_TEMPERATUREARRAY(JSON.stringify([Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2)]));
+    //     }, 1000); // 100 ms 
+    // }, []);
 
 
     // Create a publisher on the "/thruster_multipliers" ros2 topic, using a custom EER message type (see eer_messages folder in ROS2/colcon_ws/src)
@@ -218,6 +218,25 @@ export function InitROS() {
         setRequestingCameraURLs(2);
         }
     ,[requestingCameraURLs]);
+
+    const ADCDataListener = new ROSLIB.Topic({ros:ros,
+        name:"/adc",
+        messageType: "eer_messages/ADCData"
+    })
+
+    ADCDataListener.subcribe(function(message:{adc_48v_bus:number,adc_12v_bus:number,adc_5v_bus:number}){
+        setADCArray(message);
+    })
+
+    const TempratureDataListener = new ROSLIB.Topic({ros:ros,
+        name:"/board_temp",
+        messageType: "eer_messages/TempSensorData"
+    })
+
+    TempratureDataListener.subcribe(function(message:{power_board_u8:number,power_board_u9:number,power_board_u10:number,
+        mega_board_ic2:number,power_board_u11:number,mega_board_ic1:number}){
+        setTemperatureArray(message);
+    })
 
 
     // const ImuDataListener = new ROSLIB.Topic({ros:ros,

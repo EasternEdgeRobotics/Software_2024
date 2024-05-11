@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Slider, Box, Button } from "@mui/material";
 import { useAtom } from "jotai";
-import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput, PilotActions, ADC_ARRAY, TEMPERATURE_ARRAY } from "../api/Atoms";
+import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput, PilotActions, ADCArray, TemperatureArray } from "../api/Atoms";
 import { useState, useEffect } from "react";
 
 export function StatusIndicator(props: {statement: boolean}) {
@@ -29,8 +29,8 @@ export function BotTab() {
     const [controller2Name, setController2Name] = useState("Not Assigned");
 
     // ADC and TEMP data
-    const [read_ADCARRAY, ] = useAtom(ADC_ARRAY);
-    const [read_TEMPERATUREARRAY, ] = useAtom(TEMPERATURE_ARRAY); 
+    const [read_ADCArray, ] = useAtom(ADCArray);
+    const [read_TemperatureArray, ] = useAtom(TemperatureArray); 
 
 
     let initialPageLoad = true;
@@ -42,8 +42,8 @@ export function BotTab() {
     ];
 
     const Arrays = [
-        {"name": "ADC", "status": read_ADCARRAY},
-        {"name":"TEMPERATURE", "status": read_TEMPERATUREARRAY}
+        {"name": "ADC", "status": JSON.stringify(read_ADCArray)},
+        {"name":"TEMPERATURE", "status": JSON.stringify(read_TemperatureArray)}
         
     ];
       
