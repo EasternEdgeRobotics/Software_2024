@@ -227,8 +227,8 @@ export function InitROS() {
     ADCDataListener.subscribe(function(message){
         setADCArray(
             {adc_48v_bus:(message as any).adc_48v_bus,
-                adc_12v_bus:0,
-                adc_5v_bus:0});
+                adc_12v_bus:(message as any).adc_12v_bus,
+                adc_5v_bus:(message as any).adc_5v_bus});
     })
 
     const TempratureDataListener = new ROSLIB.Topic({ros:ros,
@@ -238,8 +238,12 @@ export function InitROS() {
 
     TempratureDataListener.subscribe(function(message){
         setTemperatureArray(
-            {power_board_u8:(message as any).power_board_u8,power_board_u9:0,power_board_u10:0,
-                mega_board_ic2:0,power_board_u11:0,mega_board_ic1:0}); 
+            {power_board_u8:(message as any).power_board_u8,
+            power_board_u9:(message as any).power_board_u9,
+            power_board_u10:(message as any).power_board_u10,
+            mega_board_ic2:(message as any).mega_board_ic2,
+            power_board_u11:(message as any).power_board_u11,
+            mega_board_ic1:(message as any).mega_board_ic1}); 
     })
 
 
