@@ -21,9 +21,9 @@ Additional features include:
 
 Notes:
 
-    2. Timers are too fast; for ever actual minute that passes, unfixed timers are approximately 2 seconds ahead
+    1. Timers are too fast; for every actual minute that passes, unfixed timers are approximately 2 seconds ahead
 
-    1. Testing the usage device  will be necessary as to ensure correct formatting and appropriate timer delay
+    2. Testing the usage device will be necessary as to ensure correct formatting and appropriate timer delay
 */
 
 export default function TabletApp() {

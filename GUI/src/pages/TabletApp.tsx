@@ -423,4 +423,3 @@ function Timer() {
     </Box>
   );
 }
-
