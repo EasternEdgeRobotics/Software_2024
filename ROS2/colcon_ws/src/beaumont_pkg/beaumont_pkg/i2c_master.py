@@ -480,29 +480,46 @@ class I2CMaster(Node):
         
         if self.bus is not None:
 
-            possible_actions = {
-                (0x01,0x10): controller_inputs.open_claw,
-                (0x01,0x00): controller_inputs.close_claw,
-                (0x11,0x10): controller_inputs.turn_stepper_cw,
-                (0x11,0x00): controller_inputs.turn_stepper_ccw,
-            }
+            if controller_inputs.open_claw or controller_inputs.close_claw:
+                claw_value = 0x10 if controller_inputs.open_claw else 0x00
+                try:
+                    self.bus.write_byte_data(STM32_ADDRESS, 0x01, claw_value)
+                except OSError:
+                    self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {(0x10,claw_value)}")
+            else:
+                try:
+                    self.bus.write_byte_data(STM32_ADDRESS, 0x01, 0xaa) # Send stop signal
+                except OSError:
+                    pass
 
-            for action_address, is_desired in possible_actions.items():
-                if is_desired:
-                    try:
-                        self.bus.write_byte_data(STM32_ADDRESS, action_address[0] , action_address[1])
-                    except:
-                        self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {action_address}")
+            if controller_inputs.turn_stepper_cw or controller_inputs.turn_stepper_ccw:
+                stepper_value = 0x10 if controller_inputs.turn_stepper_cw else 0x00
+                try:
+                    self.bus.write_byte_data(STM32_ADDRESS, 0x11, stepper_value)
+                except OSError:
+                    self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {(0x10,claw_value)}")
+            else:
+                try:
+                    self.bus.write_byte_data(STM32_ADDRESS, 0x11, 0xaa) # Send stop signal
+                except OSError:
+                    pass
                         
 
             led_addresses = (0x21,0x22,0x23,0x24)
 
             if controller_inputs.brighten_led or controller_inputs.dim_led:
                 self.headlight_led_brightness += 10 if controller_inputs.brighten_led else -10
+
+                if self.headlight_led_brightness > 99:
+                    self.headlight_led_brightness = 99
+                elif self.headlight_led_brightness < 0:
+                    self.headlight_led_brightness = 0
+
                 for led_address in led_addresses:
                     try:
                         self.bus.write_byte_data(STM32_ADDRESS, led_address, self.headlight_led_brightness)
-                    except:
+                        self.get_logger().info(f"SENDING LED")
+                    except OSError:
                         self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {(led_address,self.headlight_led_brightness)}")
             
             # outside_temperature_probe_register = 0x17
