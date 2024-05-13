@@ -495,12 +495,12 @@ class I2CMaster(Node):
             if controller_inputs.turn_stepper_cw or controller_inputs.turn_stepper_ccw:
                 stepper_value = 0x10 if controller_inputs.turn_stepper_cw else 0x00
                 try:
-                    self.bus.write_byte_data(STM32_ADDRESS, 0x11, stepper_value)
+                    self.bus.write_byte_data(STM32_ADDRESS, 0x02, stepper_value)
                 except OSError:
                     self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {(0x10,claw_value)}")
             else:
                 try:
-                    self.bus.write_byte_data(STM32_ADDRESS, 0x11, 0xaa) # Send stop signal
+                    self.bus.write_byte_data(STM32_ADDRESS, 0x02, 0xaa) # Send stop signal
                 except OSError:
                     pass
                         
