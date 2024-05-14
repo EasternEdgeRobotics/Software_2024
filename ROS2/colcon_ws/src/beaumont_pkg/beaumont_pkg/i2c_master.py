@@ -1,5 +1,6 @@
 import rclpy
 from rclpy.node import Node, MutuallyExclusiveCallbackGroup
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
 from eer_messages.msg import ThrusterMultipliers, PilotInput, IMUData, ADCData, TempSensorData, OutsideTempProbeData
 
@@ -15,18 +16,18 @@ THRUSTER_CHANNELS = {
     "for-port-top": 1, 
     "for-star-top": 0, 
     "aft-port-top": 4,
-    "aft-star-top": 7,
+    "aft-star-top": 3,
     "for-port-bot": 2,
     "for-star-bot": 6,
     "aft-port-bot": 5,
-    "aft-star-bot": 3
+    "aft-star-bot": 7
 }
 
 # In the thruster class, the target speed is set by the user. Each thruster accelerates towards the target speed by the acceleration below
-THRUSTER_ACCELERATION = 1 
+THRUSTER_ACCELERATION = 5 
 
 # Determines how often each thruster accelerates towards the target speed set by the user
-THRUSTER_TICK_PERIOD = 0.01
+# THRUSTER_TICK_PERIOD = 0.01
 
 RP2040_ADDRESS = 0x08
 
@@ -157,25 +158,31 @@ class I2CMaster(Node):
     def __init__(self):
         super().__init__('i2c_master')
 
+        self.debugger_mode = False
+
         # Callback group for reciving topsides input and communicated to i2c bus
         i2c_master_callback_group = MutuallyExclusiveCallbackGroup()
 
         # Subscribers
         self.copilot_listener = self.create_subscription(ThrusterMultipliers, 'thruster_multipliers', self.copilot_listener_callback, 100, callback_group=i2c_master_callback_group)
-        self.pilot_listener = self.create_subscription(PilotInput, 'controller_input', self.pilot_listener_callback, 1, callback_group=i2c_master_callback_group) # input recieved at 10Hz
+        self.pilot_listener = self.create_subscription(PilotInput, 'controller_input', self.pilot_listener_callback, 1, 
+                                                       callback_group=i2c_master_callback_group) # input recieved at 10Hz
+        
+        # TODO: TRY THE PILOT LISTENER BELOW, COMMENT ONE ABOVE
+        # pilot_input_qos_profile = QoSProfile(
+        #     reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
+        #     history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST,
+        #     depth=1
+        # )
+        # self.pilot_listener = self.create_subscription(PilotInput, 'controller_input', self.pilot_listener_callback, 
+        #                                                callback_group=i2c_master_callback_group, qos_pofile=pilot_input_qos_profile, queue_length =1 , throttle_rate = 2000) # input recieved at 10Hz
 
         # Publishers
-        self.imu_data_publisher = self.create_publisher(IMUData, "imu", 10)
-        self.adc_data_publisher = self.create_publisher(ADCData, "adc", 10)
-        self.temp_sensor_data_publisher = self.create_publisher(TempSensorData, "board_temp", 10)
-        self.outside_temperature_probe_data_publisher = self.create_publisher(OutsideTempProbeData, "outside_temp_probe", 10)
-
-        # Debugger publisher
-        # from std_msgs.msg import String
-        # self.debugger = self.create_publisher(String, 'debugger', 10)
-
-        # For finiding center speed and testing indivisual thrusters
-        # self.current_thruster = 0
+        # Comment out code below to remove slowdown
+        # self.imu_data_publisher = self.create_publisher(IMUData, "imu", 10)
+        # self.adc_data_publisher = self.create_publisher(ADCData, "adc", 10)
+        # self.temp_sensor_data_publisher = self.create_publisher(TempSensorData, "board_temp", 10)
+        # self.outside_temperature_probe_data_publisher = self.create_publisher(OutsideTempProbeData, "outside_temp_probe", 10)
 
         # prevent unused variable warning
         self.copilot_listener 
@@ -183,6 +190,25 @@ class I2CMaster(Node):
 
         self.headlight_led_brightness = 50
         
+        #################################################################
+        ################### THRUSTER CALIBRATION MODE ###################
+        #################################################################   
+
+        self.thruster_calibration_mode = False
+
+        if self.thruster_calibration_mode:
+            self.debugger_mode = True
+            self.current_thruster = 0
+
+
+        ################################################
+        ################### DEBUGGER ###################
+        ################################################   
+
+        if self.debugger_mode:
+            from std_msgs.msg import String
+            self.debugger = self.create_publisher(String, 'debugger', 10)
+
         ###############################################################
         ################### INITIALIZE ADAFRUIT I2C ###################
         ###############################################################        
@@ -205,7 +231,7 @@ class I2CMaster(Node):
                 self.imu_sensor = BNO055_I2C(self.i2c)
                 self.last_temperature_val = 0xFFFF # per recommendation on (https://learn.adafruit.com/adafruit-bno055-absolute-orientation-sensor/python-circuitpython)
 
-                self.imu_timer = self.create_timer(IMU_REQUESTS_PERIOD, self.obtain_imu_data, callback_group=i2c_master_callback_group)
+                # self.imu_timer = self.create_timer(IMU_REQUESTS_PERIOD, self.obtain_imu_data, callback_group=i2c_master_callback_group)
 
                 self.get_logger().info("BNO055 DETECTED ON I2C BUS")
             except:
@@ -224,8 +250,8 @@ class I2CMaster(Node):
         except:
             self.get_logger().error("COULD NOT INITIALIZE SMBUS")
 
-        if self.bus is not None:
-            self.thruster_timer = self.create_timer(THRUSTER_TICK_PERIOD, self.tick_thrusters, callback_group=i2c_master_callback_group)
+        # if self.bus is not None:
+        #     self.thruster_timer = self.create_timer(THRUSTER_TICK_PERIOD, self.tick_thrusters, callback_group=i2c_master_callback_group)
 
 
         #################################################
@@ -256,15 +282,16 @@ class I2CMaster(Node):
             for key in ADC_ADDRESSES:
                 self.configured_adcs[key] = False
 
-            self.adc_timer = self.create_timer(ADC_REQUESTS_PERIOD, self.obtain_adc_data, callback_group=i2c_master_callback_group)
+            # self.adc_timer = self.create_timer(ADC_REQUESTS_PERIOD, self.obtain_adc_data, callback_group=i2c_master_callback_group)
 
         #################################################################
         ###################### Temperature Sensors ######################
         #################################################################
 
         if self.bus is not None:
+            pass
 
-            self.temp_sensor_timer = self.create_timer(TEMP_SENSOR_REQUESTS_PERIOD, self.obtain_temp_sensor_data, callback_group=i2c_master_callback_group)
+            # self.temp_sensor_timer = self.create_timer(TEMP_SENSOR_REQUESTS_PERIOD, self.obtain_temp_sensor_data, callback_group=i2c_master_callback_group)
         
 
     def copilot_listener_callback(self, msg):
@@ -304,9 +331,12 @@ class I2CMaster(Node):
 
         self.imu_data_publisher.publish(imu_data)
 
-        # imu_debug_data = String()
-        # imu_debug_data.data = str(imu_data)
-        # self.debugger.publish(imu_debug_data)
+        if self.debugger_mode:
+            from std_msgs.msg import String
+
+            imu_debug_data = String()
+            imu_debug_data.data = str(imu_data)
+            self.debugger.publish(imu_debug_data)
 
     def obtain_adc_data(self):
         """
@@ -384,9 +414,11 @@ class I2CMaster(Node):
 
         self.adc_data_publisher.publish(adc_data)
 
-        # adc_debug_data = String()
-        # adc_debug_data.data = str(adc_data)
-        # self.debugger.publish(adc_debug_data)
+        if self.debugger_mode:
+            from std_msgs.msg import String
+            adc_debug_data = String()
+            adc_debug_data.data = str(adc_data)
+            self.debugger.publish(adc_debug_data)
 
     def obtain_temp_sensor_data(self):
         '''
@@ -427,9 +459,11 @@ class I2CMaster(Node):
 
         self.temp_sensor_data_publisher.publish(temp_sensor_data) 
         
-        # temp_sensor_debug_data = String()
-        # temp_sensor_debug_data.data = str(temp_sensor_data)
-        # self.debugger.publish(temp_sensor_debug_data)
+        if self.debugger_mode:
+            from std_msgs.msg import String
+            temp_sensor_debug_data = String()
+            temp_sensor_debug_data.data = str(temp_sensor_data)
+            self.debugger.publish(temp_sensor_debug_data)
 
     def pilot_listener_callback(self, msg): 
 
@@ -443,7 +477,8 @@ class I2CMaster(Node):
                 # Thrusters should be armed by the time the first pilot input is recieved
                 if not self.connected_channels[THRUSTER_CHANNELS[thruster_position]].thruster_armed:
                     self.get_logger().error(f"Thruster {thruster_position} not armed")
-
+            
+            self.tick_thrusters()
             self.stm32_communications(msg)
 
     def stm32_communications(self, controller_inputs):
@@ -527,7 +562,6 @@ class I2CMaster(Node):
                 for led_address in led_addresses:
                     try:
                         self.bus.write_byte_data(STM32_ADDRESS, led_address, self.headlight_led_brightness)
-                        self.get_logger().info(f"SENDING LED")
                     except OSError:
                         self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {(led_address,self.headlight_led_brightness)}")
             
@@ -617,68 +651,73 @@ class I2CMaster(Node):
         # Calculations below will calculate and display the net movement in all directions based on vector analysis
         # Ensure to also uncomment the debugger attribute in the init method
 
-        # from math import cos, pi
-        
-        # raw_inputs = String()
-        # raw_inputs.data = f"""
-        # # Surge: {surge}\n
-        # # Sway: {sway}\n
-        # # Heave: {heave}\n
-        # # Pitch: {pitch}\n
-        # # Yaw: {yaw}"""
-        # self.debugger.publish(raw_inputs)
+        # if self.debugger_mode:
+        #     from math import cos, pi
+        #     from std_msgs.msg import String
+            
+        #     raw_inputs = String()
+        #     raw_inputs.data = f"""
+        #     # Surge: {surge}\n
+        #     # Sway: {sway}\n
+        #     # Heave: {heave}\n
+        #     # Pitch: {pitch}\n
+        #     # Yaw: {yaw}"""
+        #     self.debugger.publish(raw_inputs)
 
-        # coefficients = String()
-        # coefficients.data = f"""Srfe Pow: {strafe_power}, Strfe scal: {strafe_scaling_coefficient}, Strfe avg: {strafe_average_coefficient}, rot avg: {rotation_average_coefficient}"""
-        # self.debugger.publish(coefficients)
+        #     coefficients = String()
+        #     coefficients.data = f"""Srfe Pow: {strafe_power}, Strfe scal: {strafe_scaling_coefficient}, Strfe avg: {strafe_average_coefficient}, rot avg: {rotation_average_coefficient}"""
+        #     self.debugger.publish(coefficients)
 
-        # from std_msgs.msg import String
+        #     thruster_values_debug = String()
+        #     thruster_values_debug.data = f"""
+        #     forportbot:{thruster_values["for-port-bot"]},for star bot:{thruster_values["for-star-bot"]},aftportbot:{thruster_values["aft-port-bot"]},aftstarbot:{thruster_values["aft-star-bot"]},forporttop:{thruster_values["for-port-top"]},
+        #     forstartop:{thruster_values["for-star-top"]},aft port top:{thruster_values["aft-port-top"]},aftstartop:{thruster_values["aft-star-top"]}"""
+        #     self.debugger.publish(thruster_values_debug)
 
-        # thruster_values_debug = String()
-        # thruster_values_debug.data = f"""
-        # forportbot:{thruster_values["for-port-bot"]},for star bot:{thruster_values["for-star-bot"]},aftportbot:{thruster_values["aft-port-bot"]},aftstarbot:{thruster_values["aft-star-bot"]},forporttop:{thruster_values["for-port-top"]},
-        # forstartop:{thruster_values["for-star-top"]},aft port top:{thruster_values["aft-port-top"]},aftstartop:{thruster_values["aft-star-top"]}"""
-        # self.debugger.publish(thruster_values_debug)
+        #     net_surge = cos(pi/3)*((-thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
+        #     net_sway = cos(pi/3)*((thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (-thruster_values["aft-star-bot"]) + (thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (-thruster_values["aft-star-top"]))
+        #     net_heave = cos(pi/3)*((thruster_values["for-port-bot"]) + (thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (-thruster_values["aft-port-top"]) + (-thruster_values["aft-star-top"]))
+            
+        #     net_pitch = cos(pi/4)*((thruster_values["for-port-bot"]) + (thruster_values["for-star-bot"]) + (-thruster_values["aft-port-bot"]) + (-thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
+        #     net_yaw = cos(pi/4)*((thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (-thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (-thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
 
-        # net_surge = cos(pi/3)*((-thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
-        # net_sway = cos(pi/3)*((thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (-thruster_values["aft-star-bot"]) + (thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (-thruster_values["aft-star-top"]))
-        # net_heave = cos(pi/3)*((thruster_values["for-port-bot"]) + (thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (-thruster_values["aft-port-top"]) + (-thruster_values["aft-star-top"]))
-        
-        # net_pitch = cos(pi/4)*((thruster_values["for-port-bot"]) + (thruster_values["for-star-bot"]) + (-thruster_values["aft-port-bot"]) + (-thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
-        # net_yaw = cos(pi/4)*((thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (-thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (-thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
-
-        # net_movement_vectors = String()
-        # net_movement_vectors.data = f"""Net Surge:{net_surge},Net Sway:{net_sway},Net Heave:{net_heave},Net Pitch:{net_pitch},Net Yaw:{net_yaw}"""
-        # self.debugger.publish(net_movement_vectors)
+        #     net_movement_vectors = String()
+        #     net_movement_vectors.data = f"""Net Surge:{net_surge},Net Sway:{net_sway},Net Heave:{net_heave},Net Pitch:{net_pitch},Net Yaw:{net_yaw}"""
+        #     self.debugger.publish(net_movement_vectors)
 
         ###########################################################################################
         ############################## INIDIVISUAL THRUSTER TESITNG ###############################
         ###########################################################################################
 
-        # Be sure to also uncomment the sef.current_thruster line in the __init__ function
+        if self.thruster_calibration_mode:
 
-        # thruster_list = ("for-port-bot", "for-star-bot", "aft-port-bot", "aft-star-bot", "for-port-top", "for-star-top", "aft-port-top", "aft-star-top")
+            from std_msgs.msg import String
+            
+            current_thruster_and_value = String()
 
-        # if controller_inputs.open_claw:
-        #     if self.current_thruster == 0:
-        #         self.current_thruster = 7
-        #     else:
-        #         self.current_thruster -= 1
-        #     self.get_logger().info(str(self.current_thruster))
-        #     self.get_logger().info(str(surge))
-        # elif controller_inputs.close_claw:
-        #     if self.current_thruster == 7:
-        #         self.current_thruster = 0
-        #     else:
-        #         self.current_thruster += 1
-        #     self.get_logger().info(str(self.current_thruster))
-        #     self.get_logger().info(str(surge))
+            if controller_inputs.brighten_led:
+                if self.current_thruster == 0:
+                    self.current_thruster = 7
+                else:
+                    self.current_thruster -= 1
 
-        # for thruster_idk, channel in THRUSTER_CHANNELS.items():
-        #     if channel == self.current_thruster:
-        #         thruster_values[thruster_idk] = surge
-        #     else:   
-        #         thruster_values[thruster_idk] = 0
+                current_thruster_and_value.data = f"{self.current_thruster}: {self.surge}"
+                self.debugger.publish(current_thruster_and_value)
+
+            elif controller_inputs.dim_led:
+                if self.current_thruster == 7:
+                    self.current_thruster = 0
+                else:
+                    self.current_thruster += 1
+
+                current_thruster_and_value.data = f"{self.current_thruster}: {self.surge}"
+                self.debugger.publish(current_thruster_and_value)
+
+            for thruster_position, channel in THRUSTER_CHANNELS.items():
+                if channel == self.current_thruster:
+                    thruster_values[thruster_position] = surge
+                else:   
+                    thruster_values[thruster_position] = 0
 
         
         ###########################################################################################

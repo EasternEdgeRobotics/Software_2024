@@ -81,7 +81,8 @@ export function InitROS() {
     // Create a publisher on the "/controller_input" ros2 topic, using the default String message which will be used from transporting JSON data
     const controllerInputTopic = new ROSLIB.Topic({ros:ros,
                                         name:"/controller_input",
-                                        messageType: "eer_messages/PilotInput"});
+                                        messageType: "eer_messages/PilotInput",
+                                        queue_size:1});
 
     // Publish the new controller input whenever it changes (10 Hz)
     React.useEffect(()=>{
@@ -219,32 +220,32 @@ export function InitROS() {
         }
     ,[requestingCameraURLs]);
 
-    const ADCDataListener = new ROSLIB.Topic({ros:ros,
-        name:"/adc",
-        messageType: "eer_messages/ADCData"
-    })
+    // const ADCDataListener = new ROSLIB.Topic({ros:ros,
+    //     name:"/adc",
+    //     messageType: "eer_messages/ADCData"
+    // })
 
-    ADCDataListener.subscribe(function(message){
-        setADCArray(
-            {adc_48v_bus:(message as any).adc_48v_bus,
-                adc_12v_bus:(message as any).adc_12v_bus,
-                adc_5v_bus:(message as any).adc_5v_bus});
-    })
+    // ADCDataListener.subscribe(function(message){
+    //     setADCArray(
+    //         {adc_48v_bus:(message as any).adc_48v_bus,
+    //             adc_12v_bus:(message as any).adc_12v_bus,
+    //             adc_5v_bus:(message as any).adc_5v_bus});
+    // })
 
-    const TempratureDataListener = new ROSLIB.Topic({ros:ros,
-        name:"/board_temp",
-        messageType: "eer_messages/TempSensorData"
-    })
+    // const TempratureDataListener = new ROSLIB.Topic({ros:ros,
+    //     name:"/board_temp",
+    //     messageType: "eer_messages/TempSensorData"
+    // })
 
-    TempratureDataListener.subscribe(function(message){
-        setTemperatureArray(
-            {power_board_u8:(message as any).power_board_u8,
-            power_board_u9:(message as any).power_board_u9,
-            power_board_u10:(message as any).power_board_u10,
-            mega_board_ic2:(message as any).mega_board_ic2,
-            power_board_u11:(message as any).power_board_u11,
-            mega_board_ic1:(message as any).mega_board_ic1}); 
-    })
+    // TempratureDataListener.subscribe(function(message){
+    //     setTemperatureArray(
+    //         {power_board_u8:(message as any).power_board_u8,
+    //         power_board_u9:(message as any).power_board_u9,
+    //         power_board_u10:(message as any).power_board_u10,
+    //         mega_board_ic2:(message as any).mega_board_ic2,
+    //         power_board_u11:(message as any).power_board_u11,
+    //         mega_board_ic1:(message as any).mega_board_ic1}); 
+    // })
 
 
     // const ImuDataListener = new ROSLIB.Topic({ros:ros,
