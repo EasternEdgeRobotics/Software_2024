@@ -24,10 +24,10 @@ THRUSTER_CHANNELS = {
 }
 
 # In the thruster class, the target speed is set by the user. Each thruster accelerates towards the target speed by the acceleration below
-THRUSTER_ACCELERATION = 5 
+THRUSTER_ACCELERATION = 5
 
 # Determines how often each thruster accelerates towards the target speed set by the user
-# THRUSTER_TICK_PERIOD = 0.01
+# THRUSTER_TICK_PERIOD = 0.05
 
 RP2040_ADDRESS = 0x08
 
@@ -55,9 +55,9 @@ TEMPERATURE_SENSOR_ADDRESSES = {
 }
 
 # How often to read data on i2c bus
-IMU_REQUESTS_PERIOD = 1
-ADC_REQUESTS_PERIOD = 1
-TEMP_SENSOR_REQUESTS_PERIOD = 1
+IMU_REQUESTS_PERIOD = 5
+ADC_REQUESTS_PERIOD = 5
+TEMP_SENSOR_REQUESTS_PERIOD = 5
 
 class Thruster:
     """Thruster class."""
@@ -231,7 +231,7 @@ class I2CMaster(Node):
                 self.imu_sensor = BNO055_I2C(self.i2c)
                 self.last_temperature_val = 0xFFFF # per recommendation on (https://learn.adafruit.com/adafruit-bno055-absolute-orientation-sensor/python-circuitpython)
 
-                # self.imu_timer = self.create_timer(IMU_REQUESTS_PERIOD, self.obtain_imu_data, callback_group=i2c_master_callback_group)
+                self.imu_timer = self.create_timer(IMU_REQUESTS_PERIOD, self.obtain_imu_data, callback_group=i2c_master_callback_group)
 
                 self.get_logger().info("BNO055 DETECTED ON I2C BUS")
             except:
@@ -282,7 +282,7 @@ class I2CMaster(Node):
             for key in ADC_ADDRESSES:
                 self.configured_adcs[key] = False
 
-            # self.adc_timer = self.create_timer(ADC_REQUESTS_PERIOD, self.obtain_adc_data, callback_group=i2c_master_callback_group)
+            self.adc_timer = self.create_timer(ADC_REQUESTS_PERIOD, self.obtain_adc_data, callback_group=i2c_master_callback_group)
 
         #################################################################
         ###################### Temperature Sensors ######################
@@ -291,7 +291,7 @@ class I2CMaster(Node):
         if self.bus is not None:
             pass
 
-            # self.temp_sensor_timer = self.create_timer(TEMP_SENSOR_REQUESTS_PERIOD, self.obtain_temp_sensor_data, callback_group=i2c_master_callback_group)
+            self.temp_sensor_timer = self.create_timer(TEMP_SENSOR_REQUESTS_PERIOD, self.obtain_temp_sensor_data, callback_group=i2c_master_callback_group)
         
 
     def copilot_listener_callback(self, msg):
