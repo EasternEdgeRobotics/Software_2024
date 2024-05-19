@@ -16,7 +16,6 @@ export default function SafetyDisclaimer() {
                         <li>Deck Crew is wearing Eye Protection, Personal Flotation Devices, and Work Boots.</li>
                         <li>Topside devices are fully charged, and a spare charger is brought.</li>
                         <li>All access hazards are removed.</li>
-                        <li>Air compressor is properly adjusted and connected with releases unhindered.</li>
                     </ul>
                     After reading this, press the &quot;I Agree&quot; button to continue.
                 </DialogContentText>
