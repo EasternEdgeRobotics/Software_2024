@@ -1,0 +1,8 @@
+bool is_for_sim
+uint8 red 
+uint8 green
+uint8 blue
+---
+bool success
+---
+string status

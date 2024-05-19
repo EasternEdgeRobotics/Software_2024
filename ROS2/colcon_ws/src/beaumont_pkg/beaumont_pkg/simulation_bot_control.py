@@ -1,7 +1,9 @@
 import rclpy
 from rclpy.node import Node, MutuallyExclusiveCallbackGroup
+from rclpy.action import ActionClient
 
 from eer_messages.msg import ThrusterMultipliers, PilotInput
+from eer_messages.action import AutoMode 
 
 from geometry_msgs.msg import Wrench, Twist
 
@@ -43,6 +45,9 @@ class SimulationBotControl(Node):
         # For claw movement, the Gazebo Planar Move Plugin is used
         self.left_claw_publisher = self.create_publisher(Twist, "/demo/left_claw", 10) 
         self.right_claw_publisher = self.create_publisher(Twist, "/demo/right_claw", 10)
+
+        # Autonomus movement node
+        self.autonomus_brain_coral_transplant_action_client = ActionClient(self, AutoMode, 'autonomus_brain_coral_transplant')
 
         # Debugger publisher
         # from std_msgs.msg import String
@@ -156,6 +161,9 @@ class SimulationBotControl(Node):
 
         self.simulation_tooling(msg)
 
+        if msg.enter_auto_mode:
+            self.enter_autonomus_mode()
+
 
     def simulation_tooling(self, controller_inputs):
         """Controls the movement of the simulation claw. """
@@ -193,7 +201,48 @@ class SimulationBotControl(Node):
             self.left_claw_publisher.publish(left_claw_velocity)
             self.right_claw_publisher.publish(right_claw_velocity)
 
+    def enter_autonomus_mode(self):
         
+        goal_msg = AutoMode.Goal()
+        goal_msg.is_for_sim = True
+        goal_msg.red = 255
+        goal_msg.green = 0 
+        goal_msg.blue = 0
+
+        self.autonomus_brain_coral_transplant_action_client.wait_for_server()
+
+        # Returns future to goal handle; client runs feedback_callback after sending the goal
+        self.send_goal_future = self.autonomus_brain_coral_transplant_action_client.send_goal_async(goal_msg, feedback_callback=self.autonomus_mode_feedback_callback)
+
+        # Register a callback for when future is complete (i.e. server accepts or rejects goal request)
+        self.send_goal_future.add_done_callback(self.autonomus_mode_response_callback)
+
+    def autonomus_mode_feedback_callback(self, feedback_msg):
+        feedback = feedback_msg.feedback
+
+        self.get_logger().info(f"Feedback is {feedback.status}")
+
+    def autonomus_mode_response_callback(self, future):
+
+        # Get handle for the goal we just sent
+        goal_handle = future.result()
+
+        # Return early if goal is rejected
+        if not goal_handle.accepted:
+            self.get_logger().info('Goal rejected :(')
+            return
+
+        self.get_logger().info('Goal accepted :)')
+
+        # Use goal handle to request the result
+        self.get_result_future = goal_handle.get_result_async()
+        self.get_result_future.add_done_callback(self.autonomus_mode_result_callback)
+
+    def autonomus_mode_result_callback(self,future):
+        result = future.result().success
+
+        # Log result 
+        self.get_logger().info(f'Result: {result.success}')
 
     def simulation_rov_math(self, controller_inputs):
         """Builds upon the real Rov Math Method in i2c_master.py and calculates net forces on Bot."""

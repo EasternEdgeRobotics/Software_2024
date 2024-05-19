@@ -28,7 +28,7 @@ setup(
             'profiles_manager = beaumont_pkg.profiles_manager:main',
             'simulation_bot_control = beaumont_pkg.simulation_bot_control:main',
             'simulation_camera_streamer = beaumont_pkg.simulation_camera_streamer:main',
-            'simulation_autonomous_movement = beaumont_pkg.simulation_autonomous_movement:main',
+            'autonomus_brain_coral_transplant = beaumont_pkg.autonomus_brain_coral_transplant:main',
         ],
     },
 )
