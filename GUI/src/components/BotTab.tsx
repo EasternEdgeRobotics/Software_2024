@@ -204,23 +204,44 @@ export function BotTab() {
         setControllerInput(controllerInput);
     };
 
-    // Add keyboard input listeners for keyboard mode
-    window.addEventListener(
-        "keydown",
-        function (e) {
-            pressed_key = e.key;
-        },
-        false
-    );
-    window.addEventListener(
-        "keyup",
-        function (e) {
-            pressed_key = "";
-        },
-        false
-    );
+    
 
     useEffect(() => {
+
+        if (keyboardMode){
+            // Add keyboard input listeners for keyboard mode
+            window.addEventListener(
+                "keydown",
+                function (e) {
+                    pressed_key = e.key;
+                },
+                false
+            );
+            window.addEventListener(
+                "keyup",
+                function (e) {
+                    pressed_key = "";
+                },
+                false
+            );
+        } else {
+            // Remove keyboard input listeners for keyboard mode
+            window.removeEventListener(
+                "keydown",
+                function (e) {
+                    pressed_key = e.key;
+                },
+                false
+            );
+            window.removeEventListener(
+                "keyup",
+                function (e) {
+                    pressed_key = "";
+                },
+                false
+            );
+        }
+
         // Constantly run the input listener
         const interval = setInterval(() => {
             reloadComponent(Math.random());

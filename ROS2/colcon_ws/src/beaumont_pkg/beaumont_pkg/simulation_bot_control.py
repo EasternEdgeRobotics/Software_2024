@@ -1,5 +1,5 @@
 import rclpy
-from rclpy.node import Node, MutuallyExclusiveCallbackGroup
+from rclpy.node import Node
 from rclpy.action import ActionClient
 
 from eer_messages.msg import ThrusterMultipliers, PilotInput
@@ -27,10 +27,10 @@ class SimulationBotControl(Node):
     def __init__(self):
         super().__init__('simulation_bot_control')
 
-        bot_control_callback_group = MutuallyExclusiveCallbackGroup()
+        # bot_control_callback_group = MutuallyExclusiveCallbackGroup()
 
-        self.copilot_listener = self.create_subscription(ThrusterMultipliers, 'thruster_multipliers', self.copilot_listener_callback, 10, callback_group=bot_control_callback_group)
-        self.pilot_listener = self.create_subscription(PilotInput, 'controller_input', self.pilot_listener_callback, 1, callback_group=bot_control_callback_group)
+        self.copilot_listener = self.create_subscription(ThrusterMultipliers, 'thruster_multipliers', self.copilot_listener_callback, 10)
+        self.pilot_listener = self.create_subscription(PilotInput, 'controller_input', self.pilot_listener_callback, 1)
 
         # For xy movement, the model is using the Gazebo Planar Move Plugin, which allows for movement relative to itself rather than the world
         # It also uses this plugin for yaw 
@@ -47,7 +47,8 @@ class SimulationBotControl(Node):
         self.right_claw_publisher = self.create_publisher(Twist, "/demo/right_claw", 10)
 
         # Autonomus movement node
-        self.autonomus_brain_coral_transplant_action_client = ActionClient(self, AutoMode, 'autonomus_brain_coral_transplant')
+        self._action_client = ActionClient(self, AutoMode, 'autonomus_brain_coral_transplant')
+        self.autonomus_mode_active = False
 
         # Debugger publisher
         # from std_msgs.msg import String
@@ -162,8 +163,16 @@ class SimulationBotControl(Node):
         self.simulation_tooling(msg)
 
         if msg.enter_auto_mode:
-            self.enter_autonomus_mode()
+            if not self.autonomus_mode_active:
+                self.autonomus_mode_active = True
+                self.send_goal()
+            else:
+                # self._action_client.wait_for_server()
 
+                future = self.goal_handle.cancel_goal_async()
+                future.add_done_callback(self.cancel_done)
+
+                self.get_logger().info("PILOT CHOSE TO ABORT AUTONOMUS MODE")
 
     def simulation_tooling(self, controller_inputs):
         """Controls the movement of the simulation claw. """
@@ -201,48 +210,45 @@ class SimulationBotControl(Node):
             self.left_claw_publisher.publish(left_claw_velocity)
             self.right_claw_publisher.publish(right_claw_velocity)
 
-    def enter_autonomus_mode(self):
-        
+    def send_goal(self):
         goal_msg = AutoMode.Goal()
         goal_msg.is_for_sim = True
-        goal_msg.red = 255
-        goal_msg.green = 0 
-        goal_msg.blue = 0
 
-        self.autonomus_brain_coral_transplant_action_client.wait_for_server()
+        self._action_client.wait_for_server()
 
-        # Returns future to goal handle; client runs feedback_callback after sending the goal
-        self.send_goal_future = self.autonomus_brain_coral_transplant_action_client.send_goal_async(goal_msg, feedback_callback=self.autonomus_mode_feedback_callback)
+        self._send_goal_future = self._action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
 
-        # Register a callback for when future is complete (i.e. server accepts or rejects goal request)
-        self.send_goal_future.add_done_callback(self.autonomus_mode_response_callback)
+        self._send_goal_future.add_done_callback(self.goal_response_callback)
 
-    def autonomus_mode_feedback_callback(self, feedback_msg):
-        feedback = feedback_msg.feedback
-
-        self.get_logger().info(f"Feedback is {feedback.status}")
-
-    def autonomus_mode_response_callback(self, future):
-
-        # Get handle for the goal we just sent
-        goal_handle = future.result()
-
-        # Return early if goal is rejected
-        if not goal_handle.accepted:
+    def goal_response_callback(self, future):
+        self.goal_handle = future.result()
+        if not self.goal_handle.accepted:
             self.get_logger().info('Goal rejected :(')
             return
 
         self.get_logger().info('Goal accepted :)')
 
-        # Use goal handle to request the result
-        self.get_result_future = goal_handle.get_result_async()
-        self.get_result_future.add_done_callback(self.autonomus_mode_result_callback)
+        self._get_result_future = self.goal_handle.get_result_async()
+        self._get_result_future.add_done_callback(self.get_result_callback)
 
-    def autonomus_mode_result_callback(self,future):
-        result = future.result().success
 
-        # Log result 
-        self.get_logger().info(f'Result: {result.success}')
+    def get_result_callback(self, future):
+        result = future.result().result
+        self.get_logger().info('Result: {0}'.format(result.success))
+        self.autonomus_mode_active = False
+
+    def feedback_callback(self, feedback_msg):
+        feedback = feedback_msg.feedback
+        self.get_logger().info('Received feedback: {0}'.format(feedback.status))
+    
+    def cancel_done(self, future):
+        cancel_response = future.result()
+        if len(cancel_response.goals_canceling) > 0:
+            self.get_logger().info('Goal successfully canceled')
+        else:
+            self.get_logger().info('Goal failed to cancel')
+
+
 
     def simulation_rov_math(self, controller_inputs):
         """Builds upon the real Rov Math Method in i2c_master.py and calculates net forces on Bot."""
@@ -332,7 +338,6 @@ def main(args=None):
     rclpy.spin(simulation_bot_control)
 
     simulation_bot_control.destroy_node()
-    rclpy.shutdown()
 
 
 if __name__ == "__main__":
