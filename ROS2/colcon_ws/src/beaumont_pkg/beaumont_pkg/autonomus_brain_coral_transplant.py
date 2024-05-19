@@ -244,13 +244,12 @@ class AutonomusBrainCoralTransplant(Node):
         restored_power_multipliers.heave = goal_handle.starting_heave
         restored_power_multipliers.pitch = goal_handle.starting_pitch
         restored_power_multipliers.yaw = goal_handle.starting_yaw
-        self.copilot_publisher.publish(restored_power_multipliers)
-
-
 
 
         feedback_msg.status = "Resetting"
+
         goal_handle.publish_feedback(feedback_msg)
+        self.copilot_publisher.publish(restored_power_multipliers)
         self.pilot_publisher.publish(controller_input)
 
     def execute_callback(self, goal_handle):
