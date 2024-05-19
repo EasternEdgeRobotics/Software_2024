@@ -32,13 +32,16 @@ class SimulationCameraStreamer(Node):
 		'''Converts ROS image into OpenCV image then stores it in a global variable'''
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+			if camera_number == 1:
+				cv_image = cv2.flip(cv_image,0)
+				cv_image = cv2.flip(cv_image,1)
 		except CvBridgeError as e:
 			print(e)
 
 		hsvImage = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
 		
-		lower_range_red = np.array([100, 185, 40]) #Need to tune this to JUST detect the red
-		upper_range_red = np.array([180, 255, 255])
+		lower_range_red = np.array([0, 250, 0]) #Need to tune this to JUST detect the red
+		upper_range_red = np.array([0, 255, 0])
 
 		mask = cv2.inRange(hsvImage,lower_range_red ,upper_range_red )
 

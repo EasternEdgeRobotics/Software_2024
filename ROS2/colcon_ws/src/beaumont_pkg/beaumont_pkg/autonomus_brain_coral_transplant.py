@@ -1,5 +1,4 @@
 import threading
-import time
 
 from eer_messages.action import AutoMode 
 from eer_messages.msg import ThrusterMultipliers, PilotInput
@@ -12,13 +11,18 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 
 import cv2 
+from PIL import Image as PIL_Image
 import numpy as np
 import urllib.request
 
 from time import time, sleep
 import json
 
-TOOLING_CAMERA_INDEX = 2
+TOOLING_CAMERA_INDEX = 1
+
+TIMEOUT = 20
+HEAVE_TIME_SIMULATION = 15
+HEAVE_TIME = 5
 
 class AutonomusBrainCoralTransplant(Node):
     """Autonomus movement node."""
@@ -43,22 +47,29 @@ class AutonomusBrainCoralTransplant(Node):
         self.pilot_publisher = self.create_publisher(PilotInput, "controller_input", 1)
         self.copilot_publisher = self.create_publisher(ThrusterMultipliers, "thruster_multipliers", 1)
 
-        self.tooling_camera_stream_url = json.loads(self.fetch_tooling_camera_stream_url())[TOOLING_CAMERA_INDEX]
-        self.get_logger().info(f"Autonomus Brain Coral Transplant Node Fetched {self.tooling_camera_stream_url}")
-
+        self.fetch_tooling_camera_stream_url()
+    
     def fetch_tooling_camera_stream_url(self):
         
-        camera_url_config_request = Config.Request()
-        camera_url_config_request.state = 1 # GET urls from database
-        camera_url_config_request.data = "" # Not used
-        
-        self.camera_urls_client.wait_for_service()
-        
-        future = self.camera_urls_client.call_async(camera_url_config_request)
-        
-        rclpy.spin_until_future_complete(self,future)
-        
-        return future.result().result
+        while True:
+            camera_url_config_request = Config.Request()
+            camera_url_config_request.state = 1 # GET urls from database
+            camera_url_config_request.data = "" # Not used
+            
+            self.camera_urls_client.wait_for_service()
+            
+            future = self.camera_urls_client.call_async(camera_url_config_request)
+            
+            rclpy.spin_until_future_complete(self,future)
+
+            if len(json.loads(future.result().result)) > 0:
+                self.tooling_camera_stream_url = json.loads(future.result().result)[TOOLING_CAMERA_INDEX]
+                self.get_logger().info(f"Autonomus Brain Coral Transplant Node Fetched {self.tooling_camera_stream_url}")
+                break
+            else:
+                self.get_logger().info(f"Cannot get tooling camera url")
+
+            sleep(1)
 
     def destroy(self):
         self._action_server.destroy()
@@ -88,122 +99,159 @@ class AutonomusBrainCoralTransplant(Node):
     def enter_autonomus_mode(self, goal_handle):
         # Append the seeds for the Fibonacci sequence
         feedback_msg = AutoMode.Feedback()
-        feedback_msg.status = "idek man"
+
+        full_power_multipliers = ThrusterMultipliers()
+        full_power_multipliers.power = 100
+        full_power_multipliers.surge = 100
+        full_power_multipliers.sway = 100
+        full_power_multipliers.heave = 100
+        full_power_multipliers.pitch = 100
+        full_power_multipliers.yaw = 100
+        self.copilot_publisher.publish(full_power_multipliers)
+
+        stream = urllib.request.urlopen(self.tooling_camera_stream_url)
+        bytes = b''
+
+        heave_stage = True
+        loop_10Hz_start_time = time()
+        time_since_action_start = time()
 
         # Start executing the action
-        for i in range(25):
-            # If goal is flagged as no longer active (ie. another goal was accepted),
-            # then stop executing
+        while True:
+            
+            current_time = time()
+
             if not goal_handle.is_active or goal_handle.is_cancel_requested:
                 self.get_logger().info('Goal aborted or canceled')
                 break
             
+            publish_input = False
+
+            if current_time-loop_10Hz_start_time > 0.01:
+                publish_input = True
+                loop_10Hz_start_time = current_time
+
             controller_input = PilotInput()
-            
-            if i < 12:
-                feedback_msg.status = "Surging Forward"
-                controller_input.surge = 100
-            else:
-                feedback_msg.status = "Surging Back"
-                controller_input.surge = -100
 
-            # Publish the feedback
-            goal_handle.publish_feedback(feedback_msg)
+            bytes += stream.read(1024)
+            a = bytes.find(b'\xff\xd8')
+            b = bytes.find(b'\xff\xd9')
+            if a != -1 and b != -1:
+                jpg = bytes[a:b+2]
+                bytes = bytes[b+2:]
+                rgb_image = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+                hsv_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2HSV)
+                mask = cv2.inRange(hsv_image, np.array(goal_handle.request.lower_hsv_bound), np.array(goal_handle.request.upper_hsv_bound))
+                PIL_image = PIL_Image.fromarray(mask)
 
-            # Sleep for demonstration purposes
-            sleep(1)
+                box = PIL_image.getbbox()
+
+                if box is not None: ### this line make the bot identify the object with a bonding box 
+                    x1, y1, x2, y2 = box
+                else:
+                    x1, y1, x2, y2 = 0, 0, 0, 0
+                    
+                if ((y2-y1) * (x2-x1)) > mask.shape[0] * mask.shape[1] *0.08:
+
+                    heave_stage = False
+                        
+                    controller_input = PilotInput()
+
+                    feedback_msg.status = "Found brain coral area: "
+
+                    center_point_x = int((x2-x1)/2)
+                    center_point_y = int((y2-y1)/2)
+
+                    desired_x_location = mask.shape[0]*0.5 # i.e. under claw horizontally
+                    desired_y_location = mask.shape[1]*0.3 # i.e. under claw vertically
+
+                    aligned_x = False
+                    aligned_y = False
+
+                    if abs(center_point_x - desired_x_location) > mask.shape[0] * 0.05: # Needs alignment in x
+                        aligned_x = False
+                        if center_point_x > desired_x_location:
+                            controller_input.sway = -10
+                            feedback_msg.status += "Swaying left "
+                        else:
+                            controller_input.sway = 10
+                            feedback_msg.status += "Swaying right "
+                    else: 
+                        aligned_x = True
+
+                    if abs(center_point_y - desired_y_location) > mask.shape[1] * 0.05: # Needs alignment in y
+                        aligned_y = False
+                        if center_point_y > desired_y_location:
+                            controller_input.surge = 10
+                            feedback_msg.status += "Surging forward"
+                        else:
+                            controller_input.surge = -10
+                            feedback_msg.status += "Surging back"
+                    else:
+                        aligned_y = True
+
+                    if aligned_x and aligned_y:
+
+                        controller_input.open_claw # Since pilot will have no control, this open claw command will not timeout 
+
+                        self.pilot_publisher.publish(controller_input)
+
+                        feedback_msg.status += "Opening Claw"
+
+                        goal_handle.publish_feedback(feedback_msg) 
+
+                        break 
+
+                    else:
+
+                        controller_input.close_claw
+
+                    self.pilot_publisher.publish(controller_input)
+
+                    goal_handle.publish_feedback(feedback_msg) 
+
+                else: 
+
+                    if publish_input and heave_stage:
+
+                        controller_input = PilotInput()
+                        controller_input.heave = 100
+                        controller_input.close_claw = True
+                        self.pilot_publisher.publish(controller_input)
+
+                        feedback_msg.status = "Heaving up"
+                        goal_handle.publish_feedback(feedback_msg)
+
+                        if current_time - time_since_action_start > (HEAVE_TIME_SIMULATION if goal_handle.request.is_for_sim else HEAVE_TIME):
+                            heave_stage = False
+
+                    elif publish_input:
+
+                        controller_input = PilotInput()
+                        controller_input.surge = 100
+                        controller_input.close_claw = True
+                        self.pilot_publisher.publish(controller_input)
+
+                        feedback_msg.status = "Surging forward"
+                        goal_handle.publish_feedback(feedback_msg)
 
         controller_input = PilotInput()
+
+        restored_power_multipliers = ThrusterMultipliers()
+        restored_power_multipliers.power = goal_handle.starting_power
+        restored_power_multipliers.surge = goal_handle.starting_surge
+        restored_power_multipliers.sway = goal_handle.starting_sway
+        restored_power_multipliers.heave = goal_handle.starting_heave
+        restored_power_multipliers.pitch = goal_handle.starting_pitch
+        restored_power_multipliers.yaw = goal_handle.starting_yaw
+        self.copilot_publisher.publish(restored_power_multipliers)
+
+
+
+
         feedback_msg.status = "Resetting"
         goal_handle.publish_feedback(feedback_msg)
         self.pilot_publisher.publish(controller_input)
-
-        # Opening mjpeg camera stream using opencv (working)
-		# stream = urllib.request.urlopen('http://localhost:8880/cam.mjpg')
-		# bytes = b''
-
-		# while True:
-		# 	bytes += stream.read(1024)
-		# 	a = bytes.find(b'\xff\xd8')
-		# 	b = bytes.find(b'\xff\xd9')
-		# 	if a != -1 and b != -1:
-		# 		jpg = bytes[a:b+2]
-		# 		bytes = bytes[b+2:]
-		# 		i = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
-		# 		cv2.imshow('i', i)
-		# 		if cv2.waitKey(1) == 27:
-		# 			exit(0)   
-
-
-		# controller_inputs = json.loads(controller_input.data)
-		# for controller_input in controller_inputs:
-		# 	if controller_input[1] != "enter_auto_mode":
-		# 		return
-		# 	time_in_second_1 = 9
-		# 	time_in_second_3 = 4
-			
-		# 	self.get_logger().info("In Auto Mode")
-
-		# 	#the function for movement 
-		# 	def time_to_move():
-		# 		start_time = time()
-		# 		while True: ### this while loop makes the ROV move up for 20 seconds
-		# 			y_movement = [-1, "heave"]
-		# 			y_movement_string = String()
-		# 			y_movement_string.data = json.dumps([y_movement]) 
-		# 			# self.autonomus_controls_publisher.publish(y_movement_string)
-		# 			claw_movement1 = [1,"open_claw"] ### this is closing the claw all the time
-		# 			claw_movement_string1 = String()
-		# 			claw_movement_string1.data = json.dumps([claw_movement1]) 
-		# 			# self.autonomus_controls_publisher.publish(claw_movement_string1)
-		# 			if (time()-start_time) > time_in_second_3:
-		# 				y_movement = [0, "heave"]
-		# 				y_movement_string = String()
-		# 				y_movement_string.data = json.dumps([y_movement]) 
-		# 				# self.autonomus_controls_publisher.publish(y_movement_string)
-		# 				break
-				
-		# 		start_time_2 = time()
-		# 		while True: ### this while loop makes the ROV move forward for 10 seconds
-		# 			x_movement = [-1,"surge"]
-		# 			x_movement_string = String()
-		# 			x_movement_string.data = json.dumps([x_movement])
-		# 			# self.autonomus_controls_publisher.publish(x_movement_string)
-		# 			claw_movement2 = [1,"open_claw"] ### this is closing the claw all the time
-		# 			claw_movement_string2 = String()
-		# 			claw_movement_string2.data = json.dumps([claw_movement2]) 
-		# 			# self.autonomus_controls_publisher.publish(claw_movement_string2)
-		# 			if (time()-start_time_2) > time_in_second_1:
-		# 				x_movement = [-1,"surge"]
-		# 				x_movement_string = String()
-		# 				x_movement_string.data = json.dumps([x_movement])
-		# 				# self.autonomus_controls_publisher.publish(x_movement_string)
-		# 				break
-			
-		# 	time_to_move()
-		# 	## then start checking if the red color is dectected to know when to drop the object
-		# 		## will also have a while loop involving the if statment for the box
-		# 	start_time = time()
-		# 	while True:
-		# 		if (time()-start_time) == 14:
-		# 			break
-		# 		if box is not None: ### this line make the bot identify the object with a bonding box 
-		# 			x1, y1, x2, y2 = box
-		# 			cv_image = cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 255, 0), 5) ## this line rap the object with a bounding box of color yellow with depth 5
-		# 			## this line should drop the object
-		# 			claw_movement = [1,"close_claw"] ### this is opening the claw 
-		# 			claw_movement_string = String()
-		# 			claw_movement_string.data = json.dumps([claw_movement])
-		# 			# self.autonomus_controls_publisher.publish(claw_movement_string)
-		# 			# then break
-		# 			break
-		# 		else:
-		# 			x_movement = [-1,"surge"]
-		# 			x_movement_string = String()
-		# 			x_movement_string.data = json.dumps([x_movement])
-		# 			# self.autonomus_controls_publisher.publish(x_movement_string)
-
-
 
     def execute_callback(self, goal_handle):
         """Execute the goal."""

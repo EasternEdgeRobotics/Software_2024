@@ -165,7 +165,7 @@ class SimulationBotControl(Node):
         if msg.enter_auto_mode:
             if not self.autonomus_mode_active:
                 self.autonomus_mode_active = True
-                self.send_goal()
+                self.send_autonomus_mode_goal()
             else:
                 # self._action_client.wait_for_server()
 
@@ -210,9 +210,20 @@ class SimulationBotControl(Node):
             self.left_claw_publisher.publish(left_claw_velocity)
             self.right_claw_publisher.publish(right_claw_velocity)
 
-    def send_goal(self):
+    def send_autonomus_mode_goal(self):
         goal_msg = AutoMode.Goal()
         goal_msg.is_for_sim = True
+
+        # HSV (hue,shade,value) bounds for filtering brain coral area
+        goal_msg.lower_hsv_bound = [0, 250, 0]
+        goal_msg.upper_hsv_bound = [255, 255, 255]
+
+        goal_msg.starting_power = int(self.power_multiplier * 100)
+        goal_msg.starting_surge = int(self.surge_multiplier * 100)
+        goal_msg.starting_sway = int(self.sway_multiplier * 100)
+        goal_msg.starting_heave = int(self.heave_multiplier * 100)
+        goal_msg.starting_pitch = int(self.pitch_multiplier * 100)
+        goal_msg.starting_yaw = int(self.yaw_multiplier * 100) 
 
         self._action_client.wait_for_server()
 
