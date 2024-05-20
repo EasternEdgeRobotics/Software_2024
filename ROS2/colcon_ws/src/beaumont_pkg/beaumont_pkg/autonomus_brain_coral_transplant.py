@@ -166,6 +166,9 @@ class AutonomusBrainCoralTransplant(Node):
             
             current_time = time()
 
+            # The following boolean will be set to True if the region is found
+            brain_coral_area_found = False
+
             # Exit action loop as soon as pilot cancels the goal
             # Can be re-entered later
             if not goal_handle.is_active or goal_handle.is_cancel_requested:
@@ -198,30 +201,37 @@ class AutonomusBrainCoralTransplant(Node):
                 # This is passed in by the action client when requesting the goal. 
                 mask = cv2.inRange(hsv_image, np.array(goal_handle.request.lower_hsv_bound), np.array(goal_handle.request.upper_hsv_bound))
 
-                # Convert to a Pillow image
-                PIL_image = PIL_Image.fromarray(mask)
+                # Grab the contours of the filtered region
+                contours = self.get_contours(mask)
 
-                # Draw a box around the location filtered out by the mask
-                box = PIL_image.getbbox()
+                # Filter out all red regions for the one with the biggest area
+                biggest_contour = np.ndarray(shape= (1,1,1))
+                biggest_contour_area = 0
+                for contour in contours:
+                    area = cv2.contourArea(contour)
+                    if area > biggest_contour_area:
+                        biggest_contour_area = area
+                        biggest_contour = contour
 
-                # If nothing is filtered out in the mask, the box object will have the value of None
-                if box is not None:  
-                    x1, y1, x2, y2 = box
+                # If there is one decently sized contour, proceed to centered atop it. 
+                # This is currently defined as taking up more than 8% of the image
+                if (len(contours) > 0) and (biggest_contour_area > mask.shape[0] * mask.shape[1] *0.08): 
+                    ((x,y),radius) = cv2.minEnclosingCircle(biggest_contour)
+                    brain_coral_area_center_location_x, brain_coral_area_center_location_y = self.get_contour_center(biggest_contour)
+                    brain_coral_area_found = True
                 else:
-                    x1, y1, x2, y2 = 0, 0, 0, 0
+                    brain_coral_area_center_location_x, brain_coral_area_center_location_y = 0, 0
+                    brain_coral_area_found = False
                     
-                # If the filtered out brain coral region fills up 8% or more of the screen, begin centering on region
-                if ((y2-y1) * (x2-x1)) > mask.shape[0] * mask.shape[1] *0.08:
+                    
+                # The following algoritm depends on whether or not the brain coral area was found
+                if brain_coral_area_found:
                     
                     heave_stage = False
                         
                     controller_input = PilotInput()
 
                     feedback_msg.status = "Found brain coral area: "
-
-                    # Determine the location of the brain coral region within the feed
-                    center_point_x = int((x2-x1)/2)
-                    center_point_y = int((y2-y1)/2)
 
                     # Attempt to center atop region such that the brain coral held by the claw will hover atop brain coral region 
                     desired_x_location = mask.shape[0]*0.5 
@@ -231,9 +241,9 @@ class AutonomusBrainCoralTransplant(Node):
                     aligned_y = False
 
                     # If the brain coral region is not within 5% of the desired area, continue centering on it
-                    if abs(center_point_x - desired_x_location) > mask.shape[0] * 0.05: 
+                    if abs(brain_coral_area_center_location_x - desired_x_location) > mask.shape[0] * 0.05: 
                         aligned_x = False
-                        if center_point_x < desired_x_location:
+                        if brain_coral_area_center_location_x < desired_x_location:
                             controller_input.sway = -10
                             feedback_msg.status += "Swaying left "
                         else:
@@ -244,9 +254,9 @@ class AutonomusBrainCoralTransplant(Node):
                         aligned_x = True
 
                     # Also center in the y
-                    if abs(center_point_y - desired_y_location) > mask.shape[1] * 0.05: 
+                    if abs(brain_coral_area_center_location_y - desired_y_location) > mask.shape[1] * 0.05: 
                         aligned_y = False
-                        if center_point_y < desired_y_location:
+                        if brain_coral_area_center_location_y < desired_y_location:
                             controller_input.surge = 10
                             feedback_msg.status += "Surging forward"
                         else:
@@ -324,6 +334,29 @@ class AutonomusBrainCoralTransplant(Node):
         goal_handle.publish_feedback(feedback_msg)
         self.copilot_publisher.publish(restored_power_multipliers)
         self.pilot_publisher.publish(controller_input)
+    
+    def get_contours(self, mask):
+        """
+        Given a black and white image where white represents pixels that have met a threshold, this function
+        uses OpenCV's findContours to locate the contours or 'edges' of the white areas and it returns these OpenCV
+        contour objects in a list.
+        """
+        contours, hirearchy = cv2.findContours(mask.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        return contours
+    
+    def get_contour_center(self, contour):
+        """
+        Given a contour, this function uses the OpenCV moments function to
+        find the center of area of that contour.
+        """
+        M = cv2.moments(contour)
+        cx = -1
+        cy = -1
+        if (M['m00'] != 0):
+            cx= round(M['m10']/M['m00'])
+            cy= round(M['m01']/M['m00'])
+        return cx, cy
+
 
 
 def main(args=None):
