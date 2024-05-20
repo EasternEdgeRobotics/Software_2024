@@ -1,5 +1,5 @@
-import { Checkbox, IconButton } from "@mui/material";
-import { useAtom } from "jotai";
+import { Checkbox, IconButton, Button, Box, Typography } from "@mui/material";
+import { atom, useAtom } from "jotai";
 //fonts
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
@@ -8,10 +8,8 @@ import "@fontsource/roboto/700.css";
 
 import { useEffect, useState } from "react";
 
-import "../styles/science.css";
 import { Sidebar, Menu, MenuItem } from "react-pro-sidebar";
 import { Home } from "@mui/icons-material";
-import "../styles/science.css";
 import { Col, Row } from "react-bootstrap";
 import taskJSON from "./tasks.json";
 import { Task } from "../types/Task";
@@ -31,97 +29,413 @@ import {
   ChartData,
   BarElement,
 } from "chart.js";
-
 import ROSLIB, { Ros } from "roslib";
 import React from "react";
 import { ROSIP } from "../api/Atoms";
+const taskPublisherAtom = atom<ROSLIB.Topic<ROSLIB.Message> | null>(null);
 
 const redirectToScreenshot = async (urls: string[], i: 0 | 1 | 2 | 3) => {
   //open a new tab with the stream url
   let streamUrl = urls[i];
   streamUrl = streamUrl.replace("/stream", "/snapshot");
+  if (!streamUrl) {
+    alert("The selected camera is not connected.");
+    return;
+  }
   window.open(streamUrl, "_blank");
 };
 
-const ScreenshotVeiw = ({ urls }: { urls: string[] }) => {
-  //[To-do] handle the case when ROS not connected / urls are not available
-  //[To-do] better styling for the components
-  console.log(urls, "URLS");
+const ScreenshotView = ({ urls }: { urls: string[] }) => {
+  if (urls.length === 0) urls = ["", "", "", ""];
+  for (let i = 0; i < 4; i++) {
+    if (!urls[i]) urls[i] = "";
+  }
   return (
-    <div className="desktop1-rectangle1">
-      <div className="desktop1-frame1">
-        <button
-          type="button"
-          className="desktop1-button button"
-          onClick={() => redirectToScreenshot(urls, 0)}
+    <Box
+      sx={{
+        width: "68vw",
+        minWidth: 350,
+        height: 159,
+        display: "flex",
+        position: "relative",
+        alignItems: "flex-start",
+        borderRadius: 8,
+        backgroundColor: "#D9D9D9",
+        padding: "5px 14px",
+      }}
+    >
+      <Box
+        sx={{
+          gap: 3,
+          flex: 0,
+          width: "65vw",
+          // minWidth: 320,
+          height: 128,
+          display: "flex",
+          opacity: 0.9,
+          padding: "0 14px",
+          zIndex: 100,
+          alignSelf: "flex-end",
+          alignItems: "center",
+          borderRadius: 3,
+          justifyContent: "center",
+          backgroundColor: "rgba(208, 208, 208, 0)",
+          position: "relative", // add this line
+        }}
+      >
+        {urls.map((url, index) => (
+          <Button
+            sx={{
+              color: "#e8e8e8",
+              width: "20vw", // adjust this value as needed
+              height: 60, // adjust this value as needed
+              borderRadius: 3.5, // adjust this value as needed
+              backgroundColor: "#252525",
+            }}
+            onClick={() => redirectToScreenshot(urls, index as 0 | 1 | 2 | 3)}
+          >
+            <Typography
+              sx={{
+                fontSize: 20,
+                fontStyle: "normal",
+                fontWeight: 600,
+              }}
+            >{`Camera ${index + 1}`}</Typography>
+          </Button>
+        ))}
+        <Typography
+          sx={{
+            position: "absolute",
+            top: 0,
+            bottom: 10,
+            marginTop: "-10px",
+            color: "rgba(0, 0, 0, 1)",
+            fontSize: 28,
+            fontStyle: "bold",
+            textAlign: "center",
+            fontFamily: "Inter",
+            fontWeight: 700,
+            textDecoration: "none",
+          }}
         >
-          <span className="desktop1-text">
-            <span>Camera 1</span>
-            <br></br>
-          </span>
-        </button>
-        <button
-          type="button"
-          className="desktop1-button1 button"
-          onClick={() => redirectToScreenshot(urls, 1)}
-        >
-          <span className="desktop1-text03">
-            <span>Camera 2</span>
-            <br></br>
-          </span>
-        </button>
-        <button
-          type="button"
-          className="desktop1-button2 button"
-          onClick={() => redirectToScreenshot(urls, 2)}
-        >
-          <span className="desktop1-text06">
-            <span>Camera 3</span>
-            <br></br>
-          </span>
-        </button>
-        <button
-          type="button"
-          className="desktop1-button3 button"
-          onClick={() => redirectToScreenshot(urls, 3)}
-        >
-          <span className="desktop1-text09">
-            <span>Camera 4</span>
-            <br></br>
-          </span>
-        </button>
-      </div>
-      <span className="desktop1-text12">
-        <span>Screenshot</span>
-      </span>
-    </div>
+          Screenshot
+        </Typography>
+      </Box>
+    </Box>
   );
 };
 
-//recursive function to render the tasks
-//level is used to calculate the padding of the tasks
-function renderTasks(tasks: Task[], level = 0) {
+function SideBar() {
+  //[To-do] acoount for mobile view
+  const [collapsed, setCollapsed] = useState(false);
+  const [RosIP] = useAtom(ROSIP);
+  const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
+  const [saved_tasks, setTasks] = useState<{ [key: string]: boolean }>({});
+  const [, setTaskPublisher] = useAtom(taskPublisherAtom);
+  const [score, setScore] = useState<number>(0);
 
-  const handleCheckboxChange = (task: Task) => {
-    //[To-do] Update the tast status globally with ROS
-    //[To-do] Listen and update the task status from ROS
-    task.checked = !task.checked;
-    const updatedTask = { ...task, checked: !task.checked };
-    localStorage.setItem(task.name, JSON.stringify(updatedTask));
+  useEffect(() => {
+    const rosInstance = new ROSLIB.Ros({});
+    rosInstance.connect(`ws://${RosIP}:9090`);
+    setRos(rosInstance);
+  }, [RosIP]);
+
+  const taskClient = new ROSLIB.Service({
+    ros: ros,
+    name: "/all_tasks",
+    serviceType: "eer_messages/Config",
+  });
+  const request = new ROSLIB.ServiceRequest({});
+
+  useEffect(() => {
+    taskClient.callService(
+      request,
+      function (result) {
+        console.log("All tasks:", result.result);
+        setTasks(JSON.parse(result.result));
+      },
+      function (error) {
+        console.log("Error calling service:", error);
+      }
+    );
+
+    const task_publisher = new ROSLIB.Topic({
+      ros: ros,
+      name: "task_updates",
+      messageType: "std_msgs/String",
+    });
+
+    task_publisher.subscribe((message) => {
+      const data: { id: string; sender: string; status: boolean } = JSON.parse(
+        (message as any).data
+      );
+      console.log("Received message UPDATE ", data);
+      if (data.sender === "science") return;
+
+      setTasks((prevSaved) => ({
+        ...prevSaved,
+        [data.id]: data.status,
+      }));
+    });
+
+    setTaskPublisher(task_publisher);
+  }, [ros, collapsed]);
+
+    useEffect(() => {
+      setScore(
+        calculateAchivedScore(
+          saved_tasks)
+      );
+    }, [saved_tasks]);
+
+  ros.on("connection", () => console.log("Connected to ROS"));
+
+  const handleToggleSidebar = () => {
+    setCollapsed(!collapsed);
+    // task_publisher.publish(message);
   };
 
-  return tasks.map((task: Task) => {
+  const styles = {
+    sideBarHeight: {
+      height: "100vh",
+      overflow: "auto",
+    },
+    menuIcon: {
+      float: "right",
+      margin: "10px",
+    },
+  };
+
+  // if (loading) {
+  //   return <div>Loading...</div>; // Display a loading message while the callService method is running
+  // }
+
+  return (
+    <div style={{ display: "flex", position: "fixed", right: 0, zIndex: 1000 }}>
+      <IconButton
+        onClick={handleToggleSidebar}
+        style={{
+          position: "fixed",
+          top: "50%",
+          right: !collapsed ? "700px" : "0",
+          transform: "translateY(-50%) rotate(180deg)",
+          backgroundColor: "#e0e0e0",
+          color: "black",
+          transition: "right 300ms",
+          borderRadius: "5px 50px 50px 5px",
+          padding: "10px",
+          paddingTop: "30px",
+          paddingBottom: "30px",
+          paddingLeft: "5px",
+          writingMode: "vertical-rl",
+          textOrientation: "mixed",
+        }}
+      >
+        Tasks
+        <div style={{ height: "5px" }} />
+        <MenuSquareIcon />
+      </IconButton>
+      <Sidebar
+        style={{
+          ...styles.sideBarHeight,
+          backdropFilter: "blur(10px)",
+        }}
+        collapsed={collapsed}
+        rtl={false}
+        width="700px"
+        collapsedWidth="0px"
+        backgroundColor="rgb(0, 0, 60, 0.8)"
+      >
+        <Menu>
+          <MenuItem>
+            <Box
+              sx={{
+                marginTop: "25px",
+                display: "inline-block",
+                backgroundColor: "rgba(20, 255, 255, 0.4)", // white, 50% transparent
+                borderRadius: "10px", // rounded edges
+                padding: "10px", // some padding
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 30,
+                  fontStyle: "normal",
+                  fontWeight: 600,
+                }}
+              >
+                Total: {score}/{350}
+              </Typography>
+            </Box>
+          </MenuItem>
+          <SubList
+            name="TASK 1 : Coastal Pioneer Array"
+            tasks={taskJSON.task1.tasks}
+            saved={saved_tasks}
+            setTasks={setTasks}
+          />
+          <SubList
+            name="TASK 2 : Deploy SMART cables"
+            tasks={taskJSON.task2.tasks}
+            saved={saved_tasks}
+            setTasks={setTasks}
+          />
+          <SubList
+            name="TASK 3 : From the Red Sea to Tenesse"
+            tasks={taskJSON.task3.tasks}
+            saved={saved_tasks}
+            setTasks={setTasks}
+          />
+          <SubList
+            name="TASK 4 : MATE Floats"
+            tasks={taskJSON.task4.tasks}
+            max={taskJSON.task4.single}
+            saved={saved_tasks}
+            setTasks={setTasks}
+          />
+          {/* More menu items... */}
+        </Menu>
+      </Sidebar>
+    </div>
+  );
+}
+
+function SubList(props: {
+  name: string;
+  tasks: Task[];
+  max?: boolean;
+  saved: { [key: string]: boolean };
+  setTasks: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>;
+}) {
+  const [score, setScore] = useState<number>(0);
+  const [totalScore, setTotalScore] = useState<number>(0);
+  const [task_publisher] = useAtom(taskPublisherAtom);
+
+  useEffect(() => {
+    //recursive function to calculate the total score of the tasks
+    //if max is true, return the maximum score of the tasks [used for when only 1 task needs to be completed]
+    const calculateTotalScore = (tasks: Task[], max = false): number => {
+      if (max)
+        return Math.max(
+          ...tasks.map(
+            (t) => t.points ?? calculateTotalScore(t.subTasks!, t.single)
+          )
+        );
+
+      let total = 0;
+      tasks.forEach((subtask) => {
+        if (subtask.single)
+          console.log("subtask", subtask, subtask.points ?? 0, subtask.single);
+        if (subtask.subTasks) {
+          total += calculateTotalScore(
+            subtask.subTasks,
+            subtask.single ?? false
+          );
+        } else {
+          total += subtask.points ?? 0;
+        }
+      });
+
+      return total;
+    };
+
+    setTotalScore(calculateTotalScore(props.tasks, props.max));
+  }, [props.tasks]);
+
+  useEffect(() => {
+    setScore(
+      calculateAchivedScore(
+        props.saved,
+        props.name.split(":")[0].trim().replace(" ", "_") as
+          | "TASK_1"
+          | "TASK_2"
+          | "TASK_3"
+          | "TASK_4"
+      )
+    );
+  }, [props.saved]);
+
+  return (
+    <div
+      style={{
+        paddingLeft: "20px",
+        paddingRight: "20px",
+        paddingBottom: "10px",
+      }}
+    >
+      <Row>
+        <h2>
+          {props.name} ({score}/{totalScore})
+        </h2>
+        <div>
+          {renderTasks(
+            props.tasks,
+            undefined,
+            props.name.split(":")[0].trim().replace(" ", "_"),
+            // props.publisher,
+            task_publisher!,
+            props.saved,
+            props.setTasks
+          )}
+        </div>
+      </Row>
+    </div>
+  );
+}
+
+//recursive function to render the tasks
+//level is used to calculate the padding of the tasks
+function renderTasks(
+  tasks: Task[],
+  level = 0,
+  id = "",
+  publisher: ROSLIB.Topic,
+  saved?: { [key: string]: boolean },
+  setTasks?: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>
+) {
+  const handleCheckboxChange = (task: Task, taskID: string) => {
+    task.checked = !task.checked;
+    console.log("Task checked:", taskID, task.checked);
+    getTaskFromID(taskID);
+
+    setTasks &&
+      setTasks((prevSaved) => ({
+        ...prevSaved,
+        [taskID]: !prevSaved[taskID],
+      }));
+
+    const message = new ROSLIB.Message({
+      data: JSON.stringify({
+        id: taskID,
+        status: task.checked,
+        sender: "science",
+      }),
+    });
+    publisher.publish(message);
+  };
+
+  return tasks.map((task: Task, index) => {
+    const currentID = id ? `${id}:${index + 1}` : `${index + 1}`;
+    const currentState = saved ? saved[currentID] ?? false : false;
+
     const Icon = () => {
+      if (saved && saved[currentID] === true) task.checked = true;
+      else task.checked = false;
+
       if (!task.subTasks && tasks.length > 1)
         return (
-          <Checkbox
-            style={{ marginBottom: "10px", padding: "0px" }}
-            aria-label={task.name}
-            defaultChecked={task.checked}
-            color="success"
-            aria-checked={task.checked}
-            onChange={() => handleCheckboxChange(task)}
-          />
+          <div>
+            <Checkbox
+              style={{ marginBottom: "10px", padding: "0px" }}
+              aria-label={task.name}
+              defaultChecked={currentState}
+              color="success"
+              aria-checked={currentState}
+              checked={currentState}
+              onChange={() => handleCheckboxChange(task, currentID)}
+              key={currentID}
+            />
+          </div>
         );
       else if (task.subTasks)
         return (
@@ -172,149 +486,19 @@ function renderTasks(tasks: Task[], level = 0) {
               </div>
             )}
           </div>
-          {task.subTasks && renderTasks(task.subTasks, level + 1)}
+          {task.subTasks &&
+            renderTasks(
+              task.subTasks,
+              level + 1,
+              currentID,
+              publisher,
+              saved,
+              setTasks
+            )}
         </Col>
       </div>
     );
   });
-}
-
-function SubList(props: { name: string; tasks: Task[]; max?: boolean }) {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [score, setScore] = useState<number>(0);
-  const [totalScore, setTotalScore] = useState<number>(0);
-
-  useEffect(() => {
-    const loadedTasks = props.tasks.map((task: Task) => {
-      const savedTask = localStorage.getItem(task.name);
-      return savedTask ? JSON.parse(savedTask) : task;
-    });
-    setTasks(loadedTasks);
-  }, [props.tasks]);
-
-  useEffect(() => {
-    //recursive function to calculate the total score of the tasks
-    //if max is true, return the maximum score of the tasks [used for when only 1 task needs to be completed]
-    const calculateTotalScore = (tasks: Task[], max = false): number => {
-      if (max)
-        return Math.max(
-          ...tasks.map(
-            (t) => t.points ?? calculateTotalScore(t.subTasks!, t.single)
-          )
-        );
-
-      let total = 0;
-      tasks.forEach((subtask) => {
-        if (subtask.single)
-          console.log("subtask", subtask, subtask.points ?? 0, subtask.single);
-        if (subtask.subTasks) {
-          total += calculateTotalScore(
-            subtask.subTasks,
-            subtask.single ?? false
-          );
-        } else {
-          total += subtask.points ?? 0;
-        }
-      });
-
-      return total;
-    };
-
-    setTotalScore(calculateTotalScore(tasks, props.max));
-  }, [tasks]);
-
-  return (
-    <div
-      style={{
-        paddingLeft: "20px",
-        paddingRight: "20px",
-        paddingBottom: "10px",
-      }}
-    >
-      <Row>
-        <h2>
-          {props.name} ({score}/{totalScore})
-        </h2>
-        <div>{renderTasks(tasks)}</div>
-      </Row>
-    </div>
-  );
-}
-
-function SideBar() {
-  //[To-do] acoount for mobile view
-  const [collapsed, setCollapsed] = useState(false);
-
-  const handleToggleSidebar = () => {
-    setCollapsed(!collapsed);
-  };
-  const styles = {
-    sideBarHeight: {
-      height: "145vh",
-    },
-    menuIcon: {
-      float: "right",
-      margin: "10px",
-    },
-  };
-
-  return (
-    <div style={{ display: "flex", position: "fixed", right: 0, zIndex: 1000 }}>
-      <IconButton
-        onClick={handleToggleSidebar}
-        style={{
-          position: "fixed",
-          top: "50%",
-          right: !collapsed ? "700px" : "0",
-          transform: "translateY(-50%) rotate(180deg)",
-          backgroundColor: "#e0e0e0",
-          color: "black",
-          transition: "right 300ms",
-          borderRadius: "5px 50px 50px 5px",
-          padding: "10px",
-          paddingTop: "30px",
-          paddingBottom: "30px",
-          paddingLeft: "5px",
-          writingMode: "vertical-rl",
-          textOrientation: "mixed",
-        }}
-      >
-        Tasks
-        <div style={{ height: "5px" }} />
-        <MenuSquareIcon />
-      </IconButton>
-      <Sidebar
-        style={styles.sideBarHeight}
-        collapsed={collapsed}
-        rtl={false}
-        width="700px"
-        collapsedWidth="0px"
-        backgroundColor="rgb(0, 0, 69, 0.7)"
-      >
-        <Menu>
-          <MenuItem icon={<Home />}>Home</MenuItem>
-          <SubList
-            name="TASK 1 : Coastal Pioneer Array"
-            tasks={taskJSON.task1.tasks}
-          />
-          <SubList
-            name="TASK 2 : Deploy SMART cables"
-            tasks={taskJSON.task2.tasks}
-          />
-          <SubList
-            name="TASK 3 : From the Red Sea to Tenesse"
-            tasks={taskJSON.task3.tasks}
-          />
-          <SubList
-            name="TASK 4 : MATE Floats"
-            tasks={taskJSON.task4.tasks}
-            max={taskJSON.task4.single}
-          />
-          {/* More menu items... */}
-        </Menu>
-      </Sidebar>
-    </div>
-  );
 }
 
 //
@@ -365,6 +549,13 @@ function CSVHandler() {
           .split("\n")
           .map((line) => line.split(",").slice(1).map(Number));
 
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].length === 0 || headers[i].length === 0) {
+            lines.splice(i, 1);
+            headers.splice(i, 1);
+            i--;
+          }
+        }
         console.log("Headers:", headers, "Lines:", lines);
 
         const datasets: ChartData["datasets"] = [];
@@ -384,7 +575,7 @@ function CSVHandler() {
 
           datasets.push({
             label: key,
-            data: lines[i - 1],
+            data: lines[i],
             borderColor: `${color.slice(0, -1)}, 0.75)`,
             backgroundColor: `${color.slice(0, -1)}, 0.95)`,
           });
@@ -447,8 +638,11 @@ export function ControllerApp() {
   const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
   const [RosIP] = useAtom(ROSIP);
   const [urls, setURLs] = React.useState<string[]>([]);
+  const [rosConnected, setRosConnected] = React.useState(true);
 
-  ros.on("error", () => {0}); // to prevent page breaking
+  ros.on("error", () => {
+   setRosConnected(false);
+  }); // to prevent page breaking
 
   React.useEffect(() => {
     ros.connect(`ws://${RosIP}:9090`);
@@ -456,6 +650,8 @@ export function ControllerApp() {
       if (!ros.isConnected) {
         setRos(new ROSLIB.Ros({}));
         ros.connect(`ws://${RosIP}:9090`);
+      } else {
+        setRosConnected(true);
       }
     }, 1000);
   }, []);
@@ -502,6 +698,17 @@ export function ControllerApp() {
 
   return (
     <>
+      {!rosConnected && ( // Add this block
+        <div
+          style={{
+            backgroundColor: "red",
+            color: "white",
+            textAlign: "center",
+          }}
+        >
+          ROS not connected
+        </div>
+      )}`
       <div
         style={{
           ...styles.contentDiv,
@@ -516,11 +723,54 @@ export function ControllerApp() {
       <Row className="justify-content-center">
         <Col lg={3}>
           <div style={styles.contentDiv}>
-            <ScreenshotVeiw urls={urls} />
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <ScreenshotView urls={urls} />
+            </div>
           </div>
           <CSVHandler />
         </Col>
       </Row>
     </>
   );
+}
+
+function getTaskFromID(
+  id: string,
+  allTasks: { [key: string]: { name: string; tasks: Task[] } } = taskJSON
+) {
+  0;
+  const indexlist = id
+    .split(":")
+    .slice(1)
+    .map((a) => Number(a) - 1);
+  const parentTask = id.split(":")[0].replace("_", "").toLowerCase();
+  const mainTasks = allTasks[parentTask].tasks;
+
+  let tempTask: Task = mainTasks[indexlist[0]];
+  for (let i = 1; i < indexlist.length; i++) {
+    const index = indexlist[i];
+    tempTask = tempTask.subTasks![index];
+  }
+  return tempTask;
+}
+
+function calculateAchivedScore(
+  stored: { [key: string]: boolean },
+  filter?: "TASK_1" | "TASK_2" | "TASK_3" | "TASK_4",
+  allTasks: { [key: string]: { name: string; tasks: Task[] } } = taskJSON
+) {
+  let score = 0;
+  const keys = Object.keys(stored);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+
+    if (filter && !key.includes(filter)) continue;
+
+    if (Object.prototype.hasOwnProperty.call(stored, key)) {
+      const task = getTaskFromID(key, allTasks);
+      if (stored[key]) score += task?.points ?? 0;
+    }
+  }
+  console.log("our Score:", score);
+  return score;
 }

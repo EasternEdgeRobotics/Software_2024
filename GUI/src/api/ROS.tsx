@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import ROSLIB, { Ros } from "roslib";
-import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs } from "./Atoms";
+import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs, ADCArray, TemperatureArray } from "./Atoms";
 import React from "react";
 
 export function InitROS() {
@@ -22,8 +22,8 @@ export function InitROS() {
     ros.on("connection", () => {
         console.log("ROS Connected!");
         setIsRosConnected(true);
-        thrusterRequestService.callService(0, (response: {power: number, surge: number, sway: number, heave: number, pitch: number, roll: number, yaw: number}) =>
-            {setThrusterMultipliers([response.power, response.surge, response.sway, response.heave, response.pitch, response.roll, response.yaw]);});
+        // thrusterRequestService.callService(0, (response: {power: number, surge: number, sway: number, heave: number, pitch: number, yaw: number}) =>
+        //     {setThrusterMultipliers([response.power, response.surge, response.sway, response.heave, response.pitch, response.yaw]);});
         setHasRecieved(true);
     });
     ros.on("close", () => {
@@ -37,21 +37,33 @@ export function InitROS() {
     React.useEffect(() => {
         ros.connect(`ws://${RosIP}:9090`);
         setInterval(() => {
-            if (!ros.isConnected) {
-                setRos(new ROSLIB.Ros({}));
-                ros.connect(`ws://${RosIP}:9090`);
-            }
+          if (!ros.isConnected) {
+            setRos(new ROSLIB.Ros({}));
+            ros.connect(`ws://${RosIP}:9090`);
+          }
         }, 1000);
     }, []);
+
+    // ADC and TEMP data
+    const [, setADCArray] = useAtom(ADCArray);
+    const [, setTemperatureArray] = useAtom(TemperatureArray); 
+
+    // React.useEffect(() => { // Constantly run the input listener 
+    //     setInterval(() => {
+    //         set_ADCARRAY(JSON.stringify([Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2)]));
+    //         set_TEMPERATUREARRAY(JSON.stringify([Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2),Math.random().toFixed(2)]));
+    //     }, 1000); // 100 ms 
+    // }, []);
+
 
     // Create a publisher on the "/thruster_multipliers" ros2 topic, using a custom EER message type (see eer_messages folder in ROS2/colcon_ws/src)
     const thrusterValsTopic = new ROSLIB.Topic({ros:ros,
                                         name:"/thruster_multipliers",
                                         messageType: "eer_messages/ThrusterMultipliers"});
 
-    const thrusterRequestService = new ROSLIB.Service({ros:ros,
-        name:"/multipliers_query",
-        serviceType: "eer_messages/Multipliers"});
+    // const thrusterRequestService = new ROSLIB.Service({ros:ros,
+    //     name:"/multipliers_query",
+    //     serviceType: "eer_messages/Multipliers"});
 
     // Publish the new power multipliers whenever they change
     React.useEffect(() => {
@@ -61,26 +73,40 @@ export function InitROS() {
             sway: thrusterMultipliers[2],
             heave: thrusterMultipliers[3],
             pitch: thrusterMultipliers[4],
-            roll: thrusterMultipliers[5],
-            yaw: thrusterMultipliers[6]});
+            yaw: thrusterMultipliers[5]});
         if (hasRecieved) thrusterValsTopic.publish(thrusterVals);
     }
     ,[thrusterMultipliers]);
-
+    
     // Create a publisher on the "/controller_input" ros2 topic, using the default String message which will be used from transporting JSON data
     const controllerInputTopic = new ROSLIB.Topic({ros:ros,
                                         name:"/controller_input",
-                                        messageType: "std_msgs/String"});
+                                        messageType: "eer_messages/PilotInput",
+                                        queue_size:1});
 
-    // Publish the new controller input whenever it changes
+    // Publish the new controller input whenever it changes (10 Hz)
     React.useEffect(()=>{
-        if (controllerInput == ""){
-            return;
-        }
-        const controllerInputVals = new ROSLIB.Message({data: controllerInput});
+        const controllerInputVals = new ROSLIB.Message({
+            surge: controllerInput[0],
+            sway: controllerInput[1],
+            heave: controllerInput[2],
+            pitch: controllerInput[3],
+            yaw: controllerInput[4],
+            open_claw: controllerInput[5] ? true: false,
+            close_claw: controllerInput[6] ? true: false,
+            heave_up: controllerInput[7] ? true: false,
+            heave_down: controllerInput[8] ? true: false,
+            pitch_up: controllerInput[9] ? true: false,
+            pitch_down: controllerInput[10] ? true: false,
+            brighten_led: controllerInput[11] ? true: false,
+            dim_led: controllerInput[12] ? true: false,
+            turn_stepper_cw: controllerInput[13] ? true: false,
+            turn_stepper_ccw: controllerInput[14] ? true: false,
+            read_outside_temperature_probe: controllerInput[15] ? true: false,
+            enter_auto_mode: controllerInput[16] ? true: false
+            });
         controllerInputTopic.publish(controllerInputVals);
-        setControllerInput("");
-        }
+    }
     ,[controllerInput]);
 
     // Create a ROS service on the "/profile_config" topic, using a custom EER service type (see eer_messages folder in ROS2/colcon_ws/src)
@@ -193,6 +219,33 @@ export function InitROS() {
         setRequestingCameraURLs(2);
         }
     ,[requestingCameraURLs]);
+
+    // const ADCDataListener = new ROSLIB.Topic({ros:ros,
+    //     name:"/adc",
+    //     messageType: "eer_messages/ADCData"
+    // })
+
+    // ADCDataListener.subscribe(function(message){
+    //     setADCArray(
+    //         {adc_48v_bus:(message as any).adc_48v_bus,
+    //             adc_12v_bus:(message as any).adc_12v_bus,
+    //             adc_5v_bus:(message as any).adc_5v_bus});
+    // })
+
+    // const TempratureDataListener = new ROSLIB.Topic({ros:ros,
+    //     name:"/board_temp",
+    //     messageType: "eer_messages/TempSensorData"
+    // })
+
+    // TempratureDataListener.subscribe(function(message){
+    //     setTemperatureArray(
+    //         {power_board_u8:(message as any).power_board_u8,
+    //         power_board_u9:(message as any).power_board_u9,
+    //         power_board_u10:(message as any).power_board_u10,
+    //         mega_board_ic2:(message as any).mega_board_ic2,
+    //         power_board_u11:(message as any).power_board_u11,
+    //         mega_board_ic1:(message as any).mega_board_ic1}); 
+    // })
 
 
     // const ImuDataListener = new ROSLIB.Topic({ros:ros,

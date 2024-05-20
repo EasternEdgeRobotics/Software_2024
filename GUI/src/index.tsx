@@ -6,6 +6,7 @@ import App from "./components/App";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import CameraTab from "./components/CameraTab";
 import { ControllerApp } from "./pages/scienceController"
+import  TabletApp  from "./pages/TabletApp";
 
 //fonts
 import "@fontsource/roboto/300.css";
@@ -22,10 +23,10 @@ root.render(
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<App />} />
-          <Route path="/0" element={<Box sx={{display: "flex", alignItems: "center", height: "100vh"}}><CameraTab /></Box>} />
+          <Route path="/0" element={<Box sx={{display: 'flex', alignItems: 'center', height: '100vh'}}><CameraTab /></Box>} />
           <Route path="/1" element={<Box><br/><BotTab /></Box>} />
           <Route path="/science" element={<ControllerApp />} />
-          
+          <Route path="/tablet" element={<TabletApp />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

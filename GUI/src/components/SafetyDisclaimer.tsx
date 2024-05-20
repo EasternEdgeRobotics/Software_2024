@@ -10,13 +10,12 @@ export default function SafetyDisclaimer() {
             <DialogContent>
                 <DialogContentText component='span'>
                     Prior to using the Eastern Edge ROV control interface, please ensure the following:<br/>
-                    <ul> {/* CHANGE THESE */}
-                        <li>You will not throw the ROV.</li>
-                        <li>You will not eat the ROV.</li>
-                        <li>You will not yell at the ROV.</li>
-                        <li>You will not kick the ROV.</li>
-                        <li>You will not swing the ROV around by the tether.</li>
-                        <li>You will not battle other ROVs with the ROV.</li>
+                    <ul>
+                        <li>The tether is neatly coiled in company standard figure 8.</li>
+                        <li>Vehicle power is switched in &#34;OFF&#34; position</li>
+                        <li>Deck Crew is wearing Eye Protection, Personal Flotation Devices, and Work Boots.</li>
+                        <li>Topside devices are fully charged, and a spare charger is brought.</li>
+                        <li>All access hazards are removed.</li>
                     </ul>
                     After reading this, press the &quot;I Agree&quot; button to continue.
                 </DialogContentText>

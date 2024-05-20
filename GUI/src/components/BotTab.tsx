@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Slider, Box, Button } from "@mui/material";
 import { useAtom } from "jotai";
-import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput } from "../api/Atoms";
+import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput, PilotActions, ADCArray, TemperatureArray } from "../api/Atoms";
 import { useState, useEffect } from "react";
 
 export function StatusIndicator(props: {statement: boolean}) {
@@ -9,10 +9,13 @@ export function StatusIndicator(props: {statement: boolean}) {
     else return <AlertCircle color="red" />;
 }
 
+
+
 export function BotTab() {
     const [isRosConnected] = useAtom(IsROSConnected);
 
     const [thrusterMultipliers, setThrusterMultipliers] = useAtom(ThrusterMultipliers);
+    const [pilotActions,] = useAtom(PilotActions);
 
     const [profilesList] = useAtom(ProfilesList);
     const [currentProfile] = useAtom(CurrentProfile);
@@ -25,12 +28,23 @@ export function BotTab() {
     const [controller1Name, setController1Name] = useState("Not Assigned");
     const [controller2Name, setController2Name] = useState("Not Assigned");
 
+    // ADC and TEMP data
+    const [read_ADCArray, ] = useAtom(ADCArray);
+    const [read_TemperatureArray, ] = useAtom(TemperatureArray); 
+
+
     let initialPageLoad = true;
 
     const status = [
         {"name": "ROS", "status": isRosConnected},
         {"name":"Controller 1 Detected", "status": controller1Detected},
         {"name":"Controller 2 Detected", "status": controller2Detected}
+    ];
+
+    const Arrays = [
+        {"name": "ADC", "status": JSON.stringify(read_ADCArray)},
+        {"name":"TEMPERATURE", "status": JSON.stringify(read_TemperatureArray)}
+        
     ];
       
     const [, reloadComponent] = useState<number>(0);
@@ -76,7 +90,7 @@ export function BotTab() {
         }
 
         const controllerIndexes = [controller1Index, controller2Index];
-        const controller_input_list:(string|number|undefined)[][] = [];
+        const controllerInput:(number|undefined)[] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]; // Current controller input from pilot. Must match length of ControllerInput defined in Atmos.tsx
 
         if (controllerIndexes[0] == -1){
             setController1Detected(false);
@@ -102,10 +116,12 @@ export function BotTab() {
             for (let j = 0; j<(gamepadInstance?.buttons.length as number);j++){
                 if (gamepadInstance?.buttons[j].pressed){ //Button press detected
                     if (mappings[i]["buttons"][j] != "None"){
-                        const controller_input = [];
-                        controller_input.push(1);
-                        controller_input.push(mappings[i]["buttons"][j]);
-                        controller_input_list.push(controller_input);
+                        for (let k = 0; k < pilotActions.length; k++){
+                            if (pilotActions[k] == mappings[i]["buttons"][j]) {
+                                controllerInput[k-1] = 1;
+                                break;
+                            } 
+                        }
                     }
                 }
             }
@@ -113,40 +129,48 @@ export function BotTab() {
                 const deadzone = Number(mappings[i]["deadzones"][j]) > 0.05 ? Number(mappings[i]["deadzones"][j]): 0.05;
                 if (Math.abs(gamepadInstance?.axes[j] as number) >= deadzone){ // The axis has been moved beyond it's "deadzone", which means that this is actual pilot input and not controller drift
                     if (mappings[i]["axes"][j] != "None"){
-                        const controller_input = [];
-                        controller_input.push(gamepadInstance?.axes[j]);
-                        controller_input.push(mappings[i]["axes"][j]);
-                        controller_input_list.push(controller_input);  
+                        for (let k = 0; k < pilotActions.length; k++){
+                            if (pilotActions[k] == mappings[i]["axes"][j]) {
+                                controllerInput[k-1] = Math.round((j%2==0) ? (gamepadInstance?.axes[j] as number) * 100: (gamepadInstance?.axes[j] as number * -100));
+                                break;
+                            }
+                        } 
                     }
                 }
             }
         }
-        if (controller_input_list.length > 0) {setControllerInput(JSON.stringify(controller_input_list));} // The ROS.tsx script will detect changes to the global variable "ControllerInput"
+        setControllerInput(controllerInput);
     }
 
     useEffect(() => { // Constantly run the input listener 
         const interval = setInterval(() => {
             reloadComponent(Math.random());
             input_listener();
-        }, 100); // 100 ms 
+        }, 100); // 100 ms or 10Hz
         return () => clearInterval(interval); // Stop listening for input when we click off the BotTab
     }, [currentProfile]);
     
     return (
         <Box flexGrow={1}>
+            
             <Grid container justifyContent={"center"} spacing={1}>
-                {["Power", "Surge", "Sway", "Heave", "Pitch", "Roll", "Yaw"].map((label, index) => {
+                {["Power", "Surge", "Sway", "Heave", "Pitch", "Yaw"].map((label, index) => {
                         return (
                             <Grid item xs={1} key={index} display="flex" justifyContent="center" alignItems="center" flexWrap="wrap" height="300px">
                                 <Slider orientation="vertical" valueLabelDisplay="auto" step={5} defaultValue={thrusterMultipliers[index]} onChange={(_,value) => setThrusterMultipliers(thrusterMultipliers.map((v, i) => {if (i == index) return value as number; else return v;}))} />
                                 <Box flexBasis="100%" height="0" />
                                 <h2>{label}: {thrusterMultipliers[index]}</h2>
                             </Grid>
+
                         );})
                 }
+                
                 <Grid item xs={3}>
+                    
                     <Grid container justifyContent={"center"} rowSpacing={2}>
+                        
                         <Grid item xs={12}>
+                            
                             <TableContainer component={Paper}>
                                 <Table>
                                     <TableHead>
@@ -168,33 +192,72 @@ export function BotTab() {
                                 </Table>
                             </TableContainer>
                         </Grid>
-                    </Grid>
-                </Grid>
+                        <Grid item xs={3} />
             </Grid>
-            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
-                <Grid item xs={3.5}>
-                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Load Power Preset</Button>
-                </Grid>
-                <Grid item xs={3.5}>
-                    <Button variant="contained" sx={{width: "100%", height: "3rem"}}>Save Power Preset</Button>
-                </Grid>
-                <Grid item xs={3} />
-            </Grid>
-            <Grid container justifyContent={"center"} spacing={1} sx={{marginTop: "64px"}}>
+            <Grid container justifyContent={"top"}  sx={{marginTop: "-18px"}}>
                 <Grid item xs="auto">
                     Current Profile: {currentProfile}
                 </Grid>
-            </Grid>
-            <Grid container justifyContent={"center"} spacing={1}>
+
                 <Grid item xs="auto">
                     Controller 1: {controller1Name}
                 </Grid>
-            </Grid>
-            <Grid container justifyContent={"center"} spacing={1}>
+            
                 <Grid item xs="auto">
                     Controller 2: {controller2Name}
                 </Grid>
+                    </Grid>
+                    
+                </Grid>
+                
             </Grid>
+            
+
+            
+
+            
+
+           
+            <Grid container justifyContent={"left"} spacing={250} sx={{marginTop: "64px"}}>
+            <Grid container justifyContent={"right"} spacing={17}>
+             <Grid item xs={5}>
+                 <Grid container justifyContent={"center"} rowSpacing={3}>
+                     <Grid item xs={10}>  
+                     
+                            <TableContainer component={Paper}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell align="center">Items</TableCell>
+                                            <TableCell align="center">Values</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                    {Arrays.map((data) => {
+                                        return (
+                                            <TableRow key={data.name} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                                                <TableCell align="center">{data.name}</TableCell>
+                                                <TableCell align="center">{data.status}</TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                            
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Grid>
+
+            </Grid>
+
+
+           
+         
+                
+           
+
         </Box>
     );
 }
