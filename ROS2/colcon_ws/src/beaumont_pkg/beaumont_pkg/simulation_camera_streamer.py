@@ -32,7 +32,7 @@ class SimulationCameraStreamer(Node):
 		'''Converts ROS image into OpenCV image then stores it in a global variable'''
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
-			if camera_number == 1:
+			if camera_number == 1 or camera_number == 2:
 				cv_image = cv2.flip(cv_image,0)
 				cv_image = cv2.flip(cv_image,1)
 		except CvBridgeError as e:

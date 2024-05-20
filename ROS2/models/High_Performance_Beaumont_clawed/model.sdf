@@ -14,7 +14,7 @@
         </inertia>
         <pose>0 0 0 0 -0 0</pose>
       </inertial>
-      <pose>-4e-06 -0.006602 -0.04 7e-06 -0 -1.57081</pose>
+      <pose>-0 0.02 -0.04 7e-06 -0 -1.57081</pose>
       <gravity>1</gravity>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
@@ -139,7 +139,7 @@
         </inertia>
         <pose>0 0 0 0 -0 0</pose>
       </inertial>
-      <pose>0.009944 -0.097908 0.015831 3.13674 1.57079 -1.57566</pose>
+      <pose>0.009945 -0.028954 -0.021963 2.76766 1.0464 -1.94474</pose>
       <gravity>1</gravity>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
@@ -264,7 +264,7 @@
         </inertia>
         <pose>0 0 0 0 -0 0</pose>
       </inertial>
-      <pose>-0.1 0.175 -0.075 0 0 -3.14159</pose>
+      <pose>-0.05 0.14 -0.14 2.76769 1.57 -1.94471</pose>
       <gravity>1</gravity>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
@@ -323,7 +323,7 @@
       <collision name='collision_0'>
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose>-0.04 0 -0 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.01 0.01 0.01</size>
@@ -389,7 +389,7 @@
         </inertia>
         <pose>0 0 0 0 -0 0</pose>
       </inertial>
-      <pose>-0 0.15 0.125 -3.14143 -1.57079 3.14142</pose>
+      <pose>-0 0.15 0.125 -3.14081 -1.57079 3.1408</pose>
       <gravity>1</gravity>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
@@ -520,7 +520,7 @@
       <self_collide>0</self_collide>
       <enable_wind>0</enable_wind>
       <kinematic>0</kinematic>
-      <pose>0.012991 0.00535 0 0 -0 0</pose>
+      <pose>0.012991 0.00535 -0 0 -0 0</pose>
       <gravity>1</gravity>
       <frame name='chassis_frame'>
         <pose>0 0 0 0 -0 0</pose>
@@ -610,7 +610,7 @@
         </inertia>
         <pose>0 0 0 0 -0 0</pose>
       </inertial>
-      <pose>-0 -0.3 -0 0 -0 0.000274</pose>
+      <pose>-0 -0.3 0 0 -0 0.000274</pose>
       <gravity>1</gravity>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
@@ -710,7 +710,7 @@
         </inertia>
         <pose>0 0 0 0 -0 0</pose>
       </inertial>
-      <pose>0.2 0.145 0 0 -0 0</pose>
+      <pose>0.2 0.145 -0 0 -0 0</pose>
       <gravity>1</gravity>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
@@ -922,7 +922,7 @@
       </plugin>
     </model>
     <model name='right_claw'>
-      <pose>-0.02 -0 0 0 0 0</pose>
+      <pose>-0.02 -0 -0 0 -0 0</pose>
       <link name='right_claw_link'>
         <inertial>
           <mass>0.0087</mass>
