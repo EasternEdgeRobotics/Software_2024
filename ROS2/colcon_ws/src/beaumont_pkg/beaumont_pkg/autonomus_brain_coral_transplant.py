@@ -216,7 +216,6 @@ class AutonomusBrainCoralTransplant(Node):
                 # If there is one decently sized contour, proceed to centered atop it. 
                 # This is currently defined as taking up more than 8% of the image
                 if (len(contours) > 0) and (biggest_contour_area > mask.shape[0] * mask.shape[1] *0.08): 
-                    ((x,y),radius) = cv2.minEnclosingCircle(biggest_contour)
                     brain_coral_area_center_location_x, brain_coral_area_center_location_y = self.get_contour_center(biggest_contour)
                     brain_coral_area_found = True
                 else:
