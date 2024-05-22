@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import ROSLIB, { Ros } from "roslib";
-import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs, ADCArray, TemperatureArray } from "./Atoms";
+import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs, ADCArray, TemperatureArray, IMUARRAY } from "./Atoms";
 import React from "react";
 
 export function InitROS() {
@@ -243,13 +243,13 @@ export function InitROS() {
     })
 
 
-    // const ImuDataListener = new ROSLIB.Topic({ros:ros,
-    //     name:"/imu",
-    //     messageType: "std_msgs/String"});
+     const ImuDataListener = new ROSLIB.Topic({ros:ros,
+         name:"/imu",
+         messageType: "std_msgs/String"});
 
-    // ImuDataListener.subscribe(function(message) {
-    //     console.log(message);
-    // });
+     ImuDataListener.subscribe(function(message) {
+         console.log(message);
+     });
 
     return (null);
 }

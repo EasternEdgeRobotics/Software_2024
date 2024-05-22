@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Slider, Box, Button } from "@mui/material";
 import { useAtom } from "jotai";
-import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput, PilotActions, ADCArray, TemperatureArray } from "../api/Atoms";
+import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput, PilotActions, ADCArray, TemperatureArray, IMUARRAY } from "../api/Atoms";
 import { useState, useEffect } from "react";
 
 export function StatusIndicator(props: {statement: boolean}) {
@@ -28,9 +28,10 @@ export function BotTab() {
     const [controller1Name, setController1Name] = useState("Not Assigned");
     const [controller2Name, setController2Name] = useState("Not Assigned");
 
-    // ADC and TEMP data
+    // ADC TEMP and IMU data
     const [read_ADCArray, ] = useAtom(ADCArray);
-    const [read_TemperatureArray, ] = useAtom(TemperatureArray); 
+    const [read_TemperatureArray, ] = useAtom(TemperatureArray);
+    const [read_IMUARRAY, ] = useAtom(IMUARRAY);
 
 
     let initialPageLoad = true;
@@ -43,7 +44,8 @@ export function BotTab() {
 
     const Arrays = [
         {"name": "ADC", "status": JSON.stringify(read_ADCArray)},
-        {"name":"TEMPERATURE", "status": JSON.stringify(read_TemperatureArray)}
+        {"name":"TEMPERATURE", "status": JSON.stringify(read_TemperatureArray)},
+        {"name": "IMU", "status": JSON.stringify(read_IMUARRAY)}
         
     ];
       
@@ -218,9 +220,9 @@ export function BotTab() {
             
 
            
-            <Grid container justifyContent={"left"} spacing={250} sx={{marginTop: "64px"}}>
-            <Grid container justifyContent={"right"} spacing={17}>
-             <Grid item xs={5}>
+            <Grid container justifyContent={"left"} spacing={250} sx={{marginTop: "25px", transform: "scale(0.8)"}}>
+            <Grid container justifyContent={"right"} spacing={120}>
+             <Grid item xs={6}>
                  <Grid container justifyContent={"center"} rowSpacing={3}>
                      <Grid item xs={10}>  
                      
