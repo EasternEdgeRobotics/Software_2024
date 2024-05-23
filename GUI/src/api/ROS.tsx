@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import ROSLIB, { Ros } from "roslib";
-import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs, ADCArray, TemperatureArray } from "./Atoms";
+import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs, ADCArray, TemperatureArray, Shutdown } from "./Atoms";
 import React from "react";
 
 export function InitROS() {
@@ -15,6 +15,8 @@ export function InitROS() {
     const [cameraURLs, setCameraURLs] = useAtom(CameraURLs);
     const [currentProfile,] = useAtom(CurrentProfile);
     const [controllerInput, setControllerInput] = useAtom(ControllerInput); // The current controller input from the pilot
+
+    const [shutdown] = useAtom(Shutdown);
 
     const [hasRecieved, setHasRecieved] = React.useState<boolean>(false);
     const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
@@ -61,6 +63,11 @@ export function InitROS() {
                                         name:"/thruster_multipliers",
                                         messageType: "eer_messages/ThrusterMultipliers"});
 
+    const shutdownTopic = new ROSLIB.Topic({ros:ros,
+                                    name:"/shutdown",
+                                    messageType: "std_msgs/Bool"});
+    
+
     // const thrusterRequestService = new ROSLIB.Service({ros:ros,
     //     name:"/multipliers_query",
     //     serviceType: "eer_messages/Multipliers"});
@@ -77,7 +84,15 @@ export function InitROS() {
         if (hasRecieved) thrusterValsTopic.publish(thrusterVals);
     }
     ,[thrusterMultipliers]);
-    
+
+    React.useEffect(() => {
+        if (shutdown) {
+            shutdownTopic.publish(new ROSLIB.Message({
+                data: true
+            }));
+        }
+    }, [shutdown]);
+
     // Create a publisher on the "/controller_input" ros2 topic, using the default String message which will be used from transporting JSON data
     const controllerInputTopic = new ROSLIB.Topic({ros:ros,
                                         name:"/controller_input",

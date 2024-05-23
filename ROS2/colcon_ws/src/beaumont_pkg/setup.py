@@ -30,6 +30,7 @@ setup(
             'simulation_camera_subscriber = beaumont_pkg.simulation_camera_subscriber:main',
             'simulation_tooling_control = beaumont_pkg.simulation_tooling_control:main',
             'simulation_autonomous_movement = beaumont_pkg.simulation_autonomous_movement:main',
+            'shutdown_handler = beaumont_pkg.shutdown_handler:main',
         ],
     },
 )

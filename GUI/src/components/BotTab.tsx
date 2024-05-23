@@ -1,15 +1,13 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Slider, Box, Button } from "@mui/material";
+import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Slider, Box, Button, Dialog, DialogTitle, DialogContentText, DialogContent, DialogActions } from "@mui/material";
 import { useAtom } from "jotai";
-import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput, PilotActions, ADCArray, TemperatureArray } from "../api/Atoms";
-import { useState, useEffect } from "react";
+import { IsROSConnected, ThrusterMultipliers, ProfilesList, CurrentProfile, Mappings, ControllerInput, PilotActions, ADCArray, TemperatureArray, CameraURLs, Shutdown } from "../api/Atoms";
+import React, { useState, useEffect } from "react";
 
 export function StatusIndicator(props: {statement: boolean}) {
     if (props.statement) return <CheckCircle2 color="lime" />;
     else return <AlertCircle color="red" />;
 }
-
-
 
 export function BotTab() {
     const [isRosConnected] = useAtom(IsROSConnected);
@@ -32,6 +30,12 @@ export function BotTab() {
     const [read_ADCArray, ] = useAtom(ADCArray);
     const [read_TemperatureArray, ] = useAtom(TemperatureArray); 
 
+    const [open, setOpen] = useState<boolean>(false);
+    const [, setShutdown] = useAtom(Shutdown);
+
+    function shutdown() {
+        setShutdown(true);
+    }
 
     let initialPageLoad = true;
 
@@ -48,6 +52,29 @@ export function BotTab() {
     ];
       
     const [, reloadComponent] = useState<number>(0);
+
+    useEffect(() => {
+        document.addEventListener("keypress", (event) => {
+            switch (event.key) {
+                case "0":
+                    setThrusterMultipliers([0, 0, 0, 0, 0, 0]);
+                    break;
+                case "1":
+                    setThrusterMultipliers([100, 100, 100, 100, 100, 70]);
+                    break;
+                case "2":
+                    setThrusterMultipliers([100, 0, 0, 100, 0, 0]);
+                    break;
+                case "3":
+                    setThrusterMultipliers([0, 100, 0, 0, 0, 0]);
+                    break;
+                default:
+                    break;
+            }
+        });
+    }, []);
+
+
 
     // All inputs will be in the format of a list, where the first element is input value (1 for button and between (-1,1) for axis) 
     // and the second element is the action
@@ -157,7 +184,7 @@ export function BotTab() {
                 {["Power", "Surge", "Sway", "Heave", "Pitch", "Yaw"].map((label, index) => {
                         return (
                             <Grid item xs={1} key={index} display="flex" justifyContent="center" alignItems="center" flexWrap="wrap" height="300px">
-                                <Slider orientation="vertical" valueLabelDisplay="auto" step={5} defaultValue={thrusterMultipliers[index]} onChange={(_,value) => setThrusterMultipliers(thrusterMultipliers.map((v, i) => {if (i == index) return value as number; else return v;}))} />
+                                <Slider orientation="vertical" valueLabelDisplay="auto" step={5} value={thrusterMultipliers[index]} onChange={(_,value) => setThrusterMultipliers(thrusterMultipliers.map((v, i) => {if (i == index) return value as number; else return v;}))} />
                                 <Box flexBasis="100%" height="0" />
                                 <h2>{label}: {thrusterMultipliers[index]}</h2>
                             </Grid>
@@ -212,52 +239,46 @@ export function BotTab() {
                 
             </Grid>
             
+            <Box display="flex" justifyContent="center" width="100%" paddingTop="16px" paddingX="10%" marginTop={"64px"}>
+                <TableContainer component={Paper}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell align="center">Items</TableCell>
+                                <TableCell align="center">Values</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                        {Arrays.map((data) => {
+                            return (
+                                <TableRow key={data.name} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                                    <TableCell align="center">{data.name}</TableCell>
+                                    <TableCell align="center">{data.status}</TableCell>
+                                </TableRow>
+                            );
+                        })}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Box>
 
-            
+            <Dialog open={open} onClose={() => setOpen(false)}>
+                <DialogTitle>Shutdown Confirmation</DialogTitle>
+                <DialogContent>
+                    <DialogContentText component='span'>
+                        Are you sure you&apos;d like to shutdown Beaumont?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {setOpen(false); shutdown();}}>Yes</Button>
+                    <Button onClick={() => setOpen(false)}>No</Button>
+                </DialogActions>
+            </Dialog>
 
-            
-
-           
-            <Grid container justifyContent={"left"} spacing={250} sx={{marginTop: "64px"}}>
-            <Grid container justifyContent={"right"} spacing={17}>
-             <Grid item xs={5}>
-                 <Grid container justifyContent={"center"} rowSpacing={3}>
-                     <Grid item xs={10}>  
-                     
-                            <TableContainer component={Paper}>
-                                <Table>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell align="center">Items</TableCell>
-                                            <TableCell align="center">Values</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                    {Arrays.map((data) => {
-                                        return (
-                                            <TableRow key={data.name} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
-                                                <TableCell align="center">{data.name}</TableCell>
-                                                <TableCell align="center">{data.status}</TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                            
-                        </Grid>
-                    </Grid>
-                </Grid>
-            </Grid>
-
-            </Grid>
-
-
-           
-         
-                
-           
-
+            <Box display="flex" justifyContent="center" width="100%" paddingTop="16px" paddingX="10%">
+                <Button variant="outlined" onClick={() => setOpen(true)} sx={{marginRight: "4px"}}>Shutdown</Button>
+                <p>0 - all off, 1 - all high (70% yaw), 2 - all vertical, 3 - all surge</p>
+            </Box>
         </Box>
     );
 }
