@@ -117,7 +117,7 @@ class Thruster:
 
                 # If communication with RP2040 fails, attempt to arm the thruster again as soon as communication is reestablished
                 try:
-                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], 127) # HARDCODED CENTER
+                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current)) # HARDCODED CENTER
                 except OSError:
                     self.thruster_armed = False
 
@@ -126,7 +126,7 @@ class Thruster:
 
                 # If communication with RP2040 fails, attempt to arm the thruster again as soon as communication is reestablished
                 try:
-                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], 127) # HARDCODED CENTER
+                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current)) # HARDCODED CENTER
                 except OSError:
                     self.thruster_armed = False
 
