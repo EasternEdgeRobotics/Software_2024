@@ -241,6 +241,24 @@ export function BotTab() {
                 false
             );
         }
+        document.addEventListener("keypress", (event) => {
+            switch (event.key) {
+                case "0":
+                    setThrusterMultipliers([0, 0, 0, 0, 0, 0]);
+                    break;
+                case "1":
+                    setThrusterMultipliers([100, 100, 100, 100, 100, 70]);
+                    break;
+                case "2":
+                    setThrusterMultipliers([100, 0, 0, 100, 0, 0]);
+                    break;
+                case "3":
+                    setThrusterMultipliers([0, 100, 0, 0, 0, 0]);
+                    break;
+                default:
+                    break;
+            }
+        });
 
         // Constantly run the input listener
         const interval = setInterval(() => {
@@ -266,20 +284,7 @@ export function BotTab() {
                                 flexWrap="wrap"
                                 height="300px"
                             >
-                                <Slider
-                                    orientation="vertical"
-                                    valueLabelDisplay="auto"
-                                    step={5}
-                                    defaultValue={thrusterMultipliers[index]}
-                                    onChange={(_, value) =>
-                                        setThrusterMultipliers(
-                                            thrusterMultipliers.map((v, i) => {
-                                                if (i == index) return value as number;
-                                                else return v;
-                                            })
-                                        )
-                                    }
-                                />
+                                <Slider orientation="vertical" valueLabelDisplay="auto" step={5} value={thrusterMultipliers[index]} onChange={(_,value) => setThrusterMultipliers(thrusterMultipliers.map((v, i) => {if (i == index) return value as number; else return v;}))} />
                                 <Box flexBasis="100%" height="0" />
                                 <h2>
                                     {label}: {thrusterMultipliers[index]}
@@ -345,46 +350,32 @@ export function BotTab() {
                 </Grid>
             </Grid>
 
-            <Grid
-                container
-                justifyContent={"left"}
-                spacing={250}
-                sx={{ marginTop: "64px" }}
-            >
-                <Grid container justifyContent={"right"} spacing={17}>
-                    <Grid item xs={5}>
-                        <Grid container justifyContent={"center"} rowSpacing={3}>
-                            <Grid item xs={10}>
-                                <TableContainer component={Paper}>
-                                    <Table>
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell align="center">Items</TableCell>
-                                                <TableCell align="center">Values</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {Arrays.map((data) => {
-                                                return (
-                                                    <TableRow
-                                                        key={data.name}
-                                                        sx={{
-                                                            "&:last-child td, &:last-child th": { border: 0 },
-                                                        }}
-                                                    >
-                                                        <TableCell align="center">{data.name}</TableCell>
-                                                        <TableCell align="center">{data.status}</TableCell>
-                                                    </TableRow>
-                                                );
-                                            })}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                            </Grid>
-                        </Grid>
-                    </Grid>
-                </Grid>
-            </Grid>
+            <Box display="flex" justifyContent="center" width="100%" paddingTop="16px" paddingX="10%" marginTop={"64px"}>
+                <TableContainer component={Paper}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell align="center">Items</TableCell>
+                                <TableCell align="center">Values</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                        {Arrays.map((data) => {
+                            return (
+                                <TableRow key={data.name} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                                    <TableCell align="center">{data.name}</TableCell>
+                                    <TableCell align="center">{data.status}</TableCell>
+                                </TableRow>
+                            );
+                        })}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Box>
+
+            <Box display="flex" justifyContent="center" width="100%" paddingTop="16px" paddingX="10%">
+                <p>0 - all off, 1 - all high (70% yaw), 2 - all vertical, 3 - all surge</p>
+            </Box>
         </Box>
     );
 }
