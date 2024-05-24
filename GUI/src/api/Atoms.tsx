@@ -40,6 +40,28 @@ export const PilotActions = atom<string[]>([ // Possible pilot inputs
   "enter_auto_mode"
 ])
 
+export const KeyboardInputMap = atom<(string|number)[][]>([ // Possible pilot inputs
+  ["w","surge",100],
+  ["a","sway",-100],
+  ["s","surge",-100],
+  ["d","sway",100],
+  ["q","yaw",-100],
+  ["e","yaw",100],
+  ["w","surge",100],
+  ["r","heave",100],
+  ["f","heave",-100],
+  ["t","pitch",100],
+  ["g","pitch",-100],
+  ["z","open_claw",1],
+  ["x","close_claw",1],
+  ["c","brighten_led",1],
+  ["v","dim_led",1],
+  ["b","turn_stepper_cw",1],
+  ["n","turn_stepper_ccw",1],
+  ["m","read_outside_temperature_probe",1],
+  [",","enter_auto_mode",1],
+])
+
 export const CurrentProfile = atom<string>("Not Assigned"); // Current pilot profile
 export const ProfilesList = atom<[{id: number, name: string, controller1: string, controller2: string}]>([{id:0, name:"default",controller1:"null",controller2:"null"}]); // List of known pilot profiles
 

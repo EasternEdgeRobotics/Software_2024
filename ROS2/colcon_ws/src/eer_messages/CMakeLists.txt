@@ -16,6 +16,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 	"msg/PilotInput.msg"
 	"msg/DiagnosticsData.msg"
 	"msg/OutsideTempProbeData.msg"
+	"action/AutoMode.action"
 )
 ament_export_dependencies(rosidl_default_runtime)
 
