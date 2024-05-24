@@ -3,4 +3,5 @@
 	<node pkg="beaumont_pkg" exec="profiles_manager"/>
 	<node pkg="beaumont_pkg" exec="task_manager"/>
 	<node pkg="beaumont_pkg" exec="i2c_master"/>
+	<node pkg="beaumont_pkg" exec="shutdown_handler"/>
 </launch>
