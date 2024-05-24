@@ -86,6 +86,7 @@ export function InitROS() {
 
     // Publish the new controller input whenever it changes (10 Hz)
     React.useEffect(()=>{
+        console.log(controllerInput)
         const controllerInputVals = new ROSLIB.Message({
             surge: controllerInput[0],
             sway: controllerInput[1],
@@ -220,33 +221,26 @@ export function InitROS() {
         }
     ,[requestingCameraURLs]);
 
-    // const ADCDataListener = new ROSLIB.Topic({ros:ros,
-    //     name:"/adc",
-    //     messageType: "eer_messages/ADCData"
-    // })
+    const DiagnosticsDataListener = new ROSLIB.Topic({ros:ros,
+        name:"/diagnostics",
+        messageType: "eer_messages/DiagnosticsData"
+    })
 
-    // ADCDataListener.subscribe(function(message){
-    //     setADCArray(
-    //         {adc_48v_bus:(message as any).adc_48v_bus,
-    //             adc_12v_bus:(message as any).adc_12v_bus,
-    //             adc_5v_bus:(message as any).adc_5v_bus});
-    // })
+    DiagnosticsDataListener.subscribe(function(message){
+        
+        setADCArray(
+            {adc_48v_bus:(message as any).adc_48v_bus,
+                adc_12v_bus:(message as any).adc_12v_bus,
+                adc_5v_bus:(message as any).adc_5v_bus});
 
-    // const TempratureDataListener = new ROSLIB.Topic({ros:ros,
-    //     name:"/board_temp",
-    //     messageType: "eer_messages/TempSensorData"
-    // })
-
-    // TempratureDataListener.subscribe(function(message){
-    //     setTemperatureArray(
-    //         {power_board_u8:(message as any).power_board_u8,
-    //         power_board_u9:(message as any).power_board_u9,
-    //         power_board_u10:(message as any).power_board_u10,
-    //         mega_board_ic2:(message as any).mega_board_ic2,
-    //         power_board_u11:(message as any).power_board_u11,
-    //         mega_board_ic1:(message as any).mega_board_ic1}); 
-    // })
-
+        setTemperatureArray(
+            {power_board_u8:(message as any).power_board_u8,
+            power_board_u9:(message as any).power_board_u9,
+            power_board_u10:(message as any).power_board_u10,
+            mega_board_ic2:(message as any).mega_board_ic2,
+            power_board_u11:(message as any).power_board_u11,
+            mega_board_ic1:(message as any).mega_board_ic1}); 
+    })
 
     // const ImuDataListener = new ROSLIB.Topic({ros:ros,
     //     name:"/imu",
