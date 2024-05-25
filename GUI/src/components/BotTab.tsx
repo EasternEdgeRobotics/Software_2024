@@ -220,7 +220,7 @@ export function BotTab() {
             
 
            
-            <Grid container justifyContent={"center"} spacing={200} sx={{marginTop: "64px", transform: "scale(0.7)"}}>
+            <Grid container justifyContent={"center"} spacing={200} sx={{marginTop: "40px", transform: "scale(0.7)"}}>
             <Grid container justifyContent={"right"} spacing={17}>
              <Grid item xs={3}>
                  <Grid container justifyContent={"center"} rowSpacing={3}>
