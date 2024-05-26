@@ -122,7 +122,8 @@ export function InitROS() {
                 state:requestingConfig.state,
                 data:JSON.stringify({"profileName": requestingConfig.profileName,"controller1": requestingConfig.controller1,
                                     "controller2": requestingConfig.controller2,"associated_mappings": mappings})}); // Turn the JSON object into a string to send over ROS
-            configClient.callService(request, (function(){null;}));
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            configClient.callService(request, () => {});
         }
         else if (requestingConfig.state==1){ // State 1 indicates that we are requesting mappings for a certain profile from the database
             const request = new ROSLIB.ServiceRequest({

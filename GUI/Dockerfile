@@ -1,9 +1,10 @@
 FROM node:alpine as build-stage
-COPY . /root/GUI
-WORKDIR /root/GUI
+WORKDIR /app
+COPY package.json package-lock.json /app/
 RUN npm install
+COPY . .
 RUN npm run build
 FROM nginx:alpine
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY --from=build-stage /root/GUI/build /usr/share/nginx/html
-RUN rm /etc/nginx/conf.d/default.conf  # <= This line solved my issue
+COPY --from=build-stage /app/build /usr/share/nginx/html
+RUN rm /etc/nginx/conf.d/default.conf # fix react router
