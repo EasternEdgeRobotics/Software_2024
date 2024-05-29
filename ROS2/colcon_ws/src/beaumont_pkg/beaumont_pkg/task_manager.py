@@ -35,7 +35,7 @@ class Color(Base):
 engine = create_engine('sqlite:///tasks.db')  # Use an SQLite database file named tasks.db
 engine2 = create_engine("sqlite:///config.db")
 Session = sessionmaker(bind=engine)
-ConfigSession = sessionmaker(bind=engine)
+ConfigSession = sessionmaker(bind=engine2)
 
 Base.metadata.create_all(engine)  # Create the tasks table
 
