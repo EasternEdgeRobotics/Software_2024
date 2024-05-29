@@ -23,15 +23,15 @@ def check_boundaries(value, tolerance, ranges, upper_or_lower):
         # set the boundary for saturation and value
         boundary = 255
 
-    if(value + tolerance > boundary):
-        value = boundary
-    elif (value - tolerance < 0):
-        value = 0
-    else:
-        if upper_or_lower == 1:
+    if upper_or_lower == 1:
             value = value + tolerance
-        else:
-            value = value - tolerance
+            if value>boundary:
+                value = boundary
+    else:
+        value = value - tolerance
+        if value<0:
+            value = 0
+
     return value
 
 def pick_color(event,x,y,flags,param):
@@ -48,8 +48,8 @@ def pick_color(event,x,y,flags,param):
         value_upper = check_boundaries(pixel[2], 40, 1, 1)
         value_lower = check_boundaries(pixel[2], 40, 1, 0)
 
-        upper =  np.array([hue_lower, saturation_lower, value_lower])
-        lower =  np.array([hue_upper, saturation_upper, value_upper])
+        lower =  np.array([hue_lower, saturation_lower, value_lower])
+        upper =  np.array([hue_upper, saturation_upper, value_upper])
         print(lower, upper)
 
         #A MONOCHROME MASK FOR GETTING A BETTER VISION OVER THE COLORS 
