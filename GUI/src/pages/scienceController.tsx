@@ -698,7 +698,7 @@ export function ControllerApp() {
 
   return (
     <>
-      {!rosConnected && ( // Add this block
+      {!rosConnected ? (
         <div
           style={{
             backgroundColor: "red",
@@ -708,7 +708,8 @@ export function ControllerApp() {
         >
           ROS not connected
         </div>
-      )}`
+      ) : null}
+
       <div
         style={{
           ...styles.contentDiv,
@@ -719,7 +720,6 @@ export function ControllerApp() {
       >
         <SideBar />
       </div>
-
       <Row className="justify-content-center">
         <Col lg={3}>
           <div style={styles.contentDiv}>
