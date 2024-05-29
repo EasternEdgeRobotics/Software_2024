@@ -14,10 +14,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 	"srv/Multipliers.srv"
 	"msg/ThrusterMultipliers.msg"
 	"msg/PilotInput.msg"
-	"msg/ADCData.msg"
-	"msg/IMUData.msg"
-	"msg/TempSensorData.msg"
+	"msg/DiagnosticsData.msg"
 	"msg/OutsideTempProbeData.msg"
+	"action/AutoMode.action"
 )
 ament_export_dependencies(rosidl_default_runtime)
 

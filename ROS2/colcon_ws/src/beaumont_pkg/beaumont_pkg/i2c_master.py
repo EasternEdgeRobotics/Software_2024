@@ -1,8 +1,6 @@
 import rclpy
-from rclpy.node import Node, MutuallyExclusiveCallbackGroup
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
-from eer_messages.msg import ThrusterMultipliers, PilotInput, IMUData, ADCData, TempSensorData, OutsideTempProbeData
+from eer_messages.msg import ThrusterMultipliers, PilotInput, DiagnosticsData, OutsideTempProbeData
 
 import board
 from smbus2 import SMBus
@@ -24,10 +22,10 @@ THRUSTER_CHANNELS = {
 }
 
 # In the thruster class, the target speed is set by the user. Each thruster accelerates towards the target speed by the acceleration below
-THRUSTER_ACCELERATION = 5 
+THRUSTER_ACCELERATION = 5
 
 # Determines how often each thruster accelerates towards the target speed set by the user
-# THRUSTER_TICK_PERIOD = 0.01
+# THRUSTER_TICK_PERIOD = 0.05
 
 RP2040_ADDRESS = 0x08
 
@@ -55,9 +53,7 @@ TEMPERATURE_SENSOR_ADDRESSES = {
 }
 
 # How often to read data on i2c bus
-IMU_REQUESTS_PERIOD = 1
-ADC_REQUESTS_PERIOD = 1
-TEMP_SENSOR_REQUESTS_PERIOD = 1
+DIAGNOSTICS_REQUESTS_PERIOD = 2
 
 class Thruster:
     """Thruster class."""
@@ -121,7 +117,7 @@ class Thruster:
 
                 # If communication with RP2040 fails, attempt to arm the thruster again as soon as communication is reestablished
                 try:
-                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current))
+                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current)) # HARDCODED CENTER
                 except OSError:
                     self.thruster_armed = False
 
@@ -130,7 +126,7 @@ class Thruster:
 
                 # If communication with RP2040 fails, attempt to arm the thruster again as soon as communication is reestablished
                 try:
-                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current))
+                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current)) # HARDCODED CENTER
                 except OSError:
                     self.thruster_armed = False
 
@@ -160,29 +156,14 @@ class I2CMaster(Node):
 
         self.debugger_mode = False
 
-        # Callback group for reciving topsides input and communicated to i2c bus
-        i2c_master_callback_group = MutuallyExclusiveCallbackGroup()
-
         # Subscribers
-        self.copilot_listener = self.create_subscription(ThrusterMultipliers, 'thruster_multipliers', self.copilot_listener_callback, 100, callback_group=i2c_master_callback_group)
-        self.pilot_listener = self.create_subscription(PilotInput, 'controller_input', self.pilot_listener_callback, 1, 
-                                                       callback_group=i2c_master_callback_group) # input recieved at 10Hz
-        
-        # TODO: TRY THE PILOT LISTENER BELOW, COMMENT ONE ABOVE
-        # pilot_input_qos_profile = QoSProfile(
-        #     reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
-        #     history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST,
-        #     depth=1
-        # )
-        # self.pilot_listener = self.create_subscription(PilotInput, 'controller_input', self.pilot_listener_callback, 
-        #                                                callback_group=i2c_master_callback_group, qos_pofile=pilot_input_qos_profile, queue_length =1 , throttle_rate = 2000) # input recieved at 10Hz
+        self.copilot_listener = self.create_subscription(ThrusterMultipliers, 'thruster_multipliers', self.copilot_listener_callback, 100)
+        self.pilot_listener = self.create_subscription(PilotInput, 'controller_input', self.pilot_listener_callback, 1) # input recieved at 10Hz
 
         # Publishers
         # Comment out code below to remove slowdown
-        # self.imu_data_publisher = self.create_publisher(IMUData, "imu", 10)
-        # self.adc_data_publisher = self.create_publisher(ADCData, "adc", 10)
-        # self.temp_sensor_data_publisher = self.create_publisher(TempSensorData, "board_temp", 10)
-        # self.outside_temperature_probe_data_publisher = self.create_publisher(OutsideTempProbeData, "outside_temp_probe", 10)
+        self.diagnostics_data_publisher = self.create_publisher(DiagnosticsData, "diagnostics", 1)
+        self.outside_temperature_probe_data_publisher = self.create_publisher(OutsideTempProbeData, "outside_temp_probe", 1)
 
         # prevent unused variable warning
         self.copilot_listener 
@@ -225,13 +206,15 @@ class I2CMaster(Node):
         ###################### IMU ######################
         #################################################
 
+        self.imu_detected = False
+
         if self.i2c is not None:
             # Connect to BNO055
             try:
                 self.imu_sensor = BNO055_I2C(self.i2c)
                 self.last_temperature_val = 0xFFFF # per recommendation on (https://learn.adafruit.com/adafruit-bno055-absolute-orientation-sensor/python-circuitpython)
 
-                # self.imu_timer = self.create_timer(IMU_REQUESTS_PERIOD, self.obtain_imu_data, callback_group=i2c_master_callback_group)
+                self.imu_detected = True
 
                 self.get_logger().info("BNO055 DETECTED ON I2C BUS")
             except:
@@ -249,9 +232,6 @@ class I2CMaster(Node):
             self.get_logger().info("INITIALIZED SMBUS!")
         except:
             self.get_logger().error("COULD NOT INITIALIZE SMBUS")
-
-        # if self.bus is not None:
-        #     self.thruster_timer = self.create_timer(THRUSTER_TICK_PERIOD, self.tick_thrusters, callback_group=i2c_master_callback_group)
 
 
         #################################################
@@ -280,18 +260,14 @@ class I2CMaster(Node):
             self.configured_adcs = {}
             
             for key in ADC_ADDRESSES:
-                self.configured_adcs[key] = False
+                self.configured_adcs[key] = False       
 
-            # self.adc_timer = self.create_timer(ADC_REQUESTS_PERIOD, self.obtain_adc_data, callback_group=i2c_master_callback_group)
 
-        #################################################################
-        ###################### Temperature Sensors ######################
-        #################################################################
+        ###############################################################
+        ###################### DIAGNOSTICS TIMER ######################
+        ###############################################################
 
-        if self.bus is not None:
-            pass
-
-            # self.temp_sensor_timer = self.create_timer(TEMP_SENSOR_REQUESTS_PERIOD, self.obtain_temp_sensor_data, callback_group=i2c_master_callback_group)
+        self.diagnostics_timer = self.create_timer(DIAGNOSTICS_REQUESTS_PERIOD, self.diagnostics_timer_callback)
         
 
     def copilot_listener_callback(self, msg):
@@ -305,40 +281,55 @@ class I2CMaster(Node):
     def tick_thrusters(self):
         for channel in self.connected_channels:
             self.connected_channels[channel].tick()
-            # self.get_logger().info(str(self.connected_channels[channel].current)) # Temporary, useful for debug
 
-    def obtain_imu_data(self):
+    def obtain_imu_data(self, diagnostics_data):
         '''
         Grabs relevant information form the IMU on the I2C Bus.
         Every time a piece of data is accessed, that is an i2c read transation. These transactions finish by the time the value is
         returned. See (https://github.com/adafruit/Adafruit_CircuitPython_BNO055/blob/main/adafruit_bno055.py).
         '''
-        imu_data = IMUData()
 
-        imu_data.temperature = self.imu_sensor.temperature
+        diagnostics_data.temperature = self.imu_sensor.temperature
 
         # This code below was recommended by Adafruit (https://learn.adafruit.com/adafruit-bno055-absolute-orientation-sensor/python-circuitpython)
-        if abs(imu_data.temperature - self.last_temperature_val) == 128:
-            imu_data.temperature = 0b00111111 & imu_data.temperature
-        self.last_temperature_val = imu_data.temperature
+        if abs(diagnostics_data.temperature - self.last_temperature_val) == 128:
+            diagnostics_data.temperature = 0b00111111 & diagnostics_data.temperature
+        self.last_temperature_val = diagnostics_data.temperature
 
         # Below assignments only work because the imu returns size 3 tuples
         # The ROS IMUData message type demands size 3 arrays
-        imu_data.acceleration = list(self.imu_sensor.acceleration)
-        imu_data.magnetic = list(self.imu_sensor.magnetic) 
-        imu_data.euler = list(self.imu_sensor.euler)
-        imu_data.linear_acceleration = list(self.imu_sensor.linear_acceleration)
+        diagnostics_data.acceleration = list(self.imu_sensor.acceleration)
+        diagnostics_data.magnetic = list(self.imu_sensor.magnetic) 
+        diagnostics_data.euler = list(self.imu_sensor.euler)
+        diagnostics_data.linear_acceleration = list(self.imu_sensor.linear_acceleration)
 
-        self.imu_data_publisher.publish(imu_data)
+        return diagnostics_data
+
+    def diagnostics_timer_callback(self):
+        """
+        Calls various functions to obtain diagnostics data from the i2c bus. Publishes to the diagnostics data ROS message.
+        """
+
+        diagnostics_data = DiagnosticsData()
+
+        if self.bus is not None:
+            diagnostics_data = self.obtain_adc_data(diagnostics_data) 
+            diagnostics_data = self.obtain_temp_sensor_data(diagnostics_data)
+
+        if self.imu_detected:
+            diagnostics_data = self.obtain_imu_data(diagnostics_data)
+
+        self.diagnostics_data_publisher.publish(diagnostics_data)
+
 
         if self.debugger_mode:
             from std_msgs.msg import String
+            diagnostics_debug_data = String()
+            diagnostics_debug_data.data = str(diagnostics_data)
+            self.debugger.publish(diagnostics_debug_data)
 
-            imu_debug_data = String()
-            imu_debug_data.data = str(imu_data)
-            self.debugger.publish(imu_debug_data)
 
-    def obtain_adc_data(self):
+    def obtain_adc_data(self, diagnostics_data):
         """
         Initially, this function will set ADC configurations. This should be done on power-up as recommended on ADC datasheet.
 
@@ -366,8 +357,6 @@ class I2CMaster(Node):
         0b111 - Highest Conversion to Date (r/w) (ignored)
         """
 
-        adc_data = ADCData()
-
         for key, is_configured in self.configured_adcs.items():
 
             if is_configured: # Assume ADC is configured. Read conversion result
@@ -378,8 +367,12 @@ class I2CMaster(Node):
                     
                     read = self.bus.read_i2c_block_data(ADC_ADDRESSES[key], conversion_result_register, conversion_result_length_in_bytes)
 
-                    read_12_bit = int("0b" + bin(read[0])[6:] + bin(read[1])[2:8],2)
-                    adc_read_voltage = (read_12_bit/0b1111111111) * 3.3
+                    first_byte_data = read[0] << 6 # This will contain the 4 MSBs
+                    second_byte_data = read[1] >> 2  # This will contain the 6 LSBs
+                    
+                    # Combine the first and second byte conversion result data to get the 10 bit value,
+                    # Divide this by 3.3/(2**10) since analog input percision is 1024 from 0 to 3.3V
+                    adc_read_voltage = (first_byte_data + second_byte_data) * (3.3/(2**10)) 
 
                     voltage = ((sum(ADC_VOLTAGE_DIVIDER_VALUES[key]))/ADC_VOLTAGE_DIVIDER_VALUES[key][1]) * adc_read_voltage
                     
@@ -389,7 +382,7 @@ class I2CMaster(Node):
                     self.configured_adcs[key] == False
 
                 
-                setattr(adc_data, key, voltage) # The read value is converted to 12 bits
+                setattr(diagnostics_data, key, voltage) # The read value is converted to 12 bits
 
             else:
 
@@ -410,17 +403,11 @@ class I2CMaster(Node):
                 except OSError:
 
                     self.configured_adcs[key] = False
+
+        return diagnostics_data
                 
 
-        self.adc_data_publisher.publish(adc_data)
-
-        if self.debugger_mode:
-            from std_msgs.msg import String
-            adc_debug_data = String()
-            adc_debug_data.data = str(adc_data)
-            self.debugger.publish(adc_debug_data)
-
-    def obtain_temp_sensor_data(self):
+    def obtain_temp_sensor_data(self, diagnostics_data):
         '''
         The temperature sensor does not need to be configured, as the default configuration 
         options are good. The registers are as follows:
@@ -435,8 +422,6 @@ class I2CMaster(Node):
 
         temperature_reading_register = 0b00000000
         temperature_reading_register_length_in_bytes = 2 
-
-        temp_sensor_data = TempSensorData()
 
         for key, address in TEMPERATURE_SENSOR_ADDRESSES.items():
             try:
@@ -455,15 +440,9 @@ class I2CMaster(Node):
                 read = 0
 
             # Data sheet says to use 0.125 for conversion to celcius
-            setattr(temp_sensor_data, key, float(read * 0.125))
+            setattr(diagnostics_data, key, float(read * 0.125))
 
-        self.temp_sensor_data_publisher.publish(temp_sensor_data) 
-        
-        if self.debugger_mode:
-            from std_msgs.msg import String
-            temp_sensor_debug_data = String()
-            temp_sensor_debug_data.data = str(temp_sensor_data)
-            self.debugger.publish(temp_sensor_debug_data)
+        return diagnostics_data
 
     def pilot_listener_callback(self, msg): 
 
