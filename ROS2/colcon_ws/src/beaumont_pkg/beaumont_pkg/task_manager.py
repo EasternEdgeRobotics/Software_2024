@@ -122,6 +122,7 @@ class TaskManager(Node):
 def main(args=None):
     # global session
     Base.metadata.create_all(engine)
+    Base.metadata.create_all(engine2)
     # session = Session(engine)
     rclpy.init(args=args)
     task_manager = TaskManager()
