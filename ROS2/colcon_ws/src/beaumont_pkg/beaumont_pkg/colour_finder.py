@@ -3,6 +3,7 @@ import numpy as np
 import sys
 import tkinter as tk
 from tkinter import filedialog
+import easygui
 
 image_hsv = None
 pixel = (0,0,0) #RANDOM DEFAULT VALUE
@@ -62,7 +63,8 @@ def main():
     #OPEN DIALOG FOR READING THE IMAGE FILE
     root = tk.Tk()
     root.withdraw() #HIDE THE TKINTER GUI
-    file_path = filedialog.askopenfilename(filetypes = ftypes)
+    # file_path = filedialog.askopenfilename(filetypes = ftypes)
+    file_path = easygui.fileopenbox(msg="Choose a file")
     root.update()
     image_src = cv2.imread(file_path)
     cv2.imshow("BGR",image_src)
