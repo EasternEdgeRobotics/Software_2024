@@ -171,11 +171,18 @@ function HSVForm({ ros }: { ros: ROSLIB.Ros }) {
     
       colorsClient.callService(request, function (result) {
         try {
-          0;
+          // console.log(result)
+          if (result.result !== "Success") {
+            throw new Error("Error setting HSV values.");
+          } else {
+            alert("HSV values submitted successfully. \n" + "Lower: " + JSON.stringify(lowerHSV) + "\nUpper: " + JSON.stringify(upperHSV));
+          }
         } catch (error) {
           console.error("Error parsing result:", error); // Log parsing errors
+          alert("Error submitting HSV values.");
         }
       });
+    
   
     
   };

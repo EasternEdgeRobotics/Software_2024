@@ -79,6 +79,8 @@ class TaskManager(Node):
         finally:
             session.close()
 
+        response.result = "Success"
+
         return response
 
     def task_listener_callback(self, msg):
