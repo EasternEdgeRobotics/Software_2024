@@ -13,7 +13,7 @@ import { Home } from "@mui/icons-material";
 import { Col, Row } from "react-bootstrap";
 import taskJSON from "./tasks.json";
 import { Task } from "../types/Task";
-import { MenuSquareIcon } from "lucide-react";
+import { MenuSquareIcon, Settings2Icon } from "lucide-react";
 import SquareIcon from "@mui/icons-material/Square";
 
 import { Line, Bar } from "react-chartjs-2";
@@ -80,16 +80,16 @@ const ScreenshotView = ({ urls }: { urls: string[] }) => {
           borderRadius: 3,
           justifyContent: "center",
           backgroundColor: "rgba(208, 208, 208, 0)",
-          position: "relative", // add this line
+          position: "relative",
         }}
       >
         {urls.map((url, index) => (
           <Button
             sx={{
               color: "#e8e8e8",
-              width: "20vw", // adjust this value as needed
-              height: 60, // adjust this value as needed
-              borderRadius: 3.5, // adjust this value as needed
+              width: "20vw",
+              height: 60,
+              borderRadius: 3.5,
               backgroundColor: "#252525",
             }}
             onClick={() => redirectToScreenshot(urls, index as 0 | 1 | 2 | 3)}
@@ -124,6 +124,125 @@ const ScreenshotView = ({ urls }: { urls: string[] }) => {
     </Box>
   );
 };
+
+function HSVForm({ ros }: { ros: ROSLIB.Ros }) {
+  const [lower, setLower] = useState({ h: "", s: "", v: "" });
+  const [upper, setUpper] = useState({ h: "", s: "", v: "" });
+
+  const handleSubmit = (event: { preventDefault: () => void }) => {
+    event.preventDefault();
+
+    // Convert the HSV values to numbers
+    const lowerHSV = {
+      h: Number(lower.h),
+      s: Number(lower.s),
+      v: Number(lower.v),
+    };
+    const upperHSV = {
+      h: Number(upper.h),
+      s: Number(upper.s),
+      v: Number(upper.v),
+    };
+
+    // Validate the HSV values
+    if (!isValidHSV(lowerHSV) || !isValidHSV(upperHSV)) {
+      alert("Please enter valid HSV values.");
+      return;
+    }
+
+    // TODO: Do something with the HSV values
+    console.log("Lower:", lowerHSV);
+    console.log("Upper:", upperHSV);
+
+    const colorsClient = new ROSLIB.Service({
+      ros: ros,
+      name: "/set_color",
+      serviceType: "eer_messages/Config",
+    });
+
+    const request = new ROSLIB.ServiceRequest({
+      data: JSON.stringify({
+        lower: [lowerHSV.h, lowerHSV.s, lowerHSV.v],
+        upper: [upperHSV.h, upperHSV.s, upperHSV.v],
+      }),
+      state: 1,
+    });
+
+    
+      colorsClient.callService(request, function (result) {
+        try {
+          0;
+        } catch (error) {
+          console.error("Error parsing result:", error); // Log parsing errors
+        }
+      });
+  
+    
+  };
+
+  return (
+    <div style={{ margin: "25px" }}>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <h2>Lower HSV</h2>
+          <input
+            type="number"
+            value={lower.h}
+            onChange={(e) => setLower({ ...lower, h: e.target.value })}
+            placeholder="Hue"
+            style={{ width: "50px" }}
+          />
+          <input
+            type="number"
+            value={lower.s}
+            onChange={(e) => setLower({ ...lower, s: e.target.value })}
+            placeholder="Saturation"
+            style={{ width: "50px" }}
+          />
+          <input
+            type="number"
+            value={lower.v}
+            onChange={(e) => setLower({ ...lower, v: e.target.value })}
+            placeholder="Value"
+            style={{ width: "50px" }}
+          />
+
+          <h2>Upper HSV</h2>
+          <input
+            type="number"
+            value={upper.h}
+            onChange={(e) => setUpper({ ...upper, h: e.target.value })}
+            placeholder="Hue"
+            style={{ width: "50px" }}
+          />
+          <input
+            type="number"
+            value={upper.s}
+            onChange={(e) => setUpper({ ...upper, s: e.target.value })}
+            placeholder="Saturation"
+            style={{ width: "50px" }}
+          />
+          <input
+            type="number"
+            value={upper.v}
+            onChange={(e) => setUpper({ ...upper, v: e.target.value })}
+            placeholder="Value"
+            style={{ width: "50px" }}
+          />
+        </div>
+
+        <div style={{ marginTop: "20px" }}>
+          <button type="submit">Submit</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function isValidHSV({ h, s, v }: { h: number; s: number; v: number }) {
+  // Hue is between 0 and 360, saturation and value are between 0 and 100
+  return h >= 0 && h <= 360 && s >= 0 && s <= 100 && v >= 0 && v <= 100;
+}
 
 function SideBar() {
   //[To-do] acoount for mobile view
@@ -294,6 +413,96 @@ function SideBar() {
             setTasks={setTasks}
           />
           {/* More menu items... */}
+        </Menu>
+      </Sidebar>
+    </div>
+  );
+}
+
+function SideBar2() {
+  //[To-do] acoount for mobile view
+  const [collapsed, setCollapsed] = useState(true);
+  const [RosIP] = useAtom(ROSIP);
+  const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
+
+  useEffect(() => {
+    const rosInstance = new ROSLIB.Ros({});
+    rosInstance.connect(`ws://${RosIP}:9090`);
+    setRos(rosInstance);
+  }, [RosIP]);
+
+  const handleToggleSidebar = () => {
+    setCollapsed(!collapsed);
+    // task_publisher.publish(message);
+  };
+
+  const styles = {
+    sideBarHeight: {
+      height: "100vh",
+      overflow: "auto",
+    },
+    menuIcon: {
+      float: "right",
+      margin: "10px",
+    },
+  };
+
+  return (
+    <div style={{ display: "flex", position: "fixed", right: 0, zIndex: 900 }}>
+      <IconButton
+        onClick={handleToggleSidebar}
+        style={{
+          position: "fixed",
+          top: "65%",
+          right: !collapsed ? "700px" : "0",
+          transform: "translateY(-50%) rotate(180deg)",
+          backgroundColor: "#f6f6f6",
+          color: "black",
+          transition: "right 300ms",
+          borderRadius: "5px 50px 50px 5px",
+          padding: "10px",
+          paddingTop: "30px",
+          paddingBottom: "30px",
+          paddingLeft: "5px",
+          writingMode: "vertical-rl",
+          textOrientation: "mixed",
+        }}
+      >
+        Config
+        <div style={{ height: "5px" }} />
+        <Settings2Icon />
+      </IconButton>
+      <Sidebar
+        style={{
+          ...styles.sideBarHeight,
+          backdropFilter: "blur(10px)",
+        }}
+        collapsed={collapsed}
+        rtl={false}
+        width="700px"
+        collapsedWidth="0px"
+        backgroundColor="rgb(0, 0, 60, 0.8)"
+      >
+        <Menu>
+          <MenuItem></MenuItem>
+
+          <Box
+            sx={{
+              gap: 3,
+              flex: 0,
+              display: "inline-flex",
+              opacity: 0.9,
+              padding: "0 14px",
+              zIndex: 100,
+              alignSelf: "flex-end",
+              borderRadius: 3,
+              backgroundColor: "rgba(208, 208, 208, 0.2)",
+              position: "relative",
+              marginLeft: "30px",
+            }}
+          >
+            <HSVForm ros={ros}/>
+          </Box>
         </Menu>
       </Sidebar>
     </div>
@@ -601,7 +810,39 @@ function CSVHandler() {
 
   return (
     <div>
-      <input type="file" accept=".csv" onChange={handleFileChange} />
+      <style>{`
+        .upload-btn-wrapper {
+          position: relative;
+          overflow: hidden;
+          display: inline-block;
+        }
+
+        .btn {
+          border: 2px solid gray;
+          color: gray;
+          background-color: white;
+          padding: 8px 15px;
+          border-radius: 8px;
+          font-size: 16px;
+          font-weight: bold;
+        }
+
+        .upload-btn-wrapper input[type="file"] {
+          font-size: 40px;
+          position: absolute;
+          left: 0;
+          top: 0;
+          opacity: 0;
+        }
+      `}</style>
+
+      <div
+        className="upload-btn-wrapper"
+        style={{ marginLeft: "30px", marginTop: "20px" }}
+      >
+        <button className="btn">Upload a file</button>
+        <input type="file" accept=".csv" onChange={handleFileChange} />
+      </div>
       <div
         style={{
           backgroundColor: "rgba(225, 225, 225, 0.8)",
@@ -719,6 +960,7 @@ export function ControllerApp() {
         }}
       >
         <SideBar />
+        <SideBar2 />
       </div>
       <Row className="justify-content-center">
         <Col lg={3}>
@@ -727,6 +969,7 @@ export function ControllerApp() {
               <ScreenshotView urls={urls} />
             </div>
           </div>
+          <div style={{ height: "10px" }}></div>
           <CSVHandler />
         </Col>
       </Row>
