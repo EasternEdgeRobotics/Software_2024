@@ -602,26 +602,20 @@ class I2CMaster(Node):
         else:
             pitch = controller_inputs.pitch * self.power_multiplier * self.pitch_multiplier * 0.01  
 
-        sum_of_magnitudes_of_linear_movements = abs(surge) + abs(sway) + abs(heave)
-        sum_of_magnitudes_of_rotational_movements = abs(pitch) + abs(yaw)
+        sum_of_magnitudes_of_pilot_input = abs(surge) + abs(sway) + abs(heave) + abs(pitch) + abs(yaw)
 
-        strafe_power = sqrt(surge**2 + sway**2 + heave**2)
-        strafe_scaling_coefficient = strafe_power / (sum_of_magnitudes_of_linear_movements) if strafe_power else 0
-        strafe_average_coefficient = strafe_power / (strafe_power + sum_of_magnitudes_of_rotational_movements) if strafe_power or sum_of_magnitudes_of_rotational_movements else 0  
-        combined_strafe_coefficient = strafe_scaling_coefficient * strafe_average_coefficient
-        rotation_average_coefficient = sum_of_magnitudes_of_rotational_movements / (strafe_power + sum_of_magnitudes_of_rotational_movements) if strafe_power or sum_of_magnitudes_of_rotational_movements else 0
-
-        # The to decimal adjustment factor is 1.85 (max value that each thruster value can be)
+        # Ensure to scale the thruster values down such that they don't exceed 1 in magnitude
+        thruster_scaling_coefficient = 1 / sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0
 
         # Calculations below are based on thruster positions
-        thruster_values["for-port-bot"] = (((-surge)+(sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / 1.85
-        thruster_values["for-star-bot"] = (((-surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
-        thruster_values["aft-port-bot"] = (((surge)+(sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / -1.85
-        thruster_values["aft-star-bot"] = (((surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / 1.85
-        thruster_values["for-port-top"] = (((-surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / -1.85
-        thruster_values["for-star-top"] = (((-surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / -1.85
-        thruster_values["aft-port-top"] = (((surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / -1.85
-        thruster_values["aft-star-top"] = (((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / -1.85
+        thruster_values["for-port-bot"] = ((-surge)+(sway)+(heave)+(pitch)+(yaw)) * thruster_scaling_coefficient * 1
+        thruster_values["for-star-bot"] = ((-surge)+(-sway)+(heave)+(pitch)+(-yaw)) * thruster_scaling_coefficient * 1
+        thruster_values["aft-port-bot"] = ((surge)+(sway)+(heave)+ (-pitch)+(-yaw)) * thruster_scaling_coefficient * -1
+        thruster_values["aft-star-bot"] = ((surge)+(-sway)+(heave)+(-pitch)+(yaw)) * thruster_scaling_coefficient * 1
+        thruster_values["for-port-top"] = ((-surge)+(sway)+(-heave)+(-pitch)+(yaw)) * thruster_scaling_coefficient * -1
+        thruster_values["for-star-top"] = ((-surge)+(-sway)+(-heave)+(-pitch)+(-yaw)) * thruster_scaling_coefficient * -1
+        thruster_values["aft-port-top"] = ((surge)+(sway)+(-heave)+(pitch)+(-yaw)) * thruster_scaling_coefficient * -1
+        thruster_values["aft-star-top"] = ((surge)+(-sway)+(-heave)+(pitch)+(yaw)) * thruster_scaling_coefficient * -1
 
         ####################################################################
         ############################## DEBUG ###############################
