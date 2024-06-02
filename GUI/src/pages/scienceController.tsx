@@ -157,22 +157,20 @@ function HSVForm({ ros }: { ros: ROSLIB.Ros }) {
     const colorsClient = new ROSLIB.Service({
       ros: ros,
       name: "/set_color",
-      serviceType: "eer_messages/Config",
+      serviceType: "eer_messages/HSVColours",
     });
 
     const request = new ROSLIB.ServiceRequest({
-      data: JSON.stringify({
-        lower: [lowerHSV.h, lowerHSV.s, lowerHSV.v],
-        upper: [upperHSV.h, upperHSV.s, upperHSV.v],
-      }),
-      state: 1,
+      load_to_database: false, // State == 0 indicates we are looking to load colours into database
+      lower_HSV: [lowerHSV.h, lowerHSV.s, lowerHSV.v],
+      upper_hsv: [upperHSV.h, upperHSV.s, upperHSV.v],
     });
 
     
       colorsClient.callService(request, function (result) {
         try {
           // console.log(result)
-          if (result.result !== "Success") {
+          if (!result.success) {
             throw new Error("Error setting HSV values.");
           } else {
             alert("HSV values submitted successfully. \n" + "Lower: " + JSON.stringify(lowerHSV) + "\nUpper: " + JSON.stringify(upperHSV));
@@ -247,8 +245,8 @@ function HSVForm({ ros }: { ros: ROSLIB.Ros }) {
 }
 
 function isValidHSV({ h, s, v }: { h: number; s: number; v: number }) {
-  // Hue is between 0 and 360, saturation and value are between 0 and 100
-  return h >= 0 && h <= 360 && s >= 0 && s <= 100 && v >= 0 && v <= 100;
+  // Hue is between 0 and 180, saturation and value are between 0 and 255
+  return h >= 0 && h <= 180 && s >= 0 && s <= 255 && v >= 0 && v <= 255;
 }
 
 function SideBar() {

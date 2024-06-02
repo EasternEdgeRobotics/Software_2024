@@ -1,4 +1,4 @@
-from eer_messages.srv import Config
+from eer_messages.srv import Config, HSVColours
 
 import rclpy
 from rclpy.node import Node
@@ -46,7 +46,7 @@ class TaskManager(Node):
         self.get_logger().info("TASK MANAGE NODE ALIVE")
         self.srv1 = self.create_service(Config, "all_tasks", self.get_all_tasks)
         self.srv2 = self.create_service(Config, "reset_tasks", self.delete_all_tasks)
-        self.srv3 = self.create_service(Config, "set_color", self.colors_callback)
+        self.srv3 = self.create_service(HSVColours, "set_color", self.colors_callback)
 
         self.subscription = self.create_subscription(
             String,
@@ -55,36 +55,44 @@ class TaskManager(Node):
             10)
     
     def colors_callback(self, request, response):
-        self.get_logger().info(request.data)
-        data = json.loads(request.data)
-        lower = data['lower']
-        upper = data['upper']
-
-        self.get_logger().info(str(lower))
 
         session = ConfigSession()
-        try:
-            colors = session.query(Color)
-            if colors is None:
-                pass
-            elif colors.count() >= 1:
-                colors.delete()
+
+        if request.load_to_database: # We are looking to load colours into database
+
+            try:
+                colors = session.query(Color)
+                if colors is None:
+                    pass
+                elif colors.count() >= 1:
+                    colors.delete()
+                    session.commit()
+                
+                new_color = Color(h_upper=request.upper_hsv[0], s_upper=request.upper_hsv[1], v_upper=request.upper_hsv[2], h_lower=request.lower_hsv[0], s_lower=request.lower_hsv[1], v_lower=request.lower_hsv[2])
+
+                session.add(new_color)
                 session.commit()
-            
-            new_color = Color(h_upper=upper[0], s_upper=upper[1], v_upper=upper[2], h_lower=lower[0], s_lower=lower[1], v_lower=lower[2])
 
-            session.add(new_color)
-            session.commit()
+            finally:
+                session.close()
 
-        finally:
-            session.close()
+            response.success = True # 1 indicates success
 
-        response.result = "Success"
+            return response
+        
+        elif not request.load_to_database: # We are looking to get colours from database
 
-        return response
+            for row in range(session.query(Color).count()): # There will only be one "row"
+                response.lower_hsv = row.dict()["lowerBounds"]
+                response.upper_hsv = row.dict()["upperBounds"]
+                
+                response.success = True # Indicates success
+                
+            return response
+
+
 
     def task_listener_callback(self, msg):
-        self.get_logger().info(msg.data)
         data = json.loads(msg.data)
         taskID:str = data['id']
         taskStatus:bool = data['status']
@@ -109,7 +117,6 @@ class TaskManager(Node):
             tasks = session.query(Task).all()
             result_dict = {task.id: task.status for task in tasks}
             response.result = json.dumps(result_dict)  # Convert the dictionary to a JSON string
-            self.get_logger().info(response.result)
         except Exception as e:
             self.get_logger().error(f"Error getting tasks: {e}")
         return response

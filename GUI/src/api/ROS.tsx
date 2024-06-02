@@ -221,26 +221,26 @@ export function InitROS() {
         }
     ,[requestingCameraURLs]);
 
-    const DiagnosticsDataListener = new ROSLIB.Topic({ros:ros,
-        name:"/diagnostics",
-        messageType: "eer_messages/DiagnosticsData"
-    })
+    // const DiagnosticsDataListener = new ROSLIB.Topic({ros:ros,
+    //     name:"/diagnostics",
+    //     messageType: "eer_messages/DiagnosticsData"
+    // })
 
-    DiagnosticsDataListener.subscribe(function(message){
+    // DiagnosticsDataListener.subscribe(function(message){
         
-        setADCArray(
-            {adc_48v_bus:(message as any).adc_48v_bus,
-                adc_12v_bus:(message as any).adc_12v_bus,
-                adc_5v_bus:(message as any).adc_5v_bus});
+    //     setADCArray(
+    //         {adc_48v_bus:(message as any).adc_48v_bus,
+    //             adc_12v_bus:(message as any).adc_12v_bus,
+    //             adc_5v_bus:(message as any).adc_5v_bus});
 
-        setTemperatureArray(
-            {power_board_u8:(message as any).power_board_u8,
-            power_board_u9:(message as any).power_board_u9,
-            power_board_u10:(message as any).power_board_u10,
-            mega_board_ic2:(message as any).mega_board_ic2,
-            power_board_u11:(message as any).power_board_u11,
-            mega_board_ic1:(message as any).mega_board_ic1}); 
-    })
+    //     setTemperatureArray(
+    //         {power_board_u8:(message as any).power_board_u8,
+    //         power_board_u9:(message as any).power_board_u9,
+    //         power_board_u10:(message as any).power_board_u10,
+    //         mega_board_ic2:(message as any).mega_board_ic2,
+    //         power_board_u11:(message as any).power_board_u11,
+    //         mega_board_ic1:(message as any).mega_board_ic1}); 
+    // })
 
     // const ImuDataListener = new ROSLIB.Topic({ros:ros,
     //     name:"/imu",

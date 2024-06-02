@@ -11,7 +11,7 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
 	"srv/Config.srv"
-	"srv/Multipliers.srv"
+	"srv/HSVColours.srv"
 	"msg/ThrusterMultipliers.msg"
 	"msg/PilotInput.msg"
 	"msg/DiagnosticsData.msg"

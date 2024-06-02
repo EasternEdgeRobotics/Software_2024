@@ -13,7 +13,6 @@ from eer_messages.srv import Config
 
 # Import libraries for MJPEG stream viewing and colour filtering
 import cv2 
-from PIL import Image as PIL_Image
 import numpy as np
 import urllib.request
 
@@ -217,10 +216,14 @@ class AutonomusBrainCoralTransplant(Node):
                 # This is currently defined as taking up more than 8% of the image
                 if (len(contours) > 0) and (biggest_contour_area > mask.shape[0] * mask.shape[1] *0.08): 
                     brain_coral_area_center_location_x, brain_coral_area_center_location_y = self.get_contour_center(biggest_contour)
+                    cv2.drawContours(mask, [biggest_contour], 0, (0,255,0), 3)
                     brain_coral_area_found = True
                 else:
                     brain_coral_area_center_location_x, brain_coral_area_center_location_y = 0, 0
                     brain_coral_area_found = False
+
+                cv2.imshow("eh bhy",mask)
+                cv2.waitKey(1)
                     
                     
                 # The following algoritm depends on whether or not the brain coral area was found
@@ -234,7 +237,7 @@ class AutonomusBrainCoralTransplant(Node):
 
                     # Attempt to center atop region such that the brain coral held by the claw will hover atop brain coral region 
                     desired_x_location = mask.shape[0]*0.5 
-                    desired_y_location = mask.shape[1]*0.2 
+                    desired_y_location = mask.shape[1]*0.5 
 
                     aligned_x = False
                     aligned_y = False
@@ -316,16 +319,18 @@ class AutonomusBrainCoralTransplant(Node):
                         goal_handle.publish_feedback(feedback_msg)
 
 
+        cv2.destroyAllWindows()
+
         # Action loop is exited. Ensure to switch over control to pilot by resetting the multipliers to their inital value and publishing empty pilot input
         controller_input = PilotInput()
 
         restored_power_multipliers = ThrusterMultipliers()
-        restored_power_multipliers.power = goal_handle.starting_power
-        restored_power_multipliers.surge = goal_handle.starting_surge
-        restored_power_multipliers.sway = goal_handle.starting_sway
-        restored_power_multipliers.heave = goal_handle.starting_heave
-        restored_power_multipliers.pitch = goal_handle.starting_pitch
-        restored_power_multipliers.yaw = goal_handle.starting_yaw
+        restored_power_multipliers.power = goal_handle.request.starting_power
+        restored_power_multipliers.surge = goal_handle.request.starting_surge
+        restored_power_multipliers.sway = goal_handle.request.starting_sway
+        restored_power_multipliers.heave = goal_handle.request.starting_heave
+        restored_power_multipliers.pitch = goal_handle.request.starting_pitch
+        restored_power_multipliers.yaw = goal_handle.request.starting_yaw
 
 
         feedback_msg.status = "Giving control back to the pilot"

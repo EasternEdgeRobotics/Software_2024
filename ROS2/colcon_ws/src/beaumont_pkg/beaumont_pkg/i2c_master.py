@@ -581,9 +581,7 @@ class I2CMaster(Node):
 
     def rov_math(self, controller_inputs):
         '''
-        Determines what power to give to each thruster based on pilot input.
-
-        # TODO Current issue (which was an issue with previous years aswell) is that the absolute values for each thruster can exceed 1 up to a max value of sqrt(2). Can be fixed by adjusting thruster speeds or approperiate scaling.
+        Determines how much power to give to each thruster based on pilot input.
         '''
 
         thruster_values = {}
@@ -593,29 +591,50 @@ class I2CMaster(Node):
         yaw = controller_inputs.yaw * self.power_multiplier * self.yaw_multiplier * 0.01
 
         if controller_inputs.heave_up or controller_inputs.heave_down:
-            heave = ((self.power_multiplier * self.heave_multiplier) if controller_inputs.heave_up else 0) + ((-self.power_multiplier * self.heave_multiplier) if controller_inputs.heave_down else 0)
-        else:
-            heave = controller_inputs.heave * self.power_multiplier * self.heave_multiplier * 0.01  
+            controller_inputs.heave = (100 if controller_inputs.heave_up else 0) + (-100 if controller_inputs.heave_down else 0)
+            
+        heave = controller_inputs.heave * self.power_multiplier * self.heave_multiplier * 0.01   
 
         if controller_inputs.pitch_up or controller_inputs.pitch_down:
-            pitch = ((self.power_multiplier * self.pitch_multiplier) if controller_inputs.pitch_up else 0) + ((-self.power_multiplier * self.pitch_multiplier) if controller_inputs.pitch_down else 0)
-        else:
-            pitch = controller_inputs.pitch * self.power_multiplier * self.pitch_multiplier * 0.01  
+            controller_inputs.pitch = (100 if controller_inputs.pitch_up else 0) + (-100 if controller_inputs.pitch_down else 0)
+        
+        pitch = controller_inputs.pitch * self.power_multiplier * self.pitch_multiplier * 0.01  
 
         sum_of_magnitudes_of_pilot_input = abs(surge) + abs(sway) + abs(heave) + abs(pitch) + abs(yaw)
+
+        # These adjustment factors determine how much to decrease power in each thruster due to multipliers.
+        # The first mutliplication term determines the total % to remove of the inital thruster direction,
+        # The second term scales that thruster direction down based on what it makes up of the sum of pilot input, and also applies a sign
+
+        surge_adjustment = (1 - (self.power_multiplier * self.surge_multiplier * abs(controller_inputs.surge) * 0.01)) * (surge/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0)  
+        sway_adjustment = (1 - (self.power_multiplier * self.sway_multiplier * abs(controller_inputs.sway) * 0.01)) * (sway/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        heave_adjustment = (1 - (self.power_multiplier * self.heave_multiplier * abs(controller_inputs.heave) * 0.01)) * (heave/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        pitch_adjustment = (1 - (self.power_multiplier * self.pitch_multiplier * abs(controller_inputs.pitch) * 0.01)) * (pitch/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        yaw_adjustment = (1 - (self.power_multiplier * self.yaw_multiplier * abs(controller_inputs.yaw) * 0.01)) * (yaw/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
 
         # Ensure to scale the thruster values down such that they don't exceed 1 in magnitude
         thruster_scaling_coefficient = 1 / sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0
 
-        # Calculations below are based on thruster positions
-        thruster_values["for-port-bot"] = ((-surge)+(sway)+(heave)+(pitch)+(yaw)) * thruster_scaling_coefficient * 1
-        thruster_values["for-star-bot"] = ((-surge)+(-sway)+(heave)+(pitch)+(-yaw)) * thruster_scaling_coefficient * 1
-        thruster_values["aft-port-bot"] = ((surge)+(sway)+(heave)+ (-pitch)+(-yaw)) * thruster_scaling_coefficient * -1
-        thruster_values["aft-star-bot"] = ((surge)+(-sway)+(heave)+(-pitch)+(yaw)) * thruster_scaling_coefficient * 1
-        thruster_values["for-port-top"] = ((-surge)+(sway)+(-heave)+(-pitch)+(yaw)) * thruster_scaling_coefficient * -1
-        thruster_values["for-star-top"] = ((-surge)+(-sway)+(-heave)+(-pitch)+(-yaw)) * thruster_scaling_coefficient * -1
-        thruster_values["aft-port-top"] = ((surge)+(sway)+(-heave)+(pitch)+(-yaw)) * thruster_scaling_coefficient * -1
-        thruster_values["aft-star-top"] = ((surge)+(-sway)+(-heave)+(pitch)+(yaw)) * thruster_scaling_coefficient * -1
+        # Calculations below are based on thruster positions:
+
+        # First term:
+        # The net pilot input based on how it applies to the specifc thruster (some are reveresed) is calculated.
+        # Then, this is scaled down by the thruster scaling coefficent such that the max absolute value it can attain is 1.
+        # This will properly activate distribute load and direction among thrusters such that the desired movement is reached,
+        # but the first term cancels out the effect of the thruster multipliers 
+
+        # Directional adjustment factors:
+        # These adjustment factors will never increase the power going to a single thruster.
+        # They will only serve to proportionally decrease it in order to reduce power in a certain direction. 
+         
+        thruster_values["for-port-bot"] = ((((-surge)+(sway)+(heave)+(pitch)+(yaw)) * thruster_scaling_coefficient) + surge_adjustment - sway_adjustment - heave_adjustment - pitch_adjustment - yaw_adjustment)
+        thruster_values["for-star-bot"] = ((((-surge)+(-sway)+(heave)+(pitch)+(-yaw)) * thruster_scaling_coefficient) + surge_adjustment + sway_adjustment - heave_adjustment - pitch_adjustment + yaw_adjustment)
+        thruster_values["aft-port-bot"] = -1 * ((((surge)+(sway)+(heave)+ (-pitch)+(-yaw)) * thruster_scaling_coefficient) - surge_adjustment - sway_adjustment - heave_adjustment + pitch_adjustment + yaw_adjustment)
+        thruster_values["aft-star-bot"] = ((((surge)+(-sway)+(heave)+(-pitch)+(yaw)) * thruster_scaling_coefficient) - surge_adjustment + sway_adjustment - heave_adjustment + pitch_adjustment - yaw_adjustment)
+        thruster_values["for-port-top"] = -1 * ((((-surge)+(sway)+(-heave)+(-pitch)+(yaw)) * thruster_scaling_coefficient) + surge_adjustment - sway_adjustment + heave_adjustment + pitch_adjustment - yaw_adjustment)
+        thruster_values["for-star-top"] = -1 * ((((-surge)+(-sway)+(-heave)+(-pitch)+(-yaw)) * thruster_scaling_coefficient) + surge_adjustment + sway_adjustment + heave_adjustment + pitch_adjustment + yaw_adjustment)
+        thruster_values["aft-port-top"] = -1 * ((((surge)+(sway)+(-heave)+(pitch)+(-yaw)) * thruster_scaling_coefficient) - surge_adjustment - sway_adjustment + heave_adjustment - pitch_adjustment + yaw_adjustment)
+        thruster_values["aft-star-top"] = -1 * ((((surge)+(-sway)+(-heave)+(pitch)+(yaw)) * thruster_scaling_coefficient) - surge_adjustment + sway_adjustment + heave_adjustment - pitch_adjustment - yaw_adjustment)
 
         ####################################################################
         ############################## DEBUG ###############################
