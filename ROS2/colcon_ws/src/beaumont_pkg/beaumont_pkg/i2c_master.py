@@ -1,5 +1,5 @@
 import rclpy
-
+from rclpy.node import Node
 from eer_messages.msg import ThrusterMultipliers, PilotInput, DiagnosticsData, OutsideTempProbeData
 
 import board
