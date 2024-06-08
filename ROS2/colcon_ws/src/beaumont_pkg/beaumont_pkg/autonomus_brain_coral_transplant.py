@@ -13,7 +13,6 @@ from eer_messages.srv import Config
 
 # Import libraries for MJPEG stream viewing and colour filtering
 import cv2 
-from PIL import Image as PIL_Image
 import numpy as np
 import urllib.request
 
@@ -22,11 +21,17 @@ from time import time, sleep
 import json
 
 # Out of the 4 cameras on Beaumont, the brain coral transplant action node will use the downward-looking camera
-BOTTOM_CAMERA_INDEX = 2 
+BOTTOM_CAMERA_INDEX = 3
 
 # The required heave time after picking up the brain coral may differ between simulation and real life
-HEAVE_TIME_SIMULATION = 6 
-HEAVE_TIME = 5
+HEAVE_TIME_SIMULATION = 10 
+HEAVE_TIME = 10
+
+xy_FINE_TUNING_SIMULATION = 1
+xy_FINE_TUNING = 5
+
+HEAVE_SPEED_SIMULATION = 10
+HEAVE_SPEED = 30
 
 class AutonomusBrainCoralTransplant(Node):
     """
@@ -160,6 +165,28 @@ class AutonomusBrainCoralTransplant(Node):
         # Predefine variables before entering loop
         heave_stage = True
         time_since_action_start = time()
+        time_since_pilot_input_publishing = time()
+
+        ##################### Calculation Reduction #####################
+
+        first_iteration = True # Will be set to false after the first iteration
+
+        # Will inialize as many variables as possible here to avoid recalculating the same values
+        camera_stream_area = 0
+
+        camera_stream_area_for_biggest_contour_detection = 0
+        desired_x_location = 0
+        desired_y_location = 0
+
+        percent_5_of_x_resolution = 0
+        percent_5_of_y_resolution = 0
+
+        alignment_adjustment_value_pos = xy_FINE_TUNING_SIMULATION if goal_handle.request.is_for_sim else xy_FINE_TUNING
+        alignment_adjustment_value_neg = -xy_FINE_TUNING_SIMULATION if goal_handle.request.is_for_sim else -xy_FINE_TUNING
+
+        heave_speed = HEAVE_SPEED_SIMULATION if goal_handle.request.is_for_sim else HEAVE_SPEED
+
+        #################################################################
 
         # Action loop
         while True:
@@ -177,6 +204,8 @@ class AutonomusBrainCoralTransplant(Node):
 
             # Initialize the controller_input message 
             controller_input = PilotInput()
+
+            controller_input.is_autonomous = True
 
             # Convert the MJPEG stream into a format recognizable by OpenCV
             bytes += stream.read(1024)
@@ -201,6 +230,20 @@ class AutonomusBrainCoralTransplant(Node):
                 # This is passed in by the action client when requesting the goal. 
                 mask = cv2.inRange(hsv_image, np.array(goal_handle.request.lower_hsv_bound), np.array(goal_handle.request.upper_hsv_bound))
 
+                if first_iteration:
+
+                    # Perform the following calculations only on the first loop iteration
+
+                    camera_stream_area_for_biggest_contour_detection = mask.shape[0] * mask.shape[1] * 0.04
+
+                    desired_x_location = mask.shape[0]*0.5 
+                    desired_y_location = mask.shape[1]*0.1
+
+                    percent_5_of_x_resolution = mask.shape[0] * 0.05
+                    percent_5_of_y_resolution = mask.shape[1] * 0.05
+
+                    first_iteration = False
+
                 # Grab the contours of the filtered region
                 contours = self.get_contours(mask)
 
@@ -213,77 +256,89 @@ class AutonomusBrainCoralTransplant(Node):
                         biggest_contour_area = area
                         biggest_contour = contour
 
-                # If there is one decently sized contour, proceed to centered atop it. 
-                # This is currently defined as taking up more than 8% of the image
-                if (len(contours) > 0) and (biggest_contour_area > mask.shape[0] * mask.shape[1] *0.08): 
+                # If there is one decently sized contour, proceed to center atop it. 
+                if (len(contours) > 0) and (biggest_contour_area > camera_stream_area_for_biggest_contour_detection): 
                     brain_coral_area_center_location_x, brain_coral_area_center_location_y = self.get_contour_center(biggest_contour)
                     brain_coral_area_found = True
                 else:
                     brain_coral_area_center_location_x, brain_coral_area_center_location_y = 0, 0
                     brain_coral_area_found = False
                     
-                    
                 # The following algoritm depends on whether or not the brain coral area was found
                 if brain_coral_area_found:
                     
                     heave_stage = False
-                        
-                    controller_input = PilotInput()
 
                     feedback_msg.status = "Found brain coral area: "
-
-                    # Attempt to center atop region such that the brain coral held by the claw will hover atop brain coral region 
-                    desired_x_location = mask.shape[0]*0.5 
-                    desired_y_location = mask.shape[1]*0.2 
 
                     aligned_x = False
                     aligned_y = False
 
                     # If the brain coral region is not within 5% of the desired area, continue centering on it
-                    if abs(brain_coral_area_center_location_x - desired_x_location) > mask.shape[0] * 0.05: 
+                    if abs(brain_coral_area_center_location_x - desired_x_location) > percent_5_of_x_resolution: 
                         aligned_x = False
                         if brain_coral_area_center_location_x < desired_x_location:
-                            controller_input.sway = -10
+                            controller_input.sway = alignment_adjustment_value_neg
                             feedback_msg.status += "Swaying left "
                         else:
-                            controller_input.sway = 10
+                            controller_input.sway = alignment_adjustment_value_pos
                             feedback_msg.status += "Swaying right "
+                        self.get_logger().info(f"{(brain_coral_area_center_location_x, desired_x_location)}")
                     else: 
                         controller_input.sway = 0
                         aligned_x = True
 
                     # Also center in the y
-                    if abs(brain_coral_area_center_location_y - desired_y_location) > mask.shape[1] * 0.05: 
+                    if abs(brain_coral_area_center_location_y - desired_y_location) > percent_5_of_y_resolution: 
                         aligned_y = False
                         if brain_coral_area_center_location_y < desired_y_location:
-                            controller_input.surge = 10
+                            controller_input.surge = alignment_adjustment_value_pos
                             feedback_msg.status += "Surging forward"
                         else:
-                            controller_input.surge = -10
+                            controller_input.surge = alignment_adjustment_value_neg
                             feedback_msg.status += "Surging back"
                     else:
                         controller_input.surge = 0
                         aligned_y = True
 
-                    # Once aligned, open the claw to drop the object
+                    # Once aligned, heave down on brain coral area
                     if aligned_x and aligned_y:
 
-                        controller_input.open_claw  
+                        if (biggest_contour_area < (camera_stream_area * 0.5)):
+                            controller_input.heave = -heave_speed
 
-                        self.pilot_publisher.publish(controller_input)
+                            feedback_msg.status += "Aligned! Heaving Down!"
 
-                        feedback_msg.status += "Opening Claw"
+                        else:
+                            controller_input.open_claw = True
+                            controller_input.heave = -10
 
-                        goal_handle.publish_feedback(feedback_msg) 
+                            
+                            claw_opening_start_time = time()
 
-                        break 
+                            while (time()-claw_opening_start_time < 5):
+                                if time()-time_since_pilot_input_publishing > 0.1:
+                                    
+                                    feedback_msg.status = "Opening Claw!"
+
+                                    time_since_pilot_input_publishing = time()
+
+                                    goal_handle.publish_feedback(feedback_msg) 
+                                    self.pilot_publisher.publish(controller_input)
+
+                            
+                            feedback_msg.status = "Autonomus task done!"
+
+                            goal_handle.publish_feedback(feedback_msg) 
+
+                            break # Break out of loop to end autonomus task
 
                     else:
 
                         # Ensure brain coral is being gripped until it is time to let go 
-                        controller_input.close_claw
+                        controller_input.close_claw = True
 
-                    self.pilot_publisher.publish(controller_input)
+                    
 
                     goal_handle.publish_feedback(feedback_msg) 
 
@@ -292,10 +347,8 @@ class AutonomusBrainCoralTransplant(Node):
                     # Initially, Beaumont will heave after the pilot initates autonomus mode
                     if heave_stage:
 
-                        controller_input = PilotInput()
-                        controller_input.heave = 100
+                        controller_input.heave = heave_speed*3
                         controller_input.close_claw = True
-                        self.pilot_publisher.publish(controller_input)
 
                         feedback_msg.status = "Heaving up"
                         goal_handle.publish_feedback(feedback_msg)
@@ -306,26 +359,31 @@ class AutonomusBrainCoralTransplant(Node):
                     # Surge forward until the brain coral region is detected. Pilot will be facing the coral reef when autonomus mode is initalized
                     else:
 
-                        controller_input = PilotInput()
-                        controller_input.surge = 100
+                        controller_input.surge = heave_speed
                         controller_input.close_claw = True
                         controller_input.heave = 0
-                        self.pilot_publisher.publish(controller_input)
 
                         feedback_msg.status = "Surging forward"
                         goal_handle.publish_feedback(feedback_msg)
+                
+                
+                if time()-time_since_pilot_input_publishing > 0.1:
+                    time_since_pilot_input_publishing = time()
+                    self.pilot_publisher.publish(controller_input)
 
 
         # Action loop is exited. Ensure to switch over control to pilot by resetting the multipliers to their inital value and publishing empty pilot input
         controller_input = PilotInput()
 
+        controller_input.is_autonomous = True
+
         restored_power_multipliers = ThrusterMultipliers()
-        restored_power_multipliers.power = goal_handle.starting_power
-        restored_power_multipliers.surge = goal_handle.starting_surge
-        restored_power_multipliers.sway = goal_handle.starting_sway
-        restored_power_multipliers.heave = goal_handle.starting_heave
-        restored_power_multipliers.pitch = goal_handle.starting_pitch
-        restored_power_multipliers.yaw = goal_handle.starting_yaw
+        restored_power_multipliers.power = goal_handle.request.starting_power
+        restored_power_multipliers.surge = goal_handle.request.starting_surge
+        restored_power_multipliers.sway = goal_handle.request.starting_sway
+        restored_power_multipliers.heave = goal_handle.request.starting_heave
+        restored_power_multipliers.pitch = goal_handle.request.starting_pitch
+        restored_power_multipliers.yaw = goal_handle.request.starting_yaw
 
 
         feedback_msg.status = "Giving control back to the pilot"

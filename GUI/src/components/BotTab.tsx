@@ -23,7 +23,8 @@ import {
     PilotActions,
     ADCArray,
     TemperatureArray,
-    KeyboardInputMap
+    KeyboardInputMap,
+    AutonomousModeStatus
 } from "../api/Atoms";
 import { useState, useEffect } from "react";
 
@@ -43,6 +44,7 @@ export function BotTab() {
     const [profilesList] = useAtom(ProfilesList);
     const [currentProfile] = useAtom(CurrentProfile);
     const [mappings] = useAtom(Mappings);
+    const [autonomousModeStatus] = useAtom(AutonomousModeStatus);
     const [, setControllerInput] = useAtom(ControllerInput);
     const [controller1Detected, setController1Detected] = useState(false);
     const [controller2Detected, setController2Detected] = useState(false);
@@ -345,6 +347,9 @@ export function BotTab() {
                             <Switch
                                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => { setKeyboardMode(event.target.checked); }}
                             />
+                        </Grid>
+                        <Grid item xs={12}>
+                            {autonomousModeStatus}
                         </Grid>
                     </Grid>
                 </Grid>

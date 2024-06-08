@@ -1,6 +1,8 @@
 import { useAtom } from "jotai";
 import ROSLIB, { Ros } from "roslib";
-import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs, ADCArray, TemperatureArray } from "./Atoms";
+import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, 
+    RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, 
+    RequestingCameraURLs, ADCArray, TemperatureArray, AutonomousModeStatus } from "./Atoms";
 import React from "react";
 
 export function InitROS() {
@@ -15,6 +17,7 @@ export function InitROS() {
     const [cameraURLs, setCameraURLs] = useAtom(CameraURLs);
     const [currentProfile,] = useAtom(CurrentProfile);
     const [controllerInput, setControllerInput] = useAtom(ControllerInput); // The current controller input from the pilot
+    const [,setAutonomousModeStatus] = useAtom(AutonomousModeStatus);
 
     const [hasRecieved, setHasRecieved] = React.useState<boolean>(false);
     const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
@@ -104,7 +107,8 @@ export function InitROS() {
             turn_stepper_cw: controllerInput[13] ? true: false,
             turn_stepper_ccw: controllerInput[14] ? true: false,
             read_outside_temperature_probe: controllerInput[15] ? true: false,
-            enter_auto_mode: controllerInput[16] ? true: false
+            enter_auto_mode: controllerInput[16] ? true: false,
+            is_autonomous: false
             });
         controllerInputTopic.publish(controllerInputVals);
     }
@@ -241,6 +245,15 @@ export function InitROS() {
             mega_board_ic2:(message as any).mega_board_ic2,
             power_board_u11:(message as any).power_board_u11,
             mega_board_ic1:(message as any).mega_board_ic1}); 
+    })
+
+    const AutonomousModeStatusListener = new ROSLIB.Topic({ros:ros,
+        name:"/autonomous_mode_status",
+        messageType: "std_msgs/String"
+    })
+
+    AutonomousModeStatusListener.subscribe(function(message){
+        setAutonomousModeStatus((message as any).data);
     })
 
     // const ImuDataListener = new ROSLIB.Topic({ros:ros,

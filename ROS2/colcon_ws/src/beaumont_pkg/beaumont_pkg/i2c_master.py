@@ -1,12 +1,18 @@
 import rclpy
+from rclpy.node import Node
+from rclpy.action import ActionClient
 
 from eer_messages.msg import ThrusterMultipliers, PilotInput, DiagnosticsData, OutsideTempProbeData
+from eer_messages.action import AutoMode 
+from eer_messages.srv import HSVColours
+from std_msgs.msg import String
+
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 
 import board
 from smbus2 import SMBus
 from adafruit_bno055 import BNO055_I2C
-
-from math import sqrt
 
 
 # Thurster channels are based on Beaumont
@@ -117,7 +123,7 @@ class Thruster:
 
                 # If communication with RP2040 fails, attempt to arm the thruster again as soon as communication is reestablished
                 try:
-                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current)) # HARDCODED CENTER
+                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current)) 
                 except OSError:
                     self.thruster_armed = False
 
@@ -126,7 +132,7 @@ class Thruster:
 
                 # If communication with RP2040 fails, attempt to arm the thruster again as soon as communication is reestablished
                 try:
-                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current)) # HARDCODED CENTER
+                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current)) 
                 except OSError:
                     self.thruster_armed = False
 
@@ -164,6 +170,20 @@ class I2CMaster(Node):
         # Comment out code below to remove slowdown
         self.diagnostics_data_publisher = self.create_publisher(DiagnosticsData, "diagnostics", 1)
         self.outside_temperature_probe_data_publisher = self.create_publisher(OutsideTempProbeData, "outside_temp_probe", 1)
+        self.autonomous_mode_publisher = self.create_publisher(String, "/autonomous_mode_status", 10)
+
+        # Autonomus movement node
+        self._action_client = ActionClient(self, AutoMode, 'autonomus_brain_coral_transplant')
+        self.autonomous_mode_active = False
+
+        # Client to fetch the hsv colour values camera saved on the task_manager database
+        self.brain_coral_hsv_colour_bounds_client = self.create_client(HSVColours, 'set_color', callback_group=ReentrantCallbackGroup())
+
+        # The default bounds filter for the colour Black
+        self.brain_coral_hsv_colour_bounds = {
+            "upper_hsv":[10,10,40],
+            "lower_hsv":[0,0,0]
+        }
 
         # prevent unused variable warning
         self.copilot_listener 
@@ -187,7 +207,6 @@ class I2CMaster(Node):
         ################################################   
 
         if self.debugger_mode:
-            from std_msgs.msg import String
             self.debugger = self.create_publisher(String, 'debugger', 10)
 
         ###############################################################
@@ -323,7 +342,6 @@ class I2CMaster(Node):
 
 
         if self.debugger_mode:
-            from std_msgs.msg import String
             diagnostics_debug_data = String()
             diagnostics_debug_data.data = str(diagnostics_data)
             self.debugger.publish(diagnostics_debug_data)
@@ -445,20 +463,29 @@ class I2CMaster(Node):
         return diagnostics_data
 
     def pilot_listener_callback(self, msg): 
+        
+        if not self.autonomous_mode_active or (msg.is_autonomous and self.autonomous_mode_active):
+            thruster_values = self.rov_math(msg)
 
-        thruster_values = self.rov_math(msg)
+            if self.bus is not None:
+                
+                for thruster_position in THRUSTER_CHANNELS:
+                    self.connected_channels[THRUSTER_CHANNELS[thruster_position]].fly(thruster_values[thruster_position])
 
-        if self.bus is not None:
-            
-            for thruster_position in THRUSTER_CHANNELS:
-                self.connected_channels[THRUSTER_CHANNELS[thruster_position]].fly(thruster_values[thruster_position])
-
-                # Thrusters should be armed by the time the first pilot input is recieved
-                if not self.connected_channels[THRUSTER_CHANNELS[thruster_position]].thruster_armed:
-                    self.get_logger().error(f"Thruster {thruster_position} not armed")
-            
-            self.tick_thrusters()
-            self.stm32_communications(msg)
+                    # Thrusters should be armed by the time the first pilot input is recieved
+                    if not self.connected_channels[THRUSTER_CHANNELS[thruster_position]].thruster_armed:
+                        self.get_logger().error(f"Thruster {thruster_position} not armed")
+                
+                self.tick_thrusters()
+                self.stm32_communications(msg)
+        
+        if msg.enter_auto_mode:
+            if not self.autonomous_mode_active:
+                self.autonomous_mode_active = True
+                self.send_autonomus_mode_goal()
+            else:
+                future = self.goal_handle.cancel_goal_async()
+                future.add_done_callback(self.cancel_done)
 
     def stm32_communications(self, controller_inputs):
         '''
@@ -581,9 +608,7 @@ class I2CMaster(Node):
 
     def rov_math(self, controller_inputs):
         '''
-        Determines what power to give to each thruster based on pilot input.
-
-        # TODO Current issue (which was an issue with previous years aswell) is that the absolute values for each thruster can exceed 1 up to a max value of sqrt(2). Can be fixed by adjusting thruster speeds or approperiate scaling.
+        Determines how much power to give to each thruster based on pilot input.
         '''
 
         thruster_values = {}
@@ -593,35 +618,50 @@ class I2CMaster(Node):
         yaw = controller_inputs.yaw * self.power_multiplier * self.yaw_multiplier * 0.01
 
         if controller_inputs.heave_up or controller_inputs.heave_down:
-            heave = ((self.power_multiplier * self.heave_multiplier) if controller_inputs.heave_up else 0) + ((-self.power_multiplier * self.heave_multiplier) if controller_inputs.heave_down else 0)
-        else:
-            heave = controller_inputs.heave * self.power_multiplier * self.heave_multiplier * 0.01  
+            controller_inputs.heave = (100 if controller_inputs.heave_up else 0) + (-100 if controller_inputs.heave_down else 0)
+            
+        heave = controller_inputs.heave * self.power_multiplier * self.heave_multiplier * 0.01   
 
         if controller_inputs.pitch_up or controller_inputs.pitch_down:
-            pitch = ((self.power_multiplier * self.pitch_multiplier) if controller_inputs.pitch_up else 0) + ((-self.power_multiplier * self.pitch_multiplier) if controller_inputs.pitch_down else 0)
-        else:
-            pitch = controller_inputs.pitch * self.power_multiplier * self.pitch_multiplier * 0.01  
+            controller_inputs.pitch = (100 if controller_inputs.pitch_up else 0) + (-100 if controller_inputs.pitch_down else 0)
+        
+        pitch = controller_inputs.pitch * self.power_multiplier * self.pitch_multiplier * 0.01  
 
-        sum_of_magnitudes_of_linear_movements = abs(surge) + abs(sway) + abs(heave)
-        sum_of_magnitudes_of_rotational_movements = abs(pitch) + abs(yaw)
+        sum_of_magnitudes_of_pilot_input = abs(surge) + abs(sway) + abs(heave) + abs(pitch) + abs(yaw)
 
-        strafe_power = sqrt(surge**2 + sway**2 + heave**2)
-        strafe_scaling_coefficient = strafe_power / (sum_of_magnitudes_of_linear_movements) if strafe_power else 0
-        strafe_average_coefficient = strafe_power / (strafe_power + sum_of_magnitudes_of_rotational_movements) if strafe_power or sum_of_magnitudes_of_rotational_movements else 0  
-        combined_strafe_coefficient = strafe_scaling_coefficient * strafe_average_coefficient
-        rotation_average_coefficient = sum_of_magnitudes_of_rotational_movements / (strafe_power + sum_of_magnitudes_of_rotational_movements) if strafe_power or sum_of_magnitudes_of_rotational_movements else 0
+        # These adjustment factors determine how much to decrease power in each thruster due to multipliers.
+        # The first mutliplication term determines the total % to remove of the inital thruster direction,
+        # The second term scales that thruster direction down based on what it makes up of the sum of pilot input, and also applies a sign
 
-        # The to decimal adjustment factor is 1.85 (max value that each thruster value can be)
+        surge_adjustment = (1 - (self.power_multiplier * self.surge_multiplier * abs(controller_inputs.surge) * 0.01)) * (surge/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0)  
+        sway_adjustment = (1 - (self.power_multiplier * self.sway_multiplier * abs(controller_inputs.sway) * 0.01)) * (sway/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        heave_adjustment = (1 - (self.power_multiplier * self.heave_multiplier * abs(controller_inputs.heave) * 0.01)) * (heave/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        pitch_adjustment = (1 - (self.power_multiplier * self.pitch_multiplier * abs(controller_inputs.pitch) * 0.01)) * (pitch/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        yaw_adjustment = (1 - (self.power_multiplier * self.yaw_multiplier * abs(controller_inputs.yaw) * 0.01)) * (yaw/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
 
-        # Calculations below are based on thruster positions
-        thruster_values["for-port-bot"] = (((-surge)+(sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / 1.85
-        thruster_values["for-star-bot"] = (((-surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
-        thruster_values["aft-port-bot"] = (((surge)+(sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / -1.85
-        thruster_values["aft-star-bot"] = (((surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / 1.85
-        thruster_values["for-port-top"] = (((-surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / -1.85
-        thruster_values["for-star-top"] = (((-surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / -1.85
-        thruster_values["aft-port-top"] = (((surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / -1.85
-        thruster_values["aft-star-top"] = (((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / -1.85
+        # Ensure to scale the thruster values down such that they don't exceed 1 in magnitude
+        thruster_scaling_coefficient = 1 / sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0
+
+        # Calculations below are based on thruster positions:
+
+        # First term:
+        # The net pilot input based on how it applies to the specifc thruster (some are reveresed) is calculated.
+        # Then, this is scaled down by the thruster scaling coefficent such that the max absolute value it can attain is 1.
+        # This will properly activate distribute load and direction among thrusters such that the desired movement is reached,
+        # but the first term cancels out the effect of the thruster multipliers 
+
+        # Directional adjustment factors:
+        # These adjustment factors will never increase the power going to a single thruster.
+        # They will only serve to proportionally decrease it in order to reduce power in a certain direction. 
+         
+        thruster_values["for-port-bot"] = ((((-surge)+(sway)+(heave)+(pitch)+(yaw)) * thruster_scaling_coefficient) + surge_adjustment - sway_adjustment - heave_adjustment - pitch_adjustment - yaw_adjustment)
+        thruster_values["for-star-bot"] = ((((-surge)+(-sway)+(heave)+(pitch)+(-yaw)) * thruster_scaling_coefficient) + surge_adjustment + sway_adjustment - heave_adjustment - pitch_adjustment + yaw_adjustment)
+        thruster_values["aft-port-bot"] = -1 * ((((surge)+(sway)+(heave)+ (-pitch)+(-yaw)) * thruster_scaling_coefficient) - surge_adjustment - sway_adjustment - heave_adjustment + pitch_adjustment + yaw_adjustment)
+        thruster_values["aft-star-bot"] = ((((surge)+(-sway)+(heave)+(-pitch)+(yaw)) * thruster_scaling_coefficient) - surge_adjustment + sway_adjustment - heave_adjustment + pitch_adjustment - yaw_adjustment)
+        thruster_values["for-port-top"] = -1 * ((((-surge)+(sway)+(-heave)+(-pitch)+(yaw)) * thruster_scaling_coefficient) + surge_adjustment - sway_adjustment + heave_adjustment + pitch_adjustment - yaw_adjustment)
+        thruster_values["for-star-top"] = -1 * ((((-surge)+(-sway)+(-heave)+(-pitch)+(-yaw)) * thruster_scaling_coefficient) + surge_adjustment + sway_adjustment + heave_adjustment + pitch_adjustment + yaw_adjustment)
+        thruster_values["aft-port-top"] = -1 * ((((surge)+(sway)+(-heave)+(pitch)+(-yaw)) * thruster_scaling_coefficient) - surge_adjustment - sway_adjustment + heave_adjustment - pitch_adjustment + yaw_adjustment)
+        thruster_values["aft-star-top"] = -1 * ((((surge)+(-sway)+(-heave)+(pitch)+(yaw)) * thruster_scaling_coefficient) - surge_adjustment + sway_adjustment + heave_adjustment - pitch_adjustment - yaw_adjustment)
 
         ####################################################################
         ############################## DEBUG ###############################
@@ -632,7 +672,6 @@ class I2CMaster(Node):
 
         # if self.debugger_mode:
         #     from math import cos, pi
-        #     from std_msgs.msg import String
             
         #     raw_inputs = String()
         #     raw_inputs.data = f"""
@@ -669,8 +708,6 @@ class I2CMaster(Node):
         ###########################################################################################
 
         if self.thruster_calibration_mode:
-
-            from std_msgs.msg import String
             
             current_thruster_and_value = String()
 
@@ -703,11 +740,92 @@ class I2CMaster(Node):
         ###########################################################################################
         ###########################################################################################
         return thruster_values
+    
+
+    def send_autonomus_mode_goal(self):
+
+        self.fetch_brain_coral_hsv_colour_bounds()
+        goal_msg = AutoMode.Goal()
+        goal_msg.is_for_sim = False
+
+        # HSV (hue,shade,value) bounds for filtering brain coral area
+        goal_msg.lower_hsv_bound = self.brain_coral_hsv_colour_bounds["lower_hsv"]
+        goal_msg.upper_hsv_bound = self.brain_coral_hsv_colour_bounds["upper_hsv"]
+
+        goal_msg.starting_power = int(self.power_multiplier * 100)
+        goal_msg.starting_surge = int(self.surge_multiplier * 100)
+        goal_msg.starting_sway = int(self.sway_multiplier * 100)
+        goal_msg.starting_heave = int(self.heave_multiplier * 100)
+        goal_msg.starting_pitch = int(self.pitch_multiplier * 100)
+        goal_msg.starting_yaw = int(self.yaw_multiplier * 100) 
+
+        self._action_client.wait_for_server()
+
+        self._send_goal_future = self._action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+
+        self._send_goal_future.add_done_callback(self.goal_response_callback)
+
+    def fetch_brain_coral_hsv_colour_bounds(self):
+
+        hsv_colour_bounds_request = HSVColours.Request()
+
+        # load_to_database = False indicates loading FROM database
+        hsv_colour_bounds_request.load_to_database = False 
+
+        # Ensure the database server is up before continuing 
+        self.brain_coral_hsv_colour_bounds_client.wait_for_service()
+            
+        future = self.brain_coral_hsv_colour_bounds_client.call(hsv_colour_bounds_request)
+        
+        if future.success: # Means that HSV colours were stored in the database at this time
+            self.brain_coral_hsv_colour_bounds["upper_hsv"] = future.upper_hsv
+            self.brain_coral_hsv_colour_bounds["lower_hsv"] = future.lower_hsv
+        else:
+            self.get_logger().info("No HSV colour bounds stored in database. Will keep using default.")    
+
+    def goal_response_callback(self, future):
+        self.goal_handle = future.result()
+        if not self.goal_handle.accepted:
+            self.get_logger().info('Goal rejected :(')
+            return
+
+        self.get_logger().info('Goal accepted :)')
+
+        self._get_result_future = self.goal_handle.get_result_async()
+        self._get_result_future.add_done_callback(self.get_result_callback)
+
+    def get_result_callback(self, future):
+        result = future.result().result
+        autonomous_mode_status = String()
+        autonomous_mode_status.data = "Autonomous Mode off, {0}".format("Mission Success" if result.success else "Mission Failed")
+        self.autonomous_mode_publisher.publish(autonomous_mode_status)
+        self.autonomous_mode_active = False
+
+    def feedback_callback(self, feedback_msg):
+        feedback = feedback_msg.feedback
+        autonomous_mode_status = String()
+        autonomous_mode_status.data = "Autonomous Mode on, {0}".format(feedback.status)
+        self.autonomous_mode_publisher.publish(autonomous_mode_status)
+    
+    def cancel_done(self, future):
+        cancel_response = future.result()
+        if len(cancel_response.goals_canceling) > 0:
+            autonomous_mode_status = String()
+            autonomous_mode_status.data = 'Auto mode successfully canceled'
+            self.autonomous_mode_publisher.publish(autonomous_mode_status)
+        else:
+            autonomous_mode_status = String()
+            autonomous_mode_status.data = 'Auto mode failed to cancel'
+            self.autonomous_mode_publisher.publish(autonomous_mode_status)
 
 def main(args=None):
     rclpy.init(args=args)
 
     i2c_master = I2CMaster()
+
+    # We use a MultiThreadedExecutor to handle incoming goal requests concurrently
+    executor = MultiThreadedExecutor()
+    rclpy.spin(i2c_master, executor=executor)
 
     rclpy.spin(i2c_master)
 

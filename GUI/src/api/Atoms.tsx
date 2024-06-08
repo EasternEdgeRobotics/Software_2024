@@ -74,3 +74,5 @@ export const ADCArray = atom<{adc_48v_bus:number,adc_12v_bus:number,adc_5v_bus:n
 export const TemperatureArray = atom<{power_board_u8:number,power_board_u9:number,power_board_u10:number,
   mega_board_ic2:number,power_board_u11:number,mega_board_ic1:number}>({power_board_u8:0,power_board_u9:0,power_board_u10:0,
     mega_board_ic2:0,power_board_u11:0,mega_board_ic1:0}); // TEMP DATA
+
+export const AutonomousModeStatus = atom<string>("Autonomous Mode Off"); // ADC DATA
