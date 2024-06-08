@@ -8,7 +8,6 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./ROS2/colcon_ws:/root/colcon_ws
       - /dev:/dev # If this docker container is not intended to communicate to board components on i2c bus, this line should be removed
   frontend: # If the frontend it going to run on a development environment (preferred for development), the frontend should be removed from the compose file
     build: ./GUI
