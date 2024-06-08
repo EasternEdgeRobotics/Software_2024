@@ -83,8 +83,10 @@ class TaskManager(Node):
         elif not request.load_to_database: # We are looking to get colours from database
 
             for row in range(session.query(Color).count()): # There will only be one "row"
-                response.lower_hsv = row.dict()["lowerBounds"]
-                response.upper_hsv = row.dict()["upperBounds"]
+
+                # sqlalchemy stores integers as byte strings
+                response.lower_hsv = list(map(lambda x: int.from_bytes(x, byteorder = 'big', signed=False) ,session.query(Color).all()[row].dict()["lowerBounds"]))
+                response.upper_hsv = list(map(lambda x: int.from_bytes(x, byteorder = 'big', signed=False) ,session.query(Color).all()[row].dict()["upperBounds"]))
                 
                 response.success = True # Indicates success
                 

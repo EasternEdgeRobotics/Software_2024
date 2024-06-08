@@ -21,17 +21,17 @@ from time import time, sleep
 import json
 
 # Out of the 4 cameras on Beaumont, the brain coral transplant action node will use the downward-looking camera
-BOTTOM_CAMERA_INDEX = 2 
+BOTTOM_CAMERA_INDEX = 3
 
 # The required heave time after picking up the brain coral may differ between simulation and real life
 HEAVE_TIME_SIMULATION = 10 
-HEAVE_TIME = 5
+HEAVE_TIME = 10
 
 xy_FINE_TUNING_SIMULATION = 1
-xy_FINE_TUNING = 10
+xy_FINE_TUNING = 5
 
 HEAVE_SPEED_SIMULATION = 10
-HEAVE_SPEED = 20
+HEAVE_SPEED = 30
 
 class AutonomusBrainCoralTransplant(Node):
     """

@@ -2,8 +2,7 @@ FROM arm64v8/ros:humble-ros-base-jammy
 
 WORKDIR /root/colcon_ws
 
-RUN apt-get update -y
-RUN apt-get upgrade -y
+RUN apt-get update -y && apt-get upgrade -y
 
 # Install Python and PIP
 RUN apt-get install python3 -y
@@ -11,6 +10,7 @@ RUN apt-get install python3-pip -y
 
 # Install rosbridge server to allow ROS instance to communicate with frontend
 RUN apt-get install ros-humble-rosbridge-server -y
+RUN apt-get install ffmpeg libsm6 libxext6  -y
 
 # Install any required Python libraries
 RUN pip3 install sqlalchemy 

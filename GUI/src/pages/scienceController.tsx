@@ -161,24 +161,19 @@ function HSVForm({ ros }: { ros: ROSLIB.Ros }) {
     });
 
     const request = new ROSLIB.ServiceRequest({
-      load_to_database: false, // State == 0 indicates we are looking to load colours into database
-      lower_HSV: [lowerHSV.h, lowerHSV.s, lowerHSV.v],
+      load_to_database: true, // State == 0 indicates we are looking to load colours into database
+      lower_hsv: [lowerHSV.h, lowerHSV.s, lowerHSV.v],
       upper_hsv: [upperHSV.h, upperHSV.s, upperHSV.v],
     });
 
     
       colorsClient.callService(request, function (result) {
-        try {
           // console.log(result)
           if (!result.success) {
-            throw new Error("Error setting HSV values.");
+            console.log(result);
           } else {
             alert("HSV values submitted successfully. \n" + "Lower: " + JSON.stringify(lowerHSV) + "\nUpper: " + JSON.stringify(upperHSV));
           }
-        } catch (error) {
-          console.error("Error parsing result:", error); // Log parsing errors
-          alert("Error submitting HSV values.");
-        }
       });
     
   

@@ -123,7 +123,7 @@ class Thruster:
 
                 # If communication with RP2040 fails, attempt to arm the thruster again as soon as communication is reestablished
                 try:
-                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current)) # HARDCODED CENTER
+                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current)) 
                 except OSError:
                     self.thruster_armed = False
 
@@ -132,7 +132,7 @@ class Thruster:
 
                 # If communication with RP2040 fails, attempt to arm the thruster again as soon as communication is reestablished
                 try:
-                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current)) # HARDCODED CENTER
+                    self.bus.write_byte_data(RP2040_ADDRESS, THRUSTER_CHANNELS[self.thruster_position], int(self.current)) 
                 except OSError:
                     self.thruster_armed = False
 
@@ -174,7 +174,7 @@ class I2CMaster(Node):
 
         # Autonomus movement node
         self._action_client = ActionClient(self, AutoMode, 'autonomus_brain_coral_transplant')
-        self.autonomus_mode_active = False
+        self.autonomous_mode_active = False
 
         # Client to fetch the hsv colour values camera saved on the task_manager database
         self.brain_coral_hsv_colour_bounds_client = self.create_client(HSVColours, 'set_color', callback_group=ReentrantCallbackGroup())
@@ -207,7 +207,6 @@ class I2CMaster(Node):
         ################################################   
 
         if self.debugger_mode:
-            from std_msgs.msg import String
             self.debugger = self.create_publisher(String, 'debugger', 10)
 
         ###############################################################
@@ -343,7 +342,6 @@ class I2CMaster(Node):
 
 
         if self.debugger_mode:
-            from std_msgs.msg import String
             diagnostics_debug_data = String()
             diagnostics_debug_data.data = str(diagnostics_data)
             self.debugger.publish(diagnostics_debug_data)
@@ -466,7 +464,7 @@ class I2CMaster(Node):
 
     def pilot_listener_callback(self, msg): 
         
-        if not self.autonomous_mode_active or (msg.is_autonomous and self.autonomus_mode_active):
+        if not self.autonomous_mode_active or (msg.is_autonomous and self.autonomous_mode_active):
             thruster_values = self.rov_math(msg)
 
             if self.bus is not None:
@@ -482,8 +480,8 @@ class I2CMaster(Node):
                 self.stm32_communications(msg)
         
         if msg.enter_auto_mode:
-            if not self.autonomus_mode_active:
-                self.autonomus_mode_active = True
+            if not self.autonomous_mode_active:
+                self.autonomous_mode_active = True
                 self.send_autonomus_mode_goal()
             else:
                 future = self.goal_handle.cancel_goal_async()
@@ -674,7 +672,6 @@ class I2CMaster(Node):
 
         # if self.debugger_mode:
         #     from math import cos, pi
-        #     from std_msgs.msg import String
             
         #     raw_inputs = String()
         #     raw_inputs.data = f"""
@@ -711,8 +708,6 @@ class I2CMaster(Node):
         ###########################################################################################
 
         if self.thruster_calibration_mode:
-
-            from std_msgs.msg import String
             
             current_thruster_and_value = String()
 
@@ -804,7 +799,7 @@ class I2CMaster(Node):
         autonomous_mode_status = String()
         autonomous_mode_status.data = "Autonomous Mode off, {0}".format("Mission Success" if result.success else "Mission Failed")
         self.autonomous_mode_publisher.publish(autonomous_mode_status)
-        self.autonomus_mode_active = False
+        self.autonomous_mode_active = False
 
     def feedback_callback(self, feedback_msg):
         feedback = feedback_msg.feedback
