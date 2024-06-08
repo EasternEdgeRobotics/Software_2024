@@ -1,6 +1,6 @@
 FROM ros:humble-ros-base-jammy
 
-RUN apt-get update && apt-get install -y python3 python3-pip ros-humble-rosbridge-server
+RUN apt-get update && apt-get install -y python3 python3-pip ros-humble-rosbridge-server ffmpeg libsm6 libxext6
 RUN pip3 install sqlalchemy RPi.GPIO smbus2 adafruit-circuitpython-bno055 adafruit-circuitpython-pca9685 adafruit-circuitpython-servokit opencv-python
 
 WORKDIR /app
