@@ -1,12 +1,18 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.action import ActionClient
+
 from eer_messages.msg import ThrusterMultipliers, PilotInput, DiagnosticsData, OutsideTempProbeData
+from eer_messages.action import AutoMode 
+from eer_messages.srv import HSVColours
+from std_msgs.msg import String
+
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 
 import board
 from smbus2 import SMBus
 from adafruit_bno055 import BNO055_I2C
-
-from math import sqrt
 
 
 # Thurster channels are based on Beaumont
@@ -164,6 +170,20 @@ class I2CMaster(Node):
         # Comment out code below to remove slowdown
         self.diagnostics_data_publisher = self.create_publisher(DiagnosticsData, "diagnostics", 1)
         self.outside_temperature_probe_data_publisher = self.create_publisher(OutsideTempProbeData, "outside_temp_probe", 1)
+        self.autonomous_mode_publisher = self.create_publisher(String, "/autonomous_mode_status", 10)
+
+        # Autonomus movement node
+        self._action_client = ActionClient(self, AutoMode, 'autonomus_brain_coral_transplant')
+        self.autonomus_mode_active = False
+
+        # Client to fetch the hsv colour values camera saved on the task_manager database
+        self.brain_coral_hsv_colour_bounds_client = self.create_client(HSVColours, 'set_color', callback_group=ReentrantCallbackGroup())
+
+        # The default bounds filter for the colour Black
+        self.brain_coral_hsv_colour_bounds = {
+            "upper_hsv":[10,10,40],
+            "lower_hsv":[0,0,0]
+        }
 
         # prevent unused variable warning
         self.copilot_listener 
@@ -445,20 +465,29 @@ class I2CMaster(Node):
         return diagnostics_data
 
     def pilot_listener_callback(self, msg): 
+        
+        if not self.autonomous_mode_active or (msg.is_autonomous and self.autonomus_mode_active):
+            thruster_values = self.rov_math(msg)
 
-        thruster_values = self.rov_math(msg)
+            if self.bus is not None:
+                
+                for thruster_position in THRUSTER_CHANNELS:
+                    self.connected_channels[THRUSTER_CHANNELS[thruster_position]].fly(thruster_values[thruster_position])
 
-        if self.bus is not None:
-            
-            for thruster_position in THRUSTER_CHANNELS:
-                self.connected_channels[THRUSTER_CHANNELS[thruster_position]].fly(thruster_values[thruster_position])
-
-                # Thrusters should be armed by the time the first pilot input is recieved
-                if not self.connected_channels[THRUSTER_CHANNELS[thruster_position]].thruster_armed:
-                    self.get_logger().error(f"Thruster {thruster_position} not armed")
-            
-            self.tick_thrusters()
-            self.stm32_communications(msg)
+                    # Thrusters should be armed by the time the first pilot input is recieved
+                    if not self.connected_channels[THRUSTER_CHANNELS[thruster_position]].thruster_armed:
+                        self.get_logger().error(f"Thruster {thruster_position} not armed")
+                
+                self.tick_thrusters()
+                self.stm32_communications(msg)
+        
+        if msg.enter_auto_mode:
+            if not self.autonomus_mode_active:
+                self.autonomus_mode_active = True
+                self.send_autonomus_mode_goal()
+            else:
+                future = self.goal_handle.cancel_goal_async()
+                future.add_done_callback(self.cancel_done)
 
     def stm32_communications(self, controller_inputs):
         '''
@@ -716,11 +745,92 @@ class I2CMaster(Node):
         ###########################################################################################
         ###########################################################################################
         return thruster_values
+    
+
+    def send_autonomus_mode_goal(self):
+
+        self.fetch_brain_coral_hsv_colour_bounds()
+        goal_msg = AutoMode.Goal()
+        goal_msg.is_for_sim = False
+
+        # HSV (hue,shade,value) bounds for filtering brain coral area
+        goal_msg.lower_hsv_bound = self.brain_coral_hsv_colour_bounds["lower_hsv"]
+        goal_msg.upper_hsv_bound = self.brain_coral_hsv_colour_bounds["upper_hsv"]
+
+        goal_msg.starting_power = int(self.power_multiplier * 100)
+        goal_msg.starting_surge = int(self.surge_multiplier * 100)
+        goal_msg.starting_sway = int(self.sway_multiplier * 100)
+        goal_msg.starting_heave = int(self.heave_multiplier * 100)
+        goal_msg.starting_pitch = int(self.pitch_multiplier * 100)
+        goal_msg.starting_yaw = int(self.yaw_multiplier * 100) 
+
+        self._action_client.wait_for_server()
+
+        self._send_goal_future = self._action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+
+        self._send_goal_future.add_done_callback(self.goal_response_callback)
+
+    def fetch_brain_coral_hsv_colour_bounds(self):
+
+        hsv_colour_bounds_request = HSVColours.Request()
+
+        # load_to_database = False indicates loading FROM database
+        hsv_colour_bounds_request.load_to_database = False 
+
+        # Ensure the database server is up before continuing 
+        self.brain_coral_hsv_colour_bounds_client.wait_for_service()
+            
+        future = self.brain_coral_hsv_colour_bounds_client.call(hsv_colour_bounds_request)
+        
+        if future.success: # Means that HSV colours were stored in the database at this time
+            self.brain_coral_hsv_colour_bounds["upper_hsv"] = future.upper_hsv
+            self.brain_coral_hsv_colour_bounds["lower_hsv"] = future.lower_hsv
+        else:
+            self.get_logger().info("No HSV colour bounds stored in database. Will keep using default.")    
+
+    def goal_response_callback(self, future):
+        self.goal_handle = future.result()
+        if not self.goal_handle.accepted:
+            self.get_logger().info('Goal rejected :(')
+            return
+
+        self.get_logger().info('Goal accepted :)')
+
+        self._get_result_future = self.goal_handle.get_result_async()
+        self._get_result_future.add_done_callback(self.get_result_callback)
+
+    def get_result_callback(self, future):
+        result = future.result().result
+        autonomous_mode_status = String()
+        autonomous_mode_status.data = "Autonomous Mode off, {0}".format("Mission Success" if result.success else "Mission Failed")
+        self.autonomous_mode_publisher.publish(autonomous_mode_status)
+        self.autonomus_mode_active = False
+
+    def feedback_callback(self, feedback_msg):
+        feedback = feedback_msg.feedback
+        autonomous_mode_status = String()
+        autonomous_mode_status.data = "Autonomous Mode on, {0}".format(feedback.status)
+        self.autonomous_mode_publisher.publish(autonomous_mode_status)
+    
+    def cancel_done(self, future):
+        cancel_response = future.result()
+        if len(cancel_response.goals_canceling) > 0:
+            autonomous_mode_status = String()
+            autonomous_mode_status.data = 'Auto mode successfully canceled'
+            self.autonomous_mode_publisher.publish(autonomous_mode_status)
+        else:
+            autonomous_mode_status = String()
+            autonomous_mode_status.data = 'Auto mode failed to cancel'
+            self.autonomous_mode_publisher.publish(autonomous_mode_status)
 
 def main(args=None):
     rclpy.init(args=args)
 
     i2c_master = I2CMaster()
+
+    # We use a MultiThreadedExecutor to handle incoming goal requests concurrently
+    executor = MultiThreadedExecutor()
+    rclpy.spin(i2c_master, executor=executor)
 
     rclpy.spin(i2c_master)
 
