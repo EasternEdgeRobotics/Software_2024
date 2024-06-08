@@ -15,3 +15,4 @@ bool turn_stepper_cw
 bool turn_stepper_ccw
 bool read_outside_temperature_probe
 bool enter_auto_mode
+bool is_autonomous

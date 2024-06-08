@@ -10,6 +10,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 
 from geometry_msgs.msg import Wrench, Twist
+from std_msgs.msg import String
 
 from math import sqrt, cos, pi
 
@@ -33,6 +34,7 @@ class SimulationBotControl(Node):
 
         self.copilot_listener = self.create_subscription(ThrusterMultipliers, 'thruster_multipliers', self.copilot_listener_callback, 10)
         self.pilot_listener = self.create_subscription(PilotInput, 'controller_input', self.pilot_listener_callback, 1)
+        self.autonomous_mode_publisher = self.create_publisher(String, "/autonomous_mode_status", 10)
 
         # For xy movement, the model is using the Gazebo Planar Move Plugin, which allows for movement relative to itself rather than the world
         # It also uses this plugin for yaw 
@@ -134,44 +136,45 @@ class SimulationBotControl(Node):
     def pilot_listener_callback(self, msg):  
         '''Called when new controller input from pilot is recieved'''
         
-        thruster_forces = self.simulation_rov_math(msg)
+        if not self.autonomus_mode_active or (msg.is_autonomous and self.autonomus_mode_active):
+            thruster_forces = self.simulation_rov_math(msg)
+            
+            for direction in thruster_forces: # Apply drag force 
 
-        for direction in thruster_forces: # Apply drag force 
+                # The pitch and yaw the velocity below is actually angular velocity, the the net force is net torque.
+                # Drag is still applied in the same way as it helps maintain smooth bot movement 
 
-            # The pitch and yaw the velocity below is actually angular velocity, the the net force is net torque.
-            # Drag is still applied in the same way as it helps maintain smooth bot movement 
+                self.velocity_array[direction] = self.velocity_array[direction]+((SIMULAITON_PERCISION*self.net_force_array[direction])/self.bot_mass) 
 
-            self.velocity_array[direction] = self.velocity_array[direction]+((SIMULAITON_PERCISION*self.net_force_array[direction])/self.bot_mass) 
+                drag_force = 0.5*self.fluid_mass_density*((self.velocity_array[direction])**2)*self.drag_coefficient*self.surface_area_for_drag[direction] * (-1 if self.velocity_array[direction]>0 else 1)
 
-            drag_force = 0.5*self.fluid_mass_density*((self.velocity_array[direction])**2)*self.drag_coefficient*self.surface_area_for_drag[direction] * (-1 if self.velocity_array[direction]>0 else 1)
-
-            self.net_force_array[direction] = thruster_forces[direction] + drag_force
+                self.net_force_array[direction] = thruster_forces[direction] + drag_force
 
 
-        velocity_xy_yaw = Twist()
-        velocity_z = Wrench()
-        velocity_pitch = Wrench()
+            velocity_xy_yaw = Twist()
+            velocity_z = Wrench()
+            velocity_pitch = Wrench()
 
-        velocity_xy_yaw.linear.x = float((-1)*self.velocity_array["sway"] * self.gazebo_simulation_velocity_xy_adjustment_factor)  
+            velocity_xy_yaw.linear.x = float((-1)*self.velocity_array["sway"] * self.gazebo_simulation_velocity_xy_adjustment_factor)  
 
-        velocity_xy_yaw.linear.y = float((-1)*self.velocity_array["surge"] * self.gazebo_simulation_velocity_xy_adjustment_factor)
+            velocity_xy_yaw.linear.y = float((-1)*self.velocity_array["surge"] * self.gazebo_simulation_velocity_xy_adjustment_factor)
 
-        velocity_z.force.z = float(self.velocity_array["heave"] * self.gazebo_simulation_velocity_z_adjustment_factor)
+            velocity_z.force.z = float(self.velocity_array["heave"] * self.gazebo_simulation_velocity_z_adjustment_factor)
 
-        velocity_xy_yaw.angular.z = float((-1)*self.velocity_array["yaw"] * self.gazebo_simulation_velocity_yaw_adjustment_factor)
+            velocity_xy_yaw.angular.z = float((-1)*self.velocity_array["yaw"] * self.gazebo_simulation_velocity_yaw_adjustment_factor)
 
-        velocity_pitch.force.z = float(self.velocity_array["pitch"] * self.gazebo_simulation_velocity_pitch_adjustment_factor)
+            velocity_pitch.force.z = float(self.velocity_array["pitch"] * self.gazebo_simulation_velocity_pitch_adjustment_factor)
 
-        self.simulation_velocity_publisher_xy_yaw.publish(velocity_xy_yaw)
-        self.simulation_velocity_publisher_z.publish(velocity_z)
-        self.simulation_velocity_publisher_pitch.publish(velocity_pitch)
+            self.simulation_velocity_publisher_xy_yaw.publish(velocity_xy_yaw)
+            self.simulation_velocity_publisher_z.publish(velocity_z)
+            self.simulation_velocity_publisher_pitch.publish(velocity_pitch)
 
-        # from std_msgs.msg import String
-        # velocity = String()
-        # velocity.data = str(self.velocity_array)
-        # self.debugger.publish(velocity)
+            # from std_msgs.msg import String
+            # velocity = String()
+            # velocity.data = str(self.velocity_array)
+            # self.debugger.publish(velocity)
 
-        self.simulation_tooling(msg)
+            self.simulation_tooling(msg)
 
         if msg.enter_auto_mode:
             if not self.autonomus_mode_active:
@@ -182,8 +185,6 @@ class SimulationBotControl(Node):
 
                 future = self.goal_handle.cancel_goal_async()
                 future.add_done_callback(self.cancel_done)
-
-                self.get_logger().info("PILOT CHOSE TO ABORT AUTONOMOUS MODE")
 
     def simulation_tooling(self, controller_inputs):
         """Controls the movement of the simulation claw. """
@@ -258,19 +259,27 @@ class SimulationBotControl(Node):
 
     def get_result_callback(self, future):
         result = future.result().result
-        self.get_logger().info('Result: {0}'.format(result.success))
+        autonomous_mode_status = String()
+        autonomous_mode_status.data = "Autonomous Mode off, {0}".format("Mission Success" if result.success else "Mission Failed")
+        self.autonomous_mode_publisher.publish(autonomous_mode_status)
         self.autonomus_mode_active = False
 
     def feedback_callback(self, feedback_msg):
         feedback = feedback_msg.feedback
-        self.get_logger().info('Received feedback: {0}'.format(feedback.status))
+        autonomous_mode_status = String()
+        autonomous_mode_status.data = "Autonomous Mode on, {0}".format(feedback.status)
+        self.autonomous_mode_publisher.publish(autonomous_mode_status)
     
     def cancel_done(self, future):
         cancel_response = future.result()
         if len(cancel_response.goals_canceling) > 0:
-            self.get_logger().info('Goal successfully canceled')
+            autonomous_mode_status = String()
+            autonomous_mode_status.data = 'Auto mode successfully canceled'
+            self.autonomous_mode_publisher.publish(autonomous_mode_status)
         else:
-            self.get_logger().info('Goal failed to cancel')
+            autonomous_mode_status = String()
+            autonomous_mode_status.data = 'Auto mode failed to cancel'
+            self.autonomous_mode_publisher.publish(autonomous_mode_status)
 
     def fetch_brain_coral_hsv_colour_bounds(self):
 
@@ -334,7 +343,8 @@ class SimulationBotControl(Node):
 
         # Directional adjustment factors:
         # These adjustment factors will never increase the power going to a single thruster.
-        # They will only serve to proportionally decrease it in order to reduce power in a certain direction.  
+        # They will only serve to proportionally decrease it in order to reduce power in a certain direction. 
+         
         thruster_values["for-port-bot"] = (((-surge)+(sway)+(heave)+(pitch)+(yaw)) * thruster_scaling_coefficient) + surge_adjustment - sway_adjustment - heave_adjustment - pitch_adjustment - yaw_adjustment
         thruster_values["for-star-bot"] = (((-surge)+(-sway)+(heave)+(pitch)+(-yaw)) * thruster_scaling_coefficient) + surge_adjustment + sway_adjustment - heave_adjustment - pitch_adjustment + yaw_adjustment
         thruster_values["aft-port-bot"] = (((surge)+(sway)+(heave)+ (-pitch)+(-yaw)) * thruster_scaling_coefficient) - surge_adjustment - sway_adjustment - heave_adjustment + pitch_adjustment + yaw_adjustment
@@ -368,9 +378,6 @@ class SimulationBotControl(Node):
         
         net_pitch = self.max_thruster_force * self.thruster_distance_from_COM * cos(pi/4)*((thruster_values["for-port-bot"]) + (thruster_values["for-star-bot"]) + (-thruster_values["aft-port-bot"]) + (-thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
         net_yaw = self.max_thruster_force * self.thruster_distance_from_COM * cos(pi/4)*((thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (-thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (-thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
-        
-        self.get_logger().info(str(thruster_values))
-        self.get_logger().info(str((net_surge,net_sway,net_heave,net_pitch,net_yaw)))
     
         return {
             "surge": net_surge,

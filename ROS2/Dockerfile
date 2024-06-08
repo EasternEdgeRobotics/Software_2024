@@ -18,6 +18,7 @@ RUN pip3 install RPi.GPIO
 RUN pip3 install smbus2
 RUN pip3 install adafruit-circuitpython-pca9685
 RUN pip3 install adafruit-circuitpython-bno055 
+RUN pip3 install opencv-python
 
 # Modify the bash.bashrc file such that sourcing happens automatically 
 RUN echo ". /opt/ros/humble/setup.sh" >> /etc/bash.bashrc
