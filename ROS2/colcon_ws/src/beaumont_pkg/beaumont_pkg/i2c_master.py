@@ -28,11 +28,12 @@ THRUSTER_CHANNELS = {
     "aft-star-bot": 7
 }
 
-# In the thruster class, the target speed is set by the user. Each thruster accelerates towards the target speed by the acceleration below
+# In the thruster class, the target speed is set by the user. 
+# Each thruster accelerates towards the target speed by the acceleration below
 THRUSTER_ACCELERATION = 5
 
-# Determines how often each thruster accelerates towards the target speed set by the user
-# THRUSTER_TICK_PERIOD = 0.05
+# Max % acceleration per second can be calculated by (THRUSTER_ACCELERATION/254)*(pilot input frequency in Hz)
+# Where 0 is max reverse speed, 127 is center speed, and 254 is max forward speed
 
 RP2040_ADDRESS = 0x08
 
@@ -141,21 +142,14 @@ class I2CMaster(Node):
     '''
     This class will communicate to multiple devices on the same I2C bus. These include the following:
 
-        1. RP2040: Talks to the 8 Thrusters connected to the bot. Communication will be achieved by the SMBUS library using a eer proprietary i2c protocol.
-        2. STM32: Talks to claw, stepper motor, dimmable LEDs, and outside temperature probe. Programmed by the electrical team, 
-           thus communication will be achieved by the SMBUS library using a eer proprietary i2c protocol
-        3. 3 Analog digital converters (ADCs) on the 48v, 12v, and 5v buses to mesure board health. Communication will be achieved with 
-           the SMBUS library.
-        4. 6 Temperature sensors on the boards (4 on power board, 2 on mega board). Communication will be achieved with the SMBUS library
+        1. RP2040: Talks to the 8 Thrusters connected to the bot.
+        2. STM32: Talks to claw, bilge pump motor, dimmable LEDs, and outside temperature probe. 
+        3. 3 Analog digital converters (ADCs) on the 48v, 12v, and 5v buses to mesure board health. 
+        4. 6 Temperature sensors on the boards (4 on power board, 2 on mega board).
         5. BNO055 Inertial Mesurement Unit (IMU). Communication will be done using the adafruit adafruit_bno055 library.
 
     All aforementioned devices will be on the same I2C bus, meaning that it is only possible to communicate to one at a time. This means these processes
-    are not thread-safe. Cases 1 and 2 are need-based communications (there will be a button to request outside temperature probe readings), while cases 
-    3, 4, and 5 are time based.
-
-    To ensure proper communication, a ROS2 Mutually Exclusive Callback Group along with timers will be used. This will avoid race conditions and writing two requests to 
-    the i2c bus at the same time (https://docs.ros.org/en/humble/How-To-Guides/Using-callback-groups.html). Cases 1 and 2 will also be moved to time-based, using the 
-    last-recieved input from topsides (it should be ensured that topsides sends pilot input even when no buttons are pressed and no axes are moved). Topsides input comes in at 10Hz.          
+    are not thread-safe. Thus, communication to each of these devices will be done sequentially and only when requested by the pilot (see self.pilot_listener_callback).         
     '''
 
     def __init__(self):
@@ -298,8 +292,8 @@ class I2CMaster(Node):
     def obtain_imu_data(self, diagnostics_data):
         '''
         Grabs relevant information form the IMU on the I2C Bus.
-        Every time a piece of data is accessed, that is an i2c read transation. These transactions finish by the time the value is
-        returned. See (https://github.com/adafruit/Adafruit_CircuitPython_BNO055/blob/main/adafruit_bno055.py).
+        Every time a piece of data is accessed, that is an i2c read transation. These transactions finish by the time 
+        the value is returned. See (https://github.com/adafruit/Adafruit_CircuitPython_BNO055/blob/main/adafruit_bno055.py).
         '''
 
         diagnostics_data.temperature = self.imu_sensor.temperature
@@ -331,11 +325,6 @@ class I2CMaster(Node):
         rate (1Hz). This means every piece of data read will be one second old.
         
         The other bits have to do with how the ADC handles alert conditions (when readings exceed a user-set min or max).
-        For our purposes, it is ok to keep them as their default configurations as readings will be displayed on topsides.
-
-        If, at any point, the smbus2 read_byte_data function returns all zeros, it is assumed the adcs are not powered.
-        This is because the read_byte_data function does not care for slave acknowledgement and will just read zeros if 
-        the slave does not exist. This function will attempt to configure the slaves again the next time it's called.
 
         The below code does everything needed for our purposes. All ADC registers are listed below:
         0b000 - Conversion Result (r) (we read this for voltage)
@@ -372,7 +361,7 @@ class I2CMaster(Node):
                     self.configured_adcs[key] == False
 
                 
-                setattr(diagnostics_data, key, voltage) # The read value is converted to 12 bits
+                setattr(diagnostics_data, key, voltage) 
 
             else:
 
@@ -435,6 +424,11 @@ class I2CMaster(Node):
         return diagnostics_data
 
     def pilot_listener_callback(self, msg): 
+        '''
+        Subscriber callback function called whenever input arrives from frontend.
+
+        This function will take the recieved input and pipe it through control functions.
+        '''
         
         if not self.autonomous_mode_active or (msg.is_autonomous and self.autonomous_mode_active):
             thruster_values = self.rov_math(msg)
@@ -462,11 +456,13 @@ class I2CMaster(Node):
     def stm32_communications(self, controller_inputs):
         '''
         Communications to the STM32 is required for the 12 DC motor (claw linear actuator),
-        stepper motor (claw rotation), dimmable LEDs, and outside temperature probe readings.
+        bilge pump, dimmable LEDs, and outside temperature probe readings.
 
-        The eer properity communication protocol is (currently) based only on writes. Each action will be achieved through:
+        Each action will be achieved through:
 
         self.bus.write_byte_data(STM32_ADDRESS, action_register, value)
+        or
+        self.bus.read_byte(STM32_ADDRESS)
 
         Possible actions and associated registers are as follows:
 
@@ -499,14 +495,19 @@ class I2CMaster(Node):
         -- Example: 0x24 (LED 4)
         Byte 2: Brightness (0-99)
 
-        Outside Temperature Probe:
+        Outside Temperature Probe reading mode:
         Byte 1: Select probe
         -- Command: 3 (hex)
-        -- Temperature Probe Selection: 1
-        -- Example: 0x31
-        Byte 2-3: Data
-        --Format: 0bSSSS S(2^6)(2^5)(2^4) (2^3)(2^2)(2^1)(2^0) (2^-1) (2^-2) (2^-3) (2^-4)
-        -- S is for signed digits, all 0 or 1 depending on sign
+        -- Temperature Probe Selection: 0
+        -- Example: 0x30
+        Byte 2: Data
+        -- Can be any byte
+
+        Outside Temperature Probe reading:
+        Must read from temperature probe TWICE to take
+        STM32 out of temperature probe reading mode.
+        Initiate two indivisual read_byte transactions
+        on the STM32 address.
         '''
         
         if self.bus is not None:
@@ -649,21 +650,22 @@ class I2CMaster(Node):
         ############ NEW THRUSTER MATH ############
         ###########################################
 
-        # Power adjustment factor of 0.65 added to avoid brownout
+        # Overcurrent adjustment factor to avoid brownout
+        overcurent_adjustment_factor = 0.65
 
-        surge = controller_inputs.surge * self.power_multiplier * self.surge_multiplier * 0.01 * 0.65
-        sway = controller_inputs.sway * self.power_multiplier * self.sway_multiplier * 0.01 * 0.65
-        yaw = controller_inputs.yaw * self.power_multiplier * self.yaw_multiplier * 0.01 * 0.65
+        surge = controller_inputs.surge * self.power_multiplier * self.surge_multiplier * 0.01 * overcurent_adjustment_factor
+        sway = controller_inputs.sway * self.power_multiplier * self.sway_multiplier * 0.01 * overcurent_adjustment_factor
+        yaw = controller_inputs.yaw * self.power_multiplier * self.yaw_multiplier * 0.01 * overcurent_adjustment_factor
 
         if controller_inputs.heave_up or controller_inputs.heave_down:
             controller_inputs.heave = (100 if controller_inputs.heave_up else 0) + (-100 if controller_inputs.heave_down else 0) 
             
-        heave = controller_inputs.heave * self.power_multiplier * self.heave_multiplier * 0.01  * 0.65
+        heave = controller_inputs.heave * self.power_multiplier * self.heave_multiplier * 0.01  * overcurent_adjustment_factor
 
         if controller_inputs.pitch_up or controller_inputs.pitch_down:
             controller_inputs.pitch = (100 if controller_inputs.pitch_up else 0) + (-100 if controller_inputs.pitch_down else 0)
         
-        pitch = controller_inputs.pitch * self.power_multiplier * self.pitch_multiplier * 0.01  * 0.65
+        pitch = controller_inputs.pitch * self.power_multiplier * self.pitch_multiplier * 0.01  * overcurent_adjustment_factor
 
         sum_of_magnitudes_of_pilot_input = abs(surge) + abs(sway) + abs(heave) + abs(pitch) + abs(yaw)
 
@@ -671,11 +673,11 @@ class I2CMaster(Node):
         # The first mutliplication term determines the total % to remove of the inital thruster direction,
         # The second term scales that thruster direction down based on what it makes up of the sum of pilot input, and also applies a sign
 
-        surge_adjustment = (1 - (self.power_multiplier * 0.65 * self.surge_multiplier * abs(controller_inputs.surge) * 0.01)) * (surge/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0)  
-        sway_adjustment = (1 - (self.power_multiplier * 0.65 * self.sway_multiplier * abs(controller_inputs.sway) * 0.01)) * (sway/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
-        heave_adjustment = (1 - (self.power_multiplier * 0.65 * self.heave_multiplier * abs(controller_inputs.heave) * 0.01)) * (heave/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
-        pitch_adjustment = (1 - (self.power_multiplier * 0.65 * self.pitch_multiplier * abs(controller_inputs.pitch) * 0.01)) * (pitch/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
-        yaw_adjustment = (1 - (self.power_multiplier * 0.65 * self.yaw_multiplier * abs(controller_inputs.yaw) * 0.01)) * (yaw/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        surge_adjustment = (1 - (self.power_multiplier * overcurent_adjustment_factor * self.surge_multiplier * abs(controller_inputs.surge) * 0.01)) * (surge/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0)  
+        sway_adjustment = (1 - (self.power_multiplier * overcurent_adjustment_factor * self.sway_multiplier * abs(controller_inputs.sway) * 0.01)) * (sway/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        heave_adjustment = (1 - (self.power_multiplier * overcurent_adjustment_factor * self.heave_multiplier * abs(controller_inputs.heave) * 0.01)) * (heave/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        pitch_adjustment = (1 - (self.power_multiplier * overcurent_adjustment_factor * self.pitch_multiplier * abs(controller_inputs.pitch) * 0.01)) * (pitch/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        yaw_adjustment = (1 - (self.power_multiplier * overcurent_adjustment_factor * self.yaw_multiplier * abs(controller_inputs.yaw) * 0.01)) * (yaw/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
 
         # Ensure to scale the thruster values down such that they don't exceed 1 in magnitude
         thruster_scaling_coefficient = 1 / sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0
