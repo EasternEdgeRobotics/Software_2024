@@ -41,10 +41,10 @@ def pick_color(event,x,y,flags,param):
         #HUE, SATURATION, AND VALUE (BRIGHTNESS) RANGES. TOLERANCE COULD BE ADJUSTED.
         # Set range = 0 for hue and range = 1 for saturation and brightness
         # set upper_or_lower = 1 for upper and upper_or_lower = 0 for lower
-        hue_upper = check_boundaries(pixel[0], 10, 0, 1)
-        hue_lower = check_boundaries(pixel[0], 10, 0, 0)
-        saturation_upper = check_boundaries(pixel[1], 10, 1, 1)
-        saturation_lower = check_boundaries(pixel[1], 10, 1, 0)
+        hue_upper = check_boundaries(pixel[0], 20, 0, 1)
+        hue_lower = check_boundaries(pixel[0], 20, 0, 0)
+        saturation_upper = check_boundaries(pixel[1], 20, 1, 1)
+        saturation_lower = check_boundaries(pixel[1], 20, 1, 0)
         value_upper = check_boundaries(pixel[2], 40, 1, 1)
         value_lower = check_boundaries(pixel[2], 40, 1, 0)
 
@@ -74,6 +74,10 @@ def main():
 
     cv2.imshow("BGR",image_src)
     cv2.moveWindow("BGR", 0+300, 0+100)
+
+    # bilateral_filtered = cv2.bilateralFilter(image_src, 25, 100, 100)
+
+    # cv2.imshow("Bilateral",image_src)
 
     #CREATE THE HSV FROM THE BGR IMAGE
     image_hsv = cv2.cvtColor(image_src,cv2.COLOR_BGR2HSV)
