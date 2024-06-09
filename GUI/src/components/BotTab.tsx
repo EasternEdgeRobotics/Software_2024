@@ -24,7 +24,8 @@ import {
     ADCArray,
     TemperatureArray,
     KeyboardInputMap,
-    AutonomousModeStatus
+    AutonomousModeStatus,
+    OutsideTemperatureProbe
 } from "../api/Atoms";
 import { useState, useEffect } from "react";
 
@@ -56,6 +57,7 @@ export function BotTab() {
     // ADC and TEMP data
     const [read_ADCArray] = useAtom(ADCArray);
     const [read_TemperatureArray] = useAtom(TemperatureArray);
+    const [outsideTemperatureProbe] = useAtom(OutsideTemperatureProbe);
 
     let initialPageLoad = true;
 
@@ -349,7 +351,10 @@ export function BotTab() {
                             />
                         </Grid>
                         <Grid item xs={12}>
-                            {autonomousModeStatus}
+                            {autonomousModeStatus} 
+                        </Grid>
+                        <Grid item xs={12}>
+                            Outside Temp Probe: {outsideTemperatureProbe}C
                         </Grid>
                     </Grid>
                 </Grid>

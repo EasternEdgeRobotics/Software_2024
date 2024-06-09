@@ -2,7 +2,7 @@ import { useAtom } from "jotai";
 import ROSLIB, { Ros } from "roslib";
 import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, 
     RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, 
-    RequestingCameraURLs, ADCArray, TemperatureArray, AutonomousModeStatus } from "./Atoms";
+    RequestingCameraURLs, ADCArray, TemperatureArray, AutonomousModeStatus, OutsideTemperatureProbe } from "./Atoms";
 import React from "react";
 
 export function InitROS() {
@@ -18,6 +18,7 @@ export function InitROS() {
     const [currentProfile,] = useAtom(CurrentProfile);
     const [controllerInput, setControllerInput] = useAtom(ControllerInput); // The current controller input from the pilot
     const [,setAutonomousModeStatus] = useAtom(AutonomousModeStatus);
+    const [,setOutsideTemperatureProbe] = useAtom(OutsideTemperatureProbe);
 
     const [hasRecieved, setHasRecieved] = React.useState<boolean>(false);
     const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
@@ -254,6 +255,15 @@ export function InitROS() {
 
     AutonomousModeStatusListener.subscribe(function(message){
         setAutonomousModeStatus((message as any).data);
+    })
+
+    const OutsideTemperatureProbeListener = new ROSLIB.Topic({ros:ros,
+        name:"/outside_temp_probe",
+        messageType: "eer_messages/OutsideTempProbeData"
+    })
+
+    OutsideTemperatureProbeListener.subscribe(function(message){
+        setOutsideTemperatureProbe((message as any).temperature);
     })
 
     // const ImuDataListener = new ROSLIB.Topic({ros:ros,

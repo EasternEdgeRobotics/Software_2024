@@ -13,6 +13,7 @@ from rclpy.executors import MultiThreadedExecutor
 import board
 from smbus2 import SMBus
 from adafruit_bno055 import BNO055_I2C
+from math import sqrt
 
 
 # Thurster channels are based on Beaumont
@@ -280,13 +281,6 @@ class I2CMaster(Node):
             
             for key in ADC_ADDRESSES:
                 self.configured_adcs[key] = False       
-
-
-        ###############################################################
-        ###################### DIAGNOSTICS TIMER ######################
-        ###############################################################
-
-        self.diagnostics_timer = self.create_timer(DIAGNOSTICS_REQUESTS_PERIOD, self.diagnostics_timer_callback)
         
 
     def copilot_listener_callback(self, msg):
@@ -323,28 +317,6 @@ class I2CMaster(Node):
         diagnostics_data.linear_acceleration = list(self.imu_sensor.linear_acceleration)
 
         return diagnostics_data
-
-    def diagnostics_timer_callback(self):
-        """
-        Calls various functions to obtain diagnostics data from the i2c bus. Publishes to the diagnostics data ROS message.
-        """
-
-        diagnostics_data = DiagnosticsData()
-
-        if self.bus is not None:
-            diagnostics_data = self.obtain_adc_data(diagnostics_data) 
-            diagnostics_data = self.obtain_temp_sensor_data(diagnostics_data)
-
-        if self.imu_detected:
-            diagnostics_data = self.obtain_imu_data(diagnostics_data)
-
-        self.diagnostics_data_publisher.publish(diagnostics_data)
-
-
-        if self.debugger_mode:
-            diagnostics_debug_data = String()
-            diagnostics_debug_data.data = str(diagnostics_data)
-            self.debugger.publish(diagnostics_debug_data)
 
 
     def obtain_adc_data(self, diagnostics_data):
@@ -482,7 +454,7 @@ class I2CMaster(Node):
         if msg.enter_auto_mode:
             if not self.autonomous_mode_active:
                 self.autonomous_mode_active = True
-                self.send_autonomus_mode_goal()
+                self.send_autonomous_mode_goal()
             else:
                 future = self.goal_handle.cancel_goal_async()
                 future.add_done_callback(self.cancel_done)
@@ -580,35 +552,46 @@ class I2CMaster(Node):
                     except OSError:
                         self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {(led_address,self.headlight_led_brightness)}")
             
-
-            outside_temperature_probe_register = 0x31
-            temperature_probe_register_length_in_bytes = 2
+            outside_temperature_probe_register = 0x30
             
             if controller_inputs.read_outside_temperature_probe:
+
+                diagnostics_data = DiagnosticsData()
+
+                diagnostics_data = self.obtain_adc_data(diagnostics_data) 
+                diagnostics_data = self.obtain_temp_sensor_data(diagnostics_data)
+
+                if self.imu_detected:
+                    diagnostics_data = self.obtain_imu_data(diagnostics_data)
+
+                self.diagnostics_data_publisher.publish(diagnostics_data)
                     
                 outside_temp_probe_data = OutsideTempProbeData()
+                
+                stm_locked = False
+
+                try:
+                    self.bus.write_byte_data(STM32_ADDRESS, outside_temperature_probe_register, 1)
+                    stm_locked = True
+                except OSError:
+                    self.get_logger().error("Cannot write to STM32 for temperature probe")
 
                 # Data will arrive based on this format (https://cdn.sparkfun.com/datasheets/Sensors/Temp/DS18B20.pdf)
+                
+                readLSBs = -1
+                readMSBs = -1
+                while stm_locked:
+                    try:
+                        if readLSBs == -1:
+                            readLSBs = self.bus.read_byte(STM32_ADDRESS)
+                        elif readMSBs == -1:
+                            readMSBs = self.bus.read_byte(STM32_ADDRESS)
+                        else:
+                            stm_locked = False
+                    except:
+                        continue
 
-                read = self.bus.read_i2c_block_data(STM32_ADDRESS, outside_temperature_probe_register, temperature_probe_register_length_in_bytes)
-
-                # Convert from 12 bit two's complement binary to string
-                read_12_bit_twos_complement_str = '{0:016b}'.format((read[0] << 8) + read[1])[4:]
-
-                # Convert from 12 bit two's complement string to signed binary
-
-                read_12_bit_twos_complement = int(f"0b{read_12_bit_twos_complement_str}",2)
-
-                read_12_bit_magnitude_str = '{0:016b}'.format(((0b111111111111 - read_12_bit_twos_complement) + 1) if read_12_bit_twos_complement >= 0b100000000000 else read_12_bit_twos_complement)[4:] 
-
-                # Convert to float32
-
-                outside_temp_probe_data.data = (-1 if int(read_12_bit_twos_complement_str[0]) else 1) * (int(f"0b{read_12_bit_magnitude_str[:8]}",2) + 0.5 * int(read_12_bit_magnitude_str[8]) + 0.25 * int(read_12_bit_magnitude_str[9]) + 0.125 * int(read_12_bit_magnitude_str[10]) + 0.0625 * int(read_12_bit_magnitude_str[11]))
-
-                if outside_temp_probe_data.data == 0xF0:
-                    self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {bin(outside_temperature_probe_register)}")
-                elif outside_temp_probe_data.data == 0x00:
-                    self.get_logger().error(f"COULD NOT COMMUNICATE TO STM32")
+                outside_temp_probe_data.temperature = float((readMSBs<<8)|readLSBs)/16
 
                 self.outside_temperature_probe_data_publisher.publish(outside_temp_probe_data)
 
@@ -623,19 +606,64 @@ class I2CMaster(Node):
 
         thruster_values = {}
 
-        surge = controller_inputs.surge * self.power_multiplier * self.surge_multiplier * 0.01
-        sway = controller_inputs.sway * self.power_multiplier * self.sway_multiplier * 0.01
-        yaw = controller_inputs.yaw * self.power_multiplier * self.yaw_multiplier * 0.01
+        ###########################################
+        ############ OLD THRUSTER MATH ############
+        ###########################################
+
+        # surge = controller_inputs.surge * self.power_multiplier * self.surge_multiplier * 0.01
+        # sway = controller_inputs.sway * self.power_multiplier * self.sway_multiplier * 0.01
+        # yaw = controller_inputs.yaw * self.power_multiplier * self.yaw_multiplier * 0.01
+
+        # if controller_inputs.heave_up or controller_inputs.heave_down:
+        #     heave = ((self.power_multiplier * self.heave_multiplier) if controller_inputs.heave_up else 0) + ((-self.power_multiplier * self.heave_multiplier) if controller_inputs.heave_down else 0)
+        # else:
+        #     heave = controller_inputs.heave * self.power_multiplier * self.heave_multiplier * 0.01  
+
+        # if controller_inputs.pitch_up or controller_inputs.pitch_down:
+        #     pitch = ((self.power_multiplier * self.pitch_multiplier) if controller_inputs.pitch_up else 0) + ((-self.power_multiplier * self.pitch_multiplier) if controller_inputs.pitch_down else 0)
+        # else:
+        #     pitch = controller_inputs.pitch * self.power_multiplier * self.pitch_multiplier * 0.01  
+
+        # sum_of_magnitudes_of_linear_movements = abs(surge) + abs(sway) + abs(heave)
+        # sum_of_magnitudes_of_rotational_movements = abs(pitch) + abs(yaw)
+
+        # strafe_power = sqrt(surge**2 + sway**2 + heave**2)
+        # strafe_scaling_coefficient = strafe_power / (sum_of_magnitudes_of_linear_movements) if strafe_power else 0
+        # strafe_average_coefficient = strafe_power / (strafe_power + sum_of_magnitudes_of_rotational_movements) if strafe_power or sum_of_magnitudes_of_rotational_movements else 0  
+        # combined_strafe_coefficient = strafe_scaling_coefficient * strafe_average_coefficient
+        # rotation_average_coefficient = sum_of_magnitudes_of_rotational_movements / (strafe_power + sum_of_magnitudes_of_rotational_movements) if strafe_power or sum_of_magnitudes_of_rotational_movements else 0
+
+        # # The to decimal adjustment factor is 1.85 (max value that each thruster value can be)
+
+        # # Calculations below are based on thruster positions
+        # thruster_values["for-port-bot"] = (((-surge)+(sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / 1.85
+        # thruster_values["for-star-bot"] = (((-surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / 1.85
+        # thruster_values["aft-port-bot"] = (((surge)+(sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / -1.85
+        # thruster_values["aft-star-bot"] = (((surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / 1.85
+        # thruster_values["for-port-top"] = (((-surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / -1.85
+        # thruster_values["for-star-top"] = (((-surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / -1.85
+        # thruster_values["aft-port-top"] = (((surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / -1.85
+        # thruster_values["aft-star-top"] = (((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / -1.85
+
+        ###########################################
+        ############ NEW THRUSTER MATH ############
+        ###########################################
+
+        # Power adjustment factor of 0.65 added to avoid brownout
+
+        surge = controller_inputs.surge * self.power_multiplier * self.surge_multiplier * 0.01 * 0.65
+        sway = controller_inputs.sway * self.power_multiplier * self.sway_multiplier * 0.01 * 0.65
+        yaw = controller_inputs.yaw * self.power_multiplier * self.yaw_multiplier * 0.01 * 0.65
 
         if controller_inputs.heave_up or controller_inputs.heave_down:
-            controller_inputs.heave = (100 if controller_inputs.heave_up else 0) + (-100 if controller_inputs.heave_down else 0)
+            controller_inputs.heave = (100 if controller_inputs.heave_up else 0) + (-100 if controller_inputs.heave_down else 0) 
             
-        heave = controller_inputs.heave * self.power_multiplier * self.heave_multiplier * 0.01   
+        heave = controller_inputs.heave * self.power_multiplier * self.heave_multiplier * 0.01  * 0.65
 
         if controller_inputs.pitch_up or controller_inputs.pitch_down:
             controller_inputs.pitch = (100 if controller_inputs.pitch_up else 0) + (-100 if controller_inputs.pitch_down else 0)
         
-        pitch = controller_inputs.pitch * self.power_multiplier * self.pitch_multiplier * 0.01  
+        pitch = controller_inputs.pitch * self.power_multiplier * self.pitch_multiplier * 0.01  * 0.65
 
         sum_of_magnitudes_of_pilot_input = abs(surge) + abs(sway) + abs(heave) + abs(pitch) + abs(yaw)
 
@@ -643,11 +671,11 @@ class I2CMaster(Node):
         # The first mutliplication term determines the total % to remove of the inital thruster direction,
         # The second term scales that thruster direction down based on what it makes up of the sum of pilot input, and also applies a sign
 
-        surge_adjustment = (1 - (self.power_multiplier * self.surge_multiplier * abs(controller_inputs.surge) * 0.01)) * (surge/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0)  
-        sway_adjustment = (1 - (self.power_multiplier * self.sway_multiplier * abs(controller_inputs.sway) * 0.01)) * (sway/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
-        heave_adjustment = (1 - (self.power_multiplier * self.heave_multiplier * abs(controller_inputs.heave) * 0.01)) * (heave/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
-        pitch_adjustment = (1 - (self.power_multiplier * self.pitch_multiplier * abs(controller_inputs.pitch) * 0.01)) * (pitch/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
-        yaw_adjustment = (1 - (self.power_multiplier * self.yaw_multiplier * abs(controller_inputs.yaw) * 0.01)) * (yaw/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        surge_adjustment = (1 - (self.power_multiplier * 0.65 * self.surge_multiplier * abs(controller_inputs.surge) * 0.01)) * (surge/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0)  
+        sway_adjustment = (1 - (self.power_multiplier * 0.65 * self.sway_multiplier * abs(controller_inputs.sway) * 0.01)) * (sway/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        heave_adjustment = (1 - (self.power_multiplier * 0.65 * self.heave_multiplier * abs(controller_inputs.heave) * 0.01)) * (heave/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        pitch_adjustment = (1 - (self.power_multiplier * 0.65 * self.pitch_multiplier * abs(controller_inputs.pitch) * 0.01)) * (pitch/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
+        yaw_adjustment = (1 - (self.power_multiplier * 0.65 * self.yaw_multiplier * abs(controller_inputs.yaw) * 0.01)) * (yaw/sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0) 
 
         # Ensure to scale the thruster values down such that they don't exceed 1 in magnitude
         thruster_scaling_coefficient = 1 / sum_of_magnitudes_of_pilot_input if sum_of_magnitudes_of_pilot_input else 0
@@ -681,6 +709,7 @@ class I2CMaster(Node):
         # Ensure to also uncomment the debugger attribute in the init method
 
         # if self.debugger_mode:
+
         #     from math import cos, pi
             
         #     raw_inputs = String()
@@ -692,22 +721,18 @@ class I2CMaster(Node):
         #     # Yaw: {yaw}"""
         #     self.debugger.publish(raw_inputs)
 
-        #     coefficients = String()
-        #     coefficients.data = f"""Srfe Pow: {strafe_power}, Strfe scal: {strafe_scaling_coefficient}, Strfe avg: {strafe_average_coefficient}, rot avg: {rotation_average_coefficient}"""
-        #     self.debugger.publish(coefficients)
-
         #     thruster_values_debug = String()
         #     thruster_values_debug.data = f"""
         #     forportbot:{thruster_values["for-port-bot"]},for star bot:{thruster_values["for-star-bot"]},aftportbot:{thruster_values["aft-port-bot"]},aftstarbot:{thruster_values["aft-star-bot"]},forporttop:{thruster_values["for-port-top"]},
         #     forstartop:{thruster_values["for-star-top"]},aft port top:{thruster_values["aft-port-top"]},aftstartop:{thruster_values["aft-star-top"]}"""
         #     self.debugger.publish(thruster_values_debug)
 
-        #     net_surge = cos(pi/3)*((-thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
-        #     net_sway = cos(pi/3)*((thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (-thruster_values["aft-star-bot"]) + (thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (-thruster_values["aft-star-top"]))
-        #     net_heave = cos(pi/3)*((thruster_values["for-port-bot"]) + (thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (-thruster_values["aft-port-top"]) + (-thruster_values["aft-star-top"]))
+        #     net_surge = cos(pi/3)*((-thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (-thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (thruster_values["for-port-top"]) + (thruster_values["for-star-top"]) + (-thruster_values["aft-port-top"]) + (-thruster_values["aft-star-top"]))
+        #     net_sway = cos(pi/3)*((thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (-thruster_values["aft-port-bot"]) + (-thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (thruster_values["for-star-top"]) + (-thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
+        #     net_heave = cos(pi/3)*((thruster_values["for-port-bot"]) + (thruster_values["for-star-bot"]) + (-thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (thruster_values["for-port-top"]) + (thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
             
-        #     net_pitch = cos(pi/4)*((thruster_values["for-port-bot"]) + (thruster_values["for-star-bot"]) + (-thruster_values["aft-port-bot"]) + (-thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
-        #     net_yaw = cos(pi/4)*((thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (-thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (thruster_values["for-port-top"]) + (-thruster_values["for-star-top"]) + (-thruster_values["aft-port-top"]) + (thruster_values["aft-star-top"]))
+        #     net_pitch = cos(pi/4)*((thruster_values["for-port-bot"]) + (thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (-thruster_values["aft-star-bot"]) + (thruster_values["for-port-top"]) + (thruster_values["for-star-top"]) + (-thruster_values["aft-port-top"]) + (-thruster_values["aft-star-top"]))
+        #     net_yaw = cos(pi/4)*((thruster_values["for-port-bot"]) + (-thruster_values["for-star-bot"]) + (thruster_values["aft-port-bot"]) + (thruster_values["aft-star-bot"]) + (-thruster_values["for-port-top"]) + (thruster_values["for-star-top"]) + (thruster_values["aft-port-top"]) + (-thruster_values["aft-star-top"]))
 
         #     net_movement_vectors = String()
         #     net_movement_vectors.data = f"""Net Surge:{net_surge},Net Sway:{net_sway},Net Heave:{net_heave},Net Pitch:{net_pitch},Net Yaw:{net_yaw}"""
@@ -752,7 +777,7 @@ class I2CMaster(Node):
         return thruster_values
     
 
-    def send_autonomus_mode_goal(self):
+    def send_autonomous_mode_goal(self):
 
         self.fetch_brain_coral_hsv_colour_bounds()
         goal_msg = AutoMode.Goal()
