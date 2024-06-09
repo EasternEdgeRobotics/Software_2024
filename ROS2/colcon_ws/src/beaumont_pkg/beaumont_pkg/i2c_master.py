@@ -526,6 +526,15 @@ class I2CMaster(Node):
         -- LED Selection: 1-4
         -- Example: 0x24 (LED 4)
         Byte 2: Brightness (0-99)
+
+        Outside Temperature Probe:
+        Byte 1: Select probe
+        -- Command: 3 (hex)
+        -- Temperature Probe Selection: 1
+        -- Example: 0x31
+        Byte 2-3: Data
+        --Format: 0bSSSS S(2^6)(2^5)(2^4) (2^3)(2^2)(2^1)(2^0) (2^-1) (2^-2) (2^-3) (2^-4)
+        -- S is for signed digits, all 0 or 1 depending on sign
         '''
         
         if self.bus is not None:
@@ -571,36 +580,37 @@ class I2CMaster(Node):
                     except OSError:
                         self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {(led_address,self.headlight_led_brightness)}")
             
-            # outside_temperature_probe_register = 0x17
-            # temperature_probe_register_length_in_bytes = 2
+
+            outside_temperature_probe_register = 0x31
+            temperature_probe_register_length_in_bytes = 2
             
-            # if controller_inputs.read_outside_temperature_probe:
+            if controller_inputs.read_outside_temperature_probe:
                     
-            #     outside_temp_probe_data = OutsideTempProbeData()
+                outside_temp_probe_data = OutsideTempProbeData()
 
-            #     # Data will arrive based on this format (https://cdn.sparkfun.com/datasheets/Sensors/Temp/DS18B20.pdf)
+                # Data will arrive based on this format (https://cdn.sparkfun.com/datasheets/Sensors/Temp/DS18B20.pdf)
 
-            #     read = self.bus.read_i2c_block_data(STM32_ADDRESS, outside_temperature_probe_register, temperature_probe_register_length_in_bytes)
+                read = self.bus.read_i2c_block_data(STM32_ADDRESS, outside_temperature_probe_register, temperature_probe_register_length_in_bytes)
 
-            #     # Convert from 12 bit two's complement binary to string
-            #     read_12_bit_twos_complement_str = '{0:016b}'.format((read[0] << 8) + read[1])[4:]
+                # Convert from 12 bit two's complement binary to string
+                read_12_bit_twos_complement_str = '{0:016b}'.format((read[0] << 8) + read[1])[4:]
 
-            #     # Convert from 12 bit two's complement string to signed binary
+                # Convert from 12 bit two's complement string to signed binary
 
-            #     read_12_bit_twos_complement = int(f"0b{read_12_bit_twos_complement_str}",2)
+                read_12_bit_twos_complement = int(f"0b{read_12_bit_twos_complement_str}",2)
 
-            #     read_12_bit_magnitude_str = '{0:016b}'.format(((0b111111111111 - read_12_bit_twos_complement) + 1) if read_12_bit_twos_complement >= 0b100000000000 else read_12_bit_twos_complement)[4:] 
+                read_12_bit_magnitude_str = '{0:016b}'.format(((0b111111111111 - read_12_bit_twos_complement) + 1) if read_12_bit_twos_complement >= 0b100000000000 else read_12_bit_twos_complement)[4:] 
 
-            #     # Convert to float32
+                # Convert to float32
 
-            #     outside_temp_probe_data.data = (-1 if int(read_12_bit_twos_complement_str[0]) else 1) * (int(f"0b{read_12_bit_magnitude_str[:8]}",2) + 0.5 * int(read_12_bit_magnitude_str[8]) + 0.25 * int(read_12_bit_magnitude_str[9]) + 0.125 * int(read_12_bit_magnitude_str[10]) + 0.0625 * int(read_12_bit_magnitude_str[11]))
+                outside_temp_probe_data.data = (-1 if int(read_12_bit_twos_complement_str[0]) else 1) * (int(f"0b{read_12_bit_magnitude_str[:8]}",2) + 0.5 * int(read_12_bit_magnitude_str[8]) + 0.25 * int(read_12_bit_magnitude_str[9]) + 0.125 * int(read_12_bit_magnitude_str[10]) + 0.0625 * int(read_12_bit_magnitude_str[11]))
 
-            #     if outside_temp_probe_data.data == 0xF0:
-            #         self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {bin(outside_temperature_probe_register)}")
-            #     elif outside_temp_probe_data.data == 0x00:
-            #         self.get_logger().error(f"COULD NOT COMMUNICATE TO STM32")
+                if outside_temp_probe_data.data == 0xF0:
+                    self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {bin(outside_temperature_probe_register)}")
+                elif outside_temp_probe_data.data == 0x00:
+                    self.get_logger().error(f"COULD NOT COMMUNICATE TO STM32")
 
-            #     self.outside_temperature_probe_data_publisher.publish(outside_temp_probe_data)
+                self.outside_temperature_probe_data_publisher.publish(outside_temp_probe_data)
 
                 
                 
