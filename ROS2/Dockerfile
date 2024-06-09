@@ -7,6 +7,7 @@ WORKDIR /app
 COPY colcon_ws/src /app/src
 COPY colcon_ws/docker_entrypoint.sh /app
 
+ARG CACHEBUST=1
 RUN . /opt/ros/$ROS_DISTRO/setup.sh && colcon build
 
 ENTRYPOINT ["bash", "/app/docker_entrypoint.sh" ]
