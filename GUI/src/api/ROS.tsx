@@ -5,6 +5,7 @@ import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfi
     RequestingCameraURLs, ADCArray, TemperatureArray, AutonomousModeStatus, OutsideTemperatureProbe } from "./Atoms";
 import React from "react";
 
+
 export function InitROS() {
     const [RosIP] = useAtom(ROSIP); // The ip of the device running the rosbridge server (will be the Pi4 in enclosure)
     const [, setIsRosConnected] = useAtom(IsROSConnected); // Used in BotTab, indicates if we are communicating with the rosbridge server
@@ -19,6 +20,7 @@ export function InitROS() {
     const [controllerInput, setControllerInput] = useAtom(ControllerInput); // The current controller input from the pilot
     const [,setAutonomousModeStatus] = useAtom(AutonomousModeStatus);
     const [,setOutsideTemperatureProbe] = useAtom(OutsideTemperatureProbe);
+    
 
     const [hasRecieved, setHasRecieved] = React.useState<boolean>(false);
     const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
@@ -114,6 +116,9 @@ export function InitROS() {
         controllerInputTopic.publish(controllerInputVals);
     }
     ,[controllerInput]);
+    
+
+    
 
     // Create a ROS service on the "/profile_config" topic, using a custom EER service type (see eer_messages folder in ROS2/colcon_ws/src)
     const configClient = new ROSLIB.Service({ros:ros,
@@ -273,6 +278,8 @@ export function InitROS() {
     // ImuDataListener.subscribe(function(message) {
     //     console.log(message);
     // });
+
+   
 
     return (null);
 }
