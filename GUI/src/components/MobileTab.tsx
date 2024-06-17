@@ -10,7 +10,7 @@ const useOpenClaw = () => {
     const openClaw = () => {
         setControllerInput(prevState => {
             const newControllerInput = [...prevState];
-            newControllerInput[5] = 1;  
+            newControllerInput[5] = 1;   // 5 is used for open_claw from the ROS file
             return newControllerInput;
         });
     };
@@ -25,7 +25,7 @@ const useCloseClaw = () => {
     const closeClaw = () => {
         setControllerInput(prevState => {
             const newControllerInput = [...prevState];
-            newControllerInput[6] = 1;  
+            newControllerInput[6] = 1;  // 6 is used for close_claw from the ROS file
             return newControllerInput;
         });
     };
@@ -40,7 +40,7 @@ const useLightLED = () => {
     const lightLED = () => {
         setControllerInput(prevState => {
             const newControllerInput = [...prevState];
-            newControllerInput[11] = 1;  
+            newControllerInput[11] = 1; //11 is used for brighten_led from ROS file  
             return newControllerInput;
         });
     };
@@ -55,7 +55,7 @@ const useDimLED = () => {
     const dimLED = () => {
         setControllerInput(prevState => {
             const newControllerInput = [...prevState];
-            newControllerInput[12] = 1;  
+            newControllerInput[12] = 1; //12 is used for dim_led from ROS file
             return newControllerInput;
         });
     };
