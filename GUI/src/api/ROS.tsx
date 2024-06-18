@@ -2,7 +2,7 @@ import { useAtom } from "jotai";
 import ROSLIB, { Ros } from "roslib";
 import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, 
     RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, 
-    RequestingCameraURLs, ADCArray, TemperatureArray, AutonomousModeStatus, OutsideTemperatureProbe } from "./Atoms";
+    RequestingCameraURLs, ADCArray, TemperatureArray, AutonomousModeStatus, OutsideTemperatureProbe, IMUARRAY } from "./Atoms";
 import React from "react";
 
 
@@ -53,6 +53,8 @@ export function InitROS() {
     // ADC and TEMP data
     const [, setADCArray] = useAtom(ADCArray);
     const [, setTemperatureArray] = useAtom(TemperatureArray); 
+    const [, setIMUARRAY] = useAtom(IMUARRAY);
+
 
     // React.useEffect(() => { // Constantly run the input listener 
     //     setInterval(() => {
@@ -251,7 +253,26 @@ export function InitROS() {
             mega_board_ic2:(message as any).mega_board_ic2,
             power_board_u11:(message as any).power_board_u11,
             mega_board_ic1:(message as any).mega_board_ic1}); 
+
+            setIMUARRAY(
+                {acceleration:(message as any).acceleration,
+                    magnetic:(message as any).magnetic,
+                    euler:(message as any).euler,
+                    linear_acceleration:(message as any).linear_acceleration} )
     })
+
+
+     const ImuDataListener = new ROSLIB.Topic({ros:ros,
+         name:"/imu",
+         messageType: "std_msgs/String"});
+
+     ImuDataListener.subscribe(function(message) {
+         console.log(message);
+     });
+
+    
+
+    
 
     const AutonomousModeStatusListener = new ROSLIB.Topic({ros:ros,
         name:"/autonomous_mode_status",

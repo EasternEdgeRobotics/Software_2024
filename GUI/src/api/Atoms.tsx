@@ -77,3 +77,5 @@ export const TemperatureArray = atom<{power_board_u8:number,power_board_u9:numbe
 
 export const OutsideTemperatureProbe = atom<number>(0);     
 export const AutonomousModeStatus = atom<string>("Autonomous Mode Off"); // ADC DATA
+
+export const IMUARRAY = atom<{acceleration:number, magnetic:number, euler:number, linear_acceleration:number}>({acceleration:0,magnetic:0, euler:0, linear_acceleration:0}); // IMU DATA

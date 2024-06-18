@@ -1,7 +1,7 @@
 import React from "react";
-import { Button, Box } from "@mui/material";
+import { Button, Box, Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import { useAtom } from 'jotai';
-import { ControllerInput } from '../api/Atoms'; 
+import { ControllerInput, ADCArray, TemperatureArray, IMUARRAY } from '../api/Atoms'; 
 
 //  hook for opening the claw
 const useOpenClaw = () => {
@@ -149,6 +149,16 @@ export default function MobileTab() {
     const surgeup = SurgingUP();
     const surgedown = SurgingDOWN();
 
+    const [read_ADCArray] = useAtom(ADCArray);
+    const [read_TemperatureArray] = useAtom(TemperatureArray);
+    const [read_IMUARRAY] = useAtom(IMUARRAY);
+
+    const Arrays = [
+        {"name": "ADC", "status": JSON.stringify(read_ADCArray)},
+        {"name":"TEMPERATURE", "status": JSON.stringify(read_TemperatureArray)},
+        {"name": "IMU", "status": JSON.stringify(read_IMUARRAY)}
+    ];
+
     return (
         <Box>
         <Box mb={8}>
@@ -163,6 +173,36 @@ export default function MobileTab() {
             <Button onClick={surgeup}>Surge UP</Button>
             <Button onClick={surgedown}>Surge DOWN</Button>
         </Box>
-    </Box>
+        
+        <Grid container justifyContent={"center"} spacing={200} sx={{ marginTop: "40px", transform: "scale(0.7)" }}>
+                <Grid container justifyContent={"right"} spacing={17}>
+                    <Grid item xs={3}>
+                        <Grid container justifyContent={"center"} rowSpacing={3}>
+                            <Grid item xs={50}>
+                                <TableContainer component={Paper}>
+                                    <Table>
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell align="center">Items</TableCell>
+                                                <TableCell align="center">Values</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {Arrays.map((data) => (
+                                                <TableRow key={data.name} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                                                    <TableCell align="center">{data.name}</TableCell>
+                                                    <TableCell align="center">{data.status}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Box>
     );
 }
+
