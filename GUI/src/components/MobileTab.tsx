@@ -13,6 +13,14 @@ const useOpenClaw = () => {
             newControllerInput[5] = 1;   // 5 is used for open_claw from the ROS file
             return newControllerInput;
         });
+        // To reset the values this will input 0 to the controller input after 1 second to reset from the button click.
+        setTimeout(() => {
+            setControllerInput(prevState => {
+                const newControllerInput = [...prevState];
+                newControllerInput[5] = 0; // Should reset the claw
+                return newControllerInput;
+            });
+        }, 1000); // 1 second
     };
 
     return openClaw;
@@ -28,6 +36,14 @@ const useCloseClaw = () => {
             newControllerInput[6] = 1;  // 6 is used for close_claw from the ROS file
             return newControllerInput;
         });
+
+        setTimeout(() => {
+            setControllerInput(prevState => {
+                const newControllerInput = [...prevState];
+                newControllerInput[6] = 0; // Should reset the claw
+                return newControllerInput;
+            });
+        }, 1000); // 1 second
     };
 
     return closeClaw;
@@ -43,6 +59,14 @@ const useLightLED = () => {
             newControllerInput[11] = 1; //11 is used for brighten_led from ROS file  
             return newControllerInput;
         });
+
+        setTimeout(() => {
+            setControllerInput(prevState => {
+                const newControllerInput = [...prevState];
+                newControllerInput[11] = 0; // Should reset the LED
+                return newControllerInput;
+            });
+        }, 1000); // 1 second
     };
 
     return lightLED;
@@ -58,16 +82,72 @@ const useDimLED = () => {
             newControllerInput[12] = 1; //12 is used for dim_led from ROS file
             return newControllerInput;
         });
+
+        setTimeout(() => {
+            setControllerInput(prevState => {
+                const newControllerInput = [...prevState];
+                newControllerInput[12] = 0; // Should reset the LED
+                return newControllerInput;
+            });
+        }, 1000); // 1 second
     };
 
     return dimLED;
 };
+
+
+const SurgingUP = () => {
+    const [, setControllerInput] = useAtom(ControllerInput);
+
+    const surgeup = () => {
+        setControllerInput(prevState => {
+            const newControllerInput = [...prevState];
+            newControllerInput[0] = 100;   // 0 is used for surge from the ROS file
+            return newControllerInput;
+        });
+        
+        setTimeout(() => {
+            setControllerInput(prevState => {
+                const newControllerInput = [...prevState];
+                newControllerInput[0] = 0; // Should reset the surge
+                return newControllerInput;
+            });
+        }, 1000); // 1 second
+    };
+
+    return surgeup;
+};
+
+const SurgingDOWN = () => {
+    const [, setControllerInput] = useAtom(ControllerInput);
+
+    const surgedown = () => {
+        setControllerInput(prevState => {
+            const newControllerInput = [...prevState];
+            newControllerInput[0] = -100;   // 0 is used for surge from the ROS file
+            return newControllerInput;
+        });
+        
+        setTimeout(() => {
+            setControllerInput(prevState => {
+                const newControllerInput = [...prevState];
+                newControllerInput[0] = 0; // Should reset the surge
+                return newControllerInput;
+            });
+        }, 1000); // 1 second
+    };
+
+    return surgedown;
+};
+
 
 export default function MobileTab() {
     const openClaw = useOpenClaw();
     const closeClaw = useCloseClaw();
     const lightLED = useLightLED();
     const dimLED = useDimLED();
+    const surgeup = SurgingUP();
+    const surgedown = SurgingDOWN();
 
     return (
         <Box>
@@ -75,6 +155,9 @@ export default function MobileTab() {
             <Button onClick={closeClaw}>Close Claw</Button>
             <Button onClick={lightLED}>Light the LED</Button>
             <Button onClick={dimLED}>Dim the LED</Button>
+            <Button onClick={surgeup}>Surge UP</Button>
+            <Button onClick={surgedown}>Surge DOWN</Button>
+
         </Box>
     );
 }
