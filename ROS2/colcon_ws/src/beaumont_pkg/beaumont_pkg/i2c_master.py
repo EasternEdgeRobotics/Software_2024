@@ -757,7 +757,7 @@ class I2CMaster(Node):
                 else:
                     self.current_thruster -= 1
 
-                current_thruster_and_value.data = f"{self.current_thruster}: {self.surge}"
+                current_thruster_and_value.data = f"{self.current_thruster}: {controller_inputs.surge}"
                 self.debugger.publish(current_thruster_and_value)
 
             elif controller_inputs.dim_led:
@@ -766,7 +766,7 @@ class I2CMaster(Node):
                 else:
                     self.current_thruster += 1
 
-                current_thruster_and_value.data = f"{self.current_thruster}: {self.surge}"
+                current_thruster_and_value.data = f"{self.current_thruster}: {controller_inputs.surge}"
                 self.debugger.publish(current_thruster_and_value)
 
             for thruster_position, channel in THRUSTER_CHANNELS.items():
