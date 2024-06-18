@@ -20,7 +20,7 @@ const useOpenClaw = () => {
                 newControllerInput[5] = 0; // Should reset the claw
                 return newControllerInput;
             });
-        }, 1000); // 1 second
+        }, 100); // 0.1 seconds
     };
 
     return openClaw;
@@ -43,7 +43,7 @@ const useCloseClaw = () => {
                 newControllerInput[6] = 0; // Should reset the claw
                 return newControllerInput;
             });
-        }, 1000); // 1 second
+        }, 100); // 0.1 seconds
     };
 
     return closeClaw;
@@ -66,7 +66,7 @@ const useLightLED = () => {
                 newControllerInput[11] = 0; // Should reset the LED
                 return newControllerInput;
             });
-        }, 1000); // 1 second
+        }, 100); // 0.1 seconds
     };
 
     return lightLED;
@@ -89,7 +89,7 @@ const useDimLED = () => {
                 newControllerInput[12] = 0; // Should reset the LED
                 return newControllerInput;
             });
-        }, 1000); // 1 second
+        }, 100); // 0.1 seconds
     };
 
     return dimLED;
@@ -112,7 +112,7 @@ const SurgingUP = () => {
                 newControllerInput[0] = 0; // Should reset the surge
                 return newControllerInput;
             });
-        }, 1000); // 1 second
+        }, 100); // 0.1 seconds
     };
 
     return surgeup;
@@ -134,7 +134,7 @@ const SurgingDOWN = () => {
                 newControllerInput[0] = 0; // Should reset the surge
                 return newControllerInput;
             });
-        }, 1000); // 1 second
+        }, 100); // 0.1 seconds
     };
 
     return surgedown;
