@@ -95,7 +95,7 @@ const useDimLED = () => {
     return dimLED;
 };
 
-
+// Hook for surging up
 const SurgingUP = () => {
     const [, setControllerInput] = useAtom(ControllerInput);
 
@@ -117,7 +117,7 @@ const SurgingUP = () => {
 
     return surgeup;
 };
-
+// Hook for surging down
 const SurgingDOWN = () => {
     const [, setControllerInput] = useAtom(ControllerInput);
 
@@ -151,13 +151,18 @@ export default function MobileTab() {
 
     return (
         <Box>
+        <Box mb={8}>
             <Button onClick={openClaw}>Open Claw</Button>
             <Button onClick={closeClaw}>Close Claw</Button>
+        </Box>
+        <Box mb={8}>
             <Button onClick={lightLED}>Light the LED</Button>
             <Button onClick={dimLED}>Dim the LED</Button>
+        </Box>
+        <Box>
             <Button onClick={surgeup}>Surge UP</Button>
             <Button onClick={surgedown}>Surge DOWN</Button>
-
         </Box>
+    </Box>
     );
 }
