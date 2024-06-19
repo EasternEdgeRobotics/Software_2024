@@ -30,7 +30,7 @@ THRUSTER_CHANNELS = {
 
 # In the thruster class, the target speed is set by the user. 
 # Each thruster accelerates towards the target speed by the acceleration below
-THRUSTER_ACCELERATION = 5
+THRUSTER_ACCELERATION = 8
 
 # Max % acceleration per second can be calculated by (THRUSTER_ACCELERATION/254)*(pilot input frequency in Hz)
 # Where 0 is max reverse speed, 127 is center speed, and 254 is max forward speed
@@ -592,7 +592,7 @@ class I2CMaster(Node):
                     except:
                         continue
 
-                outside_temp_probe_data.temperature = float((readMSBs<<8)|readLSBs)/16
+                outside_temp_probe_data.temperature = (float(((readMSBs<<8)|readLSBs) & 0b0000011111111111)/16) * (-1 if readMSBs >= 16 else 1) 
 
                 self.outside_temperature_probe_data_publisher.publish(outside_temp_probe_data)
 
@@ -644,10 +644,10 @@ class I2CMaster(Node):
         thruster_values["for-star-bot"] = (((-surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / overall_scaling_factor
         thruster_values["aft-port-bot"] = (((surge)+(sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / -overall_scaling_factor
         thruster_values["aft-star-bot"] = (((surge)+(-sway)+(heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / overall_scaling_factor
-        thruster_values["for-port-top"] = (((-surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / -overall_scaling_factor
-        thruster_values["for-star-top"] = (((-surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / -overall_scaling_factor
-        thruster_values["aft-port-top"] = (((surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / -overall_scaling_factor
-        thruster_values["aft-star-top"] = (((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / -overall_scaling_factor
+        thruster_values["for-port-top"] = (((-surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(yaw)) * rotation_average_coefficient) / overall_scaling_factor
+        thruster_values["for-star-top"] = (((-surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((-pitch)+(-yaw)) * rotation_average_coefficient) / overall_scaling_factor
+        thruster_values["aft-port-top"] = (((surge)+(sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(-yaw)) * rotation_average_coefficient) / overall_scaling_factor
+        thruster_values["aft-star-top"] = (((surge)+(-sway)+(-heave)) * combined_strafe_coefficient + ((pitch)+(yaw)) * rotation_average_coefficient) / overall_scaling_factor
 
         ###########################################
         ############ NEW THRUSTER MATH ############
