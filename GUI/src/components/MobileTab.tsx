@@ -96,7 +96,7 @@ const useDimLED = () => {
 };
 
 // Hook for surging up
-const SurgingUP = () => {
+const useSurgeUp = () => {
     const [, setControllerInput] = useAtom(ControllerInput);
 
     const surgeup = () => {
@@ -105,20 +105,21 @@ const SurgingUP = () => {
             newControllerInput[0] = 100;   // 0 is used for surge from the ROS file
             return newControllerInput;
         });
-        
-        setTimeout(() => {
-            setControllerInput(prevState => {
-                const newControllerInput = [...prevState];
-                newControllerInput[0] = 0; // Should reset the surge
-                return newControllerInput;
-            });
-        }, 100); // 0.1 seconds
     };
 
-    return surgeup;
+    const stopsurgeup = () => {
+        setControllerInput(prevState => {
+            const newControllerInput = [...prevState];
+            newControllerInput[0] = 0; // Should reset the surge
+            return newControllerInput;
+        });
+    };
+
+    return { surgeup, stopsurgeup };
 };
+
 // Hook for surging down
-const SurgingDOWN = () => {
+const useSurgeDown = () => {
     const [, setControllerInput] = useAtom(ControllerInput);
 
     const surgedown = () => {
@@ -127,17 +128,17 @@ const SurgingDOWN = () => {
             newControllerInput[0] = -100;   // 0 is used for surge from the ROS file
             return newControllerInput;
         });
-        
-        setTimeout(() => {
-            setControllerInput(prevState => {
-                const newControllerInput = [...prevState];
-                newControllerInput[0] = 0; // Should reset the surge
-                return newControllerInput;
-            });
-        }, 100); // 0.1 seconds
     };
 
-    return surgedown;
+    const stopsurgedown = () => {
+        setControllerInput(prevState => {
+            const newControllerInput = [...prevState];
+            newControllerInput[0] = 0; // Should reset the surge
+            return newControllerInput;
+        });
+    };
+
+    return { surgedown, stopsurgedown };
 };
 
 
@@ -146,8 +147,8 @@ export default function MobileTab() {
     const closeClaw = useCloseClaw();
     const lightLED = useLightLED();
     const dimLED = useDimLED();
-    const surgeup = SurgingUP();
-    const surgedown = SurgingDOWN();
+    const { surgeup: surgeUpClick, stopsurgeup: surgeUpRelease } = useSurgeUp();
+    const { surgedown: surgeDownClick, stopsurgedown: surgeDownRelease } = useSurgeDown();
 
     const [read_ADCArray] = useAtom(ADCArray);
     const [read_TemperatureArray] = useAtom(TemperatureArray);
@@ -170,8 +171,8 @@ export default function MobileTab() {
             <Button onClick={dimLED}>Dim the LED</Button>
         </Box>
         <Box>
-            <Button onClick={surgeup}>Surge UP</Button>
-            <Button onClick={surgedown}>Surge DOWN</Button>
+        <Button onMouseDown={surgeUpClick} onMouseUp={surgeUpRelease}>Surge UP</Button>
+        <Button onMouseDown={surgeDownClick} onMouseUp={surgeDownRelease}>Surge DOWN</Button>
         </Box>
         
         <Grid container justifyContent={"center"} spacing={200} sx={{ marginTop: "40px", transform: "scale(0.7)" }}>
