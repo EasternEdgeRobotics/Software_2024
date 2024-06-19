@@ -1,6 +1,8 @@
 import { useAtom } from "jotai";
 import ROSLIB, { Ros } from "roslib";
-import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, RequestingCameraURLs, ADCArray, TemperatureArray } from "./Atoms";
+import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig, 
+    RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput, 
+    RequestingCameraURLs, ADCArray, TemperatureArray, AutonomousModeStatus, OutsideTemperatureProbe } from "./Atoms";
 import React from "react";
 
 export function InitROS() {
@@ -15,6 +17,8 @@ export function InitROS() {
     const [cameraURLs, setCameraURLs] = useAtom(CameraURLs);
     const [currentProfile,] = useAtom(CurrentProfile);
     const [controllerInput, setControllerInput] = useAtom(ControllerInput); // The current controller input from the pilot
+    const [,setAutonomousModeStatus] = useAtom(AutonomousModeStatus);
+    const [,setOutsideTemperatureProbe] = useAtom(OutsideTemperatureProbe);
 
     const [hasRecieved, setHasRecieved] = React.useState<boolean>(false);
     const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
@@ -86,6 +90,7 @@ export function InitROS() {
 
     // Publish the new controller input whenever it changes (10 Hz)
     React.useEffect(()=>{
+        console.log(controllerInput)
         const controllerInputVals = new ROSLIB.Message({
             surge: controllerInput[0],
             sway: controllerInput[1],
@@ -103,7 +108,8 @@ export function InitROS() {
             turn_stepper_cw: controllerInput[13] ? true: false,
             turn_stepper_ccw: controllerInput[14] ? true: false,
             read_outside_temperature_probe: controllerInput[15] ? true: false,
-            enter_auto_mode: controllerInput[16] ? true: false
+            enter_auto_mode: controllerInput[16] ? true: false,
+            is_autonomous: false
             });
         controllerInputTopic.publish(controllerInputVals);
     }
@@ -121,7 +127,8 @@ export function InitROS() {
                 state:requestingConfig.state,
                 data:JSON.stringify({"profileName": requestingConfig.profileName,"controller1": requestingConfig.controller1,
                                     "controller2": requestingConfig.controller2,"associated_mappings": mappings})}); // Turn the JSON object into a string to send over ROS
-            configClient.callService(request, (function(){null;}));
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            configClient.callService(request, () => {});
         }
         else if (requestingConfig.state==1){ // State 1 indicates that we are requesting mappings for a certain profile from the database
             const request = new ROSLIB.ServiceRequest({
@@ -220,33 +227,44 @@ export function InitROS() {
         }
     ,[requestingCameraURLs]);
 
-    // const ADCDataListener = new ROSLIB.Topic({ros:ros,
-    //     name:"/adc",
-    //     messageType: "eer_messages/ADCData"
-    // })
+    const DiagnosticsDataListener = new ROSLIB.Topic({ros:ros,
+        name:"/diagnostics",
+        messageType: "eer_messages/DiagnosticsData"
+    })
 
-    // ADCDataListener.subscribe(function(message){
-    //     setADCArray(
-    //         {adc_48v_bus:(message as any).adc_48v_bus,
-    //             adc_12v_bus:(message as any).adc_12v_bus,
-    //             adc_5v_bus:(message as any).adc_5v_bus});
-    // })
+    DiagnosticsDataListener.subscribe(function(message){
+        
+        setADCArray(
+            {adc_48v_bus:(message as any).adc_48v_bus,
+                adc_12v_bus:(message as any).adc_12v_bus,
+                adc_5v_bus:(message as any).adc_5v_bus});
 
-    // const TempratureDataListener = new ROSLIB.Topic({ros:ros,
-    //     name:"/board_temp",
-    //     messageType: "eer_messages/TempSensorData"
-    // })
+        setTemperatureArray(
+            {power_board_u8:(message as any).power_board_u8,
+            power_board_u9:(message as any).power_board_u9,
+            power_board_u10:(message as any).power_board_u10,
+            mega_board_ic2:(message as any).mega_board_ic2,
+            power_board_u11:(message as any).power_board_u11,
+            mega_board_ic1:(message as any).mega_board_ic1}); 
+    })
 
-    // TempratureDataListener.subscribe(function(message){
-    //     setTemperatureArray(
-    //         {power_board_u8:(message as any).power_board_u8,
-    //         power_board_u9:(message as any).power_board_u9,
-    //         power_board_u10:(message as any).power_board_u10,
-    //         mega_board_ic2:(message as any).mega_board_ic2,
-    //         power_board_u11:(message as any).power_board_u11,
-    //         mega_board_ic1:(message as any).mega_board_ic1}); 
-    // })
+    const AutonomousModeStatusListener = new ROSLIB.Topic({ros:ros,
+        name:"/autonomous_mode_status",
+        messageType: "std_msgs/String"
+    })
 
+    AutonomousModeStatusListener.subscribe(function(message){
+        setAutonomousModeStatus((message as any).data);
+    })
+
+    const OutsideTemperatureProbeListener = new ROSLIB.Topic({ros:ros,
+        name:"/outside_temp_probe",
+        messageType: "eer_messages/OutsideTempProbeData"
+    })
+
+    OutsideTemperatureProbeListener.subscribe(function(message){
+        setOutsideTemperatureProbe((message as any).temperature);
+    })
 
     // const ImuDataListener = new ROSLIB.Topic({ros:ros,
     //     name:"/imu",
