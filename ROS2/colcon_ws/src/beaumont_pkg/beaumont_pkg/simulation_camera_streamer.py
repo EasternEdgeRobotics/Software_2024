@@ -9,7 +9,6 @@ import cv2
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
-import time
 
 camera_captures = {0: None, 1: None, 2: None, 3: None}
 
@@ -17,10 +16,10 @@ camera_captures = {0: None, 1: None, 2: None, 3: None}
 
 ip_address = "localhost"
 
-class SimulationCameraSubscriber(Node):
+class SimulationCameraStreamer(Node):
 	
 	def __init__(self):
-		super().__init__('simulation_camera_subscriber')
+		super().__init__('simulation_camera_streamer')
 
 		#Create a subscriber to listen to each camera on the bot
 		self.simulation_camera_listener = self.create_subscription(Image, '/demo_cam/camera0/image_raw', self.simulation_camera_0_listener_callback, 10)
@@ -33,13 +32,16 @@ class SimulationCameraSubscriber(Node):
 		'''Converts ROS image into OpenCV image then stores it in a global variable'''
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+			if camera_number == 1 or camera_number == 2:
+				cv_image = cv2.flip(cv_image,0)
+				cv_image = cv2.flip(cv_image,1)
 		except CvBridgeError as e:
 			print(e)
 
 		hsvImage = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
 		
-		lower_range_red = np.array([100, 185, 40]) #Need to tune this to JUST detect the red
-		upper_range_red = np.array([180, 255, 255])
+		lower_range_red = np.array([0, 250, 0]) #Need to tune this to JUST detect the red
+		upper_range_red = np.array([0, 255, 0])
 
 		mask = cv2.inRange(hsvImage,lower_range_red ,upper_range_red )
 
@@ -116,7 +118,7 @@ def runserver(port):
 def main(args=None):
 	rclpy.init(args=args)
 
-	simulation_data_subscriber = SimulationCameraSubscriber()
+	simulation_camera_streamer = SimulationCameraStreamer()
 
 	#Create a server to publish each camera's footage
 	camera_0_server = threading.Thread(target=runserver, args=(8880,), daemon=True)
@@ -130,10 +132,10 @@ def main(args=None):
 	camera_2_server.start()
 	camera_3_server.start()
 
-	rclpy.spin(simulation_data_subscriber)
+	rclpy.spin(simulation_camera_streamer)
 	
 		
-	simulation_data_subscriber.destroy_node()
+	simulation_camera_streamer.destroy_node()
 	rclpy.shutdown()
 
 

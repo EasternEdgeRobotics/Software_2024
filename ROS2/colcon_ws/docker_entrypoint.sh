@@ -1,16 +1,12 @@
-#!/bin/sh
+source /opt/ros/humble/setup.sh
 
-. /opt/ros/humble/setup.sh
-
-if [ -e /root/colcon_ws/install/setup.sh ]
+if [ -e /app/install/setup.sh ]
 then 
-  . /root/colcon_ws/install/setup.sh
+  source /app/install/setup.sh
   ros2 launch beaumont_pkg beaumont_startup.xml
 else
-  cd /root/colcon_ws/
+  cd /app
   colcon build
-  . /root/colcon_ws/install/setup.sh
+  source /app/install/setup.sh
   ros2 launch beaumont_pkg beaumont_startup.xml
 fi
-  
-

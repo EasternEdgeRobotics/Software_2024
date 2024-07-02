@@ -1,27 +1,13 @@
-FROM arm64v8/ros:humble-ros-base-jammy
+FROM ros:humble-ros-base-jammy
 
-WORKDIR /root/colcon_ws
+RUN apt-get update && apt-get install -y python3 python3-pip ros-humble-rosbridge-server ffmpeg libsm6 libxext6
+RUN pip3 install sqlalchemy RPi.GPIO smbus2 adafruit-circuitpython-bno055 adafruit-circuitpython-pca9685 adafruit-circuitpython-servokit opencv-python
 
-RUN apt-get update -y
-RUN apt-get upgrade -y
+WORKDIR /app
+COPY colcon_ws/src /app/src
+COPY colcon_ws/docker_entrypoint.sh /app
 
-# Install Python and PIP
-RUN apt-get install python3 -y
-RUN apt-get install python3-pip -y
+ARG CACHEBUST=1
+RUN . /opt/ros/$ROS_DISTRO/setup.sh && colcon build
 
-# Install rosbridge server to allow ROS instance to communicate with frontend
-RUN apt-get install ros-humble-rosbridge-server -y
-
-# Install any required Python libraries
-RUN pip3 install sqlalchemy 
-RUN pip3 install RPi.GPIO
-RUN pip3 install smbus2
-RUN pip3 install adafruit-circuitpython-pca9685
-RUN pip3 install adafruit-circuitpython-bno055 
-
-# Modify the bash.bashrc file such that sourcing happens automatically 
-RUN echo ". /opt/ros/humble/setup.sh" >> /etc/bash.bashrc
-RUN echo ". /root/colcon_ws/install/setup.sh" >> /etc/bash.bashrc
-
-# Launch ROS on startup OR colcon build again if needed (see docker_entrypoint.sh script in colcon_ws)
-ENTRYPOINT ["/root/colcon_ws/docker_entrypoint.sh" ]
+ENTRYPOINT ["bash", "/app/docker_entrypoint.sh" ]

@@ -1,0 +1,14 @@
+float32 adc_48v_bus
+float32 adc_12v_bus
+float32 adc_5v_bus
+int16 temperature
+float32[3] acceleration
+float32[3] magnetic
+float32[3] euler
+float32[3] linear_acceleration
+float32 power_board_u8
+float32 power_board_u9
+float32 power_board_u10
+float32 mega_board_ic2
+float32 power_board_u11
+float32 mega_board_ic1
