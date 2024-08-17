@@ -5,6 +5,9 @@ import { IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfi
     RequestingCameraURLs, ADCArray, TemperatureArray, AutonomousModeStatus, OutsideTemperatureProbe } from "./Atoms";
 import React from "react";
 
+let initial_page_load = true
+let first_input_sent = false
+
 export function InitROS() {
     const [RosIP] = useAtom(ROSIP); // The ip of the device running the rosbridge server (will be the Pi4 in enclosure)
     const [, setIsRosConnected] = useAtom(IsROSConnected); // Used in BotTab, indicates if we are communicating with the rosbridge server
@@ -112,6 +115,7 @@ export function InitROS() {
             is_autonomous: false
             });
         controllerInputTopic.publish(controllerInputVals);
+        first_input_sent = true;
     }
     ,[controllerInput]);
 
@@ -227,52 +231,60 @@ export function InitROS() {
         }
     ,[requestingCameraURLs]);
 
-    const DiagnosticsDataListener = new ROSLIB.Topic({ros:ros,
-        name:"/diagnostics",
-        messageType: "eer_messages/DiagnosticsData"
-    })
+    if (initial_page_load && first_input_sent)
+    {
 
-    DiagnosticsDataListener.subscribe(function(message){
-        
-        setADCArray(
-            {adc_48v_bus:(message as any).adc_48v_bus,
-                adc_12v_bus:(message as any).adc_12v_bus,
-                adc_5v_bus:(message as any).adc_5v_bus});
+        const DiagnosticsDataListener = new ROSLIB.Topic({ros:ros,
+            name:"/diagnostics",
+            messageType: "eer_messages/DiagnosticsData"
+        })
+    
+        DiagnosticsDataListener.subscribe(function(message){
+            
+            setADCArray(
+                {adc_48v_bus:(message as any).adc_48v_bus,
+                    adc_12v_bus:(message as any).adc_12v_bus,
+                    adc_5v_bus:(message as any).adc_5v_bus});
+    
+            setTemperatureArray(
+                {power_board_u8:(message as any).power_board_u8,
+                power_board_u9:(message as any).power_board_u9,
+                power_board_u10:(message as any).power_board_u10,
+                mega_board_ic2:(message as any).mega_board_ic2,
+                power_board_u11:(message as any).power_board_u11,
+                mega_board_ic1:(message as any).mega_board_ic1}); 
+        })
+    
+        const AutonomousModeStatusListener = new ROSLIB.Topic({ros:ros,
+            name:"/autonomous_mode_status",
+            messageType: "std_msgs/String"
+        })
+    
+        AutonomousModeStatusListener.subscribe(function(message){
+            setAutonomousModeStatus((message as any).data);
+        })
+    
+        const OutsideTemperatureProbeListener = new ROSLIB.Topic({ros:ros,
+            name:"/outside_temp_probe",
+            messageType: "eer_messages/OutsideTempProbeData"
+        })
+    
+        OutsideTemperatureProbeListener.subscribe(function(message){
+            setOutsideTemperatureProbe((message as any).temperature);
+        })
+    
+        // const ImuDataListener = new ROSLIB.Topic({ros:ros,
+        //     name:"/imu",
+        //     messageType: "std_msgs/String"});
+    
+        // ImuDataListener.subscribe(function(message) {
+        //     console.log(message);
+        // });
 
-        setTemperatureArray(
-            {power_board_u8:(message as any).power_board_u8,
-            power_board_u9:(message as any).power_board_u9,
-            power_board_u10:(message as any).power_board_u10,
-            mega_board_ic2:(message as any).mega_board_ic2,
-            power_board_u11:(message as any).power_board_u11,
-            mega_board_ic1:(message as any).mega_board_ic1}); 
-    })
+        initial_page_load = false
+    }
 
-    const AutonomousModeStatusListener = new ROSLIB.Topic({ros:ros,
-        name:"/autonomous_mode_status",
-        messageType: "std_msgs/String"
-    })
-
-    AutonomousModeStatusListener.subscribe(function(message){
-        setAutonomousModeStatus((message as any).data);
-    })
-
-    const OutsideTemperatureProbeListener = new ROSLIB.Topic({ros:ros,
-        name:"/outside_temp_probe",
-        messageType: "eer_messages/OutsideTempProbeData"
-    })
-
-    OutsideTemperatureProbeListener.subscribe(function(message){
-        setOutsideTemperatureProbe((message as any).temperature);
-    })
-
-    // const ImuDataListener = new ROSLIB.Topic({ros:ros,
-    //     name:"/imu",
-    //     messageType: "std_msgs/String"});
-
-    // ImuDataListener.subscribe(function(message) {
-    //     console.log(message);
-    // });
+    
 
     return (null);
 }
