@@ -2,7 +2,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 
-from eer_messages.msg import ThrusterMultipliers, PilotInput
+from eer_messages.msg import ThrusterMultipliers, PilotInput, DiagnosticsData, OutsideTempProbeData
 from eer_messages.action import AutoMode 
 from eer_messages.srv import HSVColours
 
@@ -13,6 +13,8 @@ from geometry_msgs.msg import Wrench, Twist
 from std_msgs.msg import String
 
 from math import sqrt, cos, pi
+
+import random
 
 SIMULAITON_PERCISION = 0.1 # 10 Hz
 
@@ -27,6 +29,10 @@ MAX_VALUE = {
     "aft-star-bot": 0
 }
 
+# Set to true to test backend publishers
+# This can be used to test frontend issues such as the previous React GUI input delay bug
+TEST_BACKEND_PUBLISHERS = False
+
 class SimulationBotControl(Node):
 
     def __init__(self):
@@ -34,6 +40,10 @@ class SimulationBotControl(Node):
 
         self.copilot_listener = self.create_subscription(ThrusterMultipliers, 'thruster_multipliers', self.copilot_listener_callback, 10)
         self.pilot_listener = self.create_subscription(PilotInput, 'controller_input', self.pilot_listener_callback, 1)
+        
+        self.diagnostics_data_publisher = self.create_publisher(DiagnosticsData, "diagnostics", 1)
+        self.outside_temperature_probe_data_publisher = self.create_publisher(OutsideTempProbeData, "outside_temp_probe", 1)
+        
         self.autonomous_mode_publisher = self.create_publisher(String, "/autonomous_mode_status", 10)
 
         # For xy movement, the model is using the Gazebo Planar Move Plugin, which allows for movement relative to itself rather than the world
@@ -175,6 +185,9 @@ class SimulationBotControl(Node):
             # self.debugger.publish(velocity)
 
             self.simulation_tooling(msg)
+            
+            if TEST_BACKEND_PUBLISHERS:
+                self.simulate_backend_publishers(msg)
 
         if msg.enter_auto_mode:
             if not self.autonomus_mode_active:
@@ -185,6 +198,34 @@ class SimulationBotControl(Node):
 
                 future = self.goal_handle.cancel_goal_async()
                 future.add_done_callback(self.cancel_done)
+
+    def simulate_backend_publishers(self, controller_inputs):
+
+        diagnostics_data = DiagnosticsData()
+
+        diagnostics_data.adc_48v_bus = random.uniform(40,48.5)
+        diagnostics_data.adc_12v_bus = random.uniform(11.5,12.1)
+        diagnostics_data.adc_5v_bus = random.uniform(4.8,5.2)
+        diagnostics_data.temperature = random.randint(30,55)
+        diagnostics_data.acceleration = [random.uniform(11.5,12.1), random.uniform(11.5,12.1), random.uniform(11.5,12.1)]
+        diagnostics_data.magnetic = [random.uniform(11.5,12.1), random.uniform(11.5,12.1), random.uniform(11.5,12.1)]
+        diagnostics_data.euler = [random.uniform(11.5,12.1), random.uniform(11.5,12.1), random.uniform(11.5,12.1)]
+        diagnostics_data.linear_acceleration = [random.uniform(11.5,12.1), random.uniform(11.5,12.1), random.uniform(11.5,12.1)]
+        diagnostics_data.power_board_u8 = random.uniform(4.8,5.2)
+        diagnostics_data.power_board_u9 = random.uniform(4.8,5.2)
+        diagnostics_data.power_board_u10 = random.uniform(4.8,5.2)
+        diagnostics_data.mega_board_ic2 = random.uniform(4.8,5.2)
+        diagnostics_data.power_board_u11 = random.uniform(4.8,5.2)
+        diagnostics_data.mega_board_ic1 = random.uniform(4.8,5.2)
+        
+        self.diagnostics_data_publisher.publish(diagnostics_data)
+
+        outside_temp_probe_data = OutsideTempProbeData()
+
+        outside_temp_probe_data.temperature =  random.uniform(10,15)
+
+        self.outside_temperature_probe_data_publisher.publish(outside_temp_probe_data)
+
 
     def simulation_tooling(self, controller_inputs):
         """Controls the movement of the simulation claw. """
