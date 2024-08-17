@@ -1,7 +1,7 @@
-import {Box, Button, Checkbox, FormGroup, FormControlLabel, Grid, Typography, AppBar, Stack} from "@mui/material";
+import { Box, Button, Checkbox, FormGroup, FormControlLabel, Grid, Typography, AppBar, Stack } from "@mui/material";
 import React, { useState, useEffect } from "react";
 import { atom, useAtom } from "jotai";
-import { grey, green, yellow, red, blue} from "@mui/material/colors";
+import { grey, green, yellow, red, blue } from "@mui/material/colors";
 import { Task } from "../types/Task";
 import taskJSON from "./tasks.json";
 import { Row } from "react-bootstrap";
@@ -69,11 +69,11 @@ export default function TabletApp() {
       }
     );
 
-      const task_publisher = new ROSLIB.Topic({
-        ros: ros,
-        name: "task_updates",
-        messageType: "std_msgs/String",
-      });
+    const task_publisher = new ROSLIB.Topic({
+      ros: ros,
+      name: "task_updates",
+      messageType: "std_msgs/String",
+    });
 
 
     task_publisher.subscribe((message) => {
@@ -147,7 +147,7 @@ function Tasks(props: {
   saved?: { [key: string]: boolean };
   setTasks: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>;
 }) {
-  
+
   return (
     <FormGroup style={{ paddingLeft: "10vw", paddingRight: "8vw" }}>
       <Row
@@ -356,48 +356,48 @@ function MainTimer() {
 }
 
 function Timer() {
- const [startTime, setStartTime] = useState<Date | null>(null);
- const [time, setTime] = useState(0);
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [time, setTime] = useState(0);
 
- useEffect(() => {
-   let interval: NodeJS.Timeout;
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
 
-   if (startTime) {
-     interval = setInterval(() => {
-       const now = new Date();
-       const elapsed = now.getTime() - startTime.getTime();
-       setTime(elapsed);
-     }, 60);
-   }
+    if (startTime) {
+      interval = setInterval(() => {
+        const now = new Date();
+        const elapsed = now.getTime() - startTime.getTime();
+        setTime(elapsed);
+      }, 60);
+    }
 
-   return () => {
-     if (interval) {
-       clearInterval(interval);
-     }
-   };
- }, [startTime]);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [startTime]);
 
- const start = () => {
-   if (startTime) return;
-   setStartTime(new Date());
- };
+  const start = () => {
+    if (startTime) return;
+    setStartTime(new Date());
+  };
 
- const pause = () => {
-   setStartTime(null);
- };
+  const pause = () => {
+    setStartTime(null);
+  };
 
- const reset = () => {
-   setStartTime(null);
-   setTime(0);
- };
+  const reset = () => {
+    setStartTime(null);
+    setTime(0);
+  };
 
- const minutes = Math.floor(time / 60000);
- const seconds = Math.floor((time % 60000) / 1000);
- const milliseconds = Math.floor((time % 1000) / 10);
+  const minutes = Math.floor(time / 60000);
+  const seconds = Math.floor((time % 60000) / 1000);
+  const milliseconds = Math.floor((time % 1000) / 10);
 
- const displayedMinutes = String(minutes).padStart(2, "0");
- const displayedSeconds = String(seconds).padStart(2, "0");
- const displayedMilliseconds = String(milliseconds).padStart(2, "0");
+  const displayedMinutes = String(minutes).padStart(2, "0");
+  const displayedSeconds = String(seconds).padStart(2, "0");
+  const displayedMilliseconds = String(milliseconds).padStart(2, "0");
 
   return (
     <Box sx={{ width: [400], textAlign: "left" }}>

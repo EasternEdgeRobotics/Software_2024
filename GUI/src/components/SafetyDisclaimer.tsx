@@ -9,7 +9,7 @@ export default function SafetyDisclaimer() {
             <DialogTitle>Eastern Edge Safety Disclaimer</DialogTitle>
             <DialogContent>
                 <DialogContentText component='span'>
-                    Prior to using the Eastern Edge ROV control interface, please ensure the following:<br/>
+                    Prior to using the Eastern Edge ROV control interface, please ensure the following:<br />
                     <ul>
                         <li>The tether is neatly coiled in company standard figure 8.</li>
                         <li>Vehicle power is switched in &#34;OFF&#34; position</li>

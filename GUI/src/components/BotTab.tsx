@@ -10,7 +10,7 @@ import {
     TableRow,
     Slider,
     Box,
-    Switch,
+    Switch
 } from "@mui/material";
 import { useAtom } from "jotai";
 import {
@@ -70,15 +70,16 @@ export function BotTab() {
     ];
 
     const Arrays = [
-        { "name": "ADC", "status": "48V bus: " + read_ADCArray.adc_48v_bus + ", 12V bus: " + read_ADCArray.adc_12v_bus + ", 5V bus: " + read_ADCArray.adc_5v_bus},
-        { "name": "BOARD TEMPERATURE", "status": "Power u8: " + read_TemperatureArray.power_board_u8 +  
-                                        ", Power u9: " + read_TemperatureArray.power_board_u9 +  
-                                        ", Power u10: " + read_TemperatureArray.power_board_u10 +  
-                                        ", Mega ic2: " + read_TemperatureArray.mega_board_ic2 +  
-                                        ", Power u11: " + read_TemperatureArray.power_board_u11 +  
-                                        ", Mega ic1: " + read_TemperatureArray.mega_board_ic1
+        { "name": "ADC", "status": "48V bus: " + read_ADCArray.adc_48v_bus + ", 12V bus: " + read_ADCArray.adc_12v_bus + ", 5V bus: " + read_ADCArray.adc_5v_bus },
+        {
+            "name": "BOARD TEMPERATURE", "status": "Power u8: " + read_TemperatureArray.power_board_u8 +
+                ", Power u9: " + read_TemperatureArray.power_board_u9 +
+                ", Power u10: " + read_TemperatureArray.power_board_u10 +
+                ", Mega ic2: " + read_TemperatureArray.mega_board_ic2 +
+                ", Power u11: " + read_TemperatureArray.power_board_u11 +
+                ", Mega ic1: " + read_TemperatureArray.mega_board_ic1
         },
-        { "name": "OUTSIDE TEMPERATURE PROBE", "status": outsideTemperatureProbe}
+        { "name": "OUTSIDE TEMPERATURE PROBE", "status": outsideTemperatureProbe }
     ];
 
     const [, reloadComponent] = useState<number>(0);
@@ -191,15 +192,15 @@ export function BotTab() {
                 }
             }
         }
-        
+
         setControllerInput(controllerInput);
     };
 
-    
+
 
     useEffect(() => {
 
-        if (keyboardMode){
+        if (keyboardMode) {
             // Add keyboard input listeners for keyboard mode
             window.addEventListener(
                 "keydown",
@@ -262,128 +263,118 @@ export function BotTab() {
     const textStyle = { fontSize: "1.3rem" } // This makes it so that values stay on one line for thruster multipliers
 
     return (
-        <Box flexGrow={1}>
+        <Grid container justifyContent={"center"} spacing={1}>
 
-            <Grid container justifyContent={"center"} spacing={1}>
-                {["Power", "Surge", "Sway", "Heave", "Pitch", "Yaw"].map((label, index) => {
-                    return (
-                        <Grid item xs={1} key={index} display="flex" justifyContent="center" alignItems="center" flexWrap="wrap" height="275px">
-                            <Slider orientation="vertical" valueLabelDisplay="auto" step={5} defaultValue={thrusterMultipliers[index]} onChange={(_, value) => setThrusterMultipliers(thrusterMultipliers.map((v, i) => { if (i == index) return value as number; else return v; }))} />
-                            <Box flexBasis="100%" height="0" />
-                            <h2 style={textStyle}>{label}: {thrusterMultipliers[index]}</h2>
-                        </Grid>
+            <Grid item xs={8}>
+                <Grid container justifyContent="center" spacing={1} marginBottom={3}>
+                    {["Power", "Surge", "Sway", "Heave", "Pitch", "Yaw"].map((label, index) => {
+                        return (
+                            <Grid item xs="auto" key={index} display="flex" justifyContent="center" alignItems="center" flexWrap="wrap" height="275px">
+                                <Slider orientation="vertical" valueLabelDisplay="auto" step={5} defaultValue={thrusterMultipliers[index]} onChange={(_, value) => setThrusterMultipliers(thrusterMultipliers.map((v, i) => { if (i == index) return value as number; else return v; }))} />
+                                <Box flexBasis="100%" height="0" />
+                                <h2 style={textStyle}>{label}: {thrusterMultipliers[index]}</h2>
+                            </Grid>
 
-                    );
-                })
-                }
-
-                <Grid item xs={3}>
-
-                    <Grid container justifyContent={"center"} rowSpacing={2}>
-
-                        <Grid item xs={12}>
-
-                            <TableContainer component={Paper}>
-                                <Table>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell align="center">Service</TableCell>
-                                            <TableCell align="center">Status</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {status.map((data) => {
-                                            return (
-                                                <TableRow key={data.name} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
-                                                    <TableCell align="center">{data.name}</TableCell>
-                                                    <TableCell align="center"><StatusIndicator statement={data.status} /></TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                        </Grid>
-                        <Grid item xs={3} />
-                    </Grid>
-                    <Grid container justifyContent={"center"} rowSpacing={1}>
-                        <Grid item xs={12}>
-                            <TableContainer component={Paper}>
-
-                                <Table>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell align="center">
-                                                User Information
-                                            </TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        <TableRow>
-                                            <TableCell align="left">
-                                                Current Profile: {currentProfile}
-                                            </TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell align="left">
-                                                Controller 1: {controller1Name}
-                                            </TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell align="left">
-                                                Controller 2: {controller2Name}
-                                            </TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell align="left">
-                                                {autonomousModeStatus}
-                                            </TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
-
-                            </TableContainer>
-                        </Grid>
-                    </Grid>
-
+                        );
+                    })
+                    }
                 </Grid>
-
-
-
-                <Grid container justifyContent={"left"} sx={{ marginTop: "-125px", marginLeft: "200px" }}>
-                    <Grid item xs={6.2}>
-
-                        <Grid item xs={12}>
-
-                            <TableContainer component={Paper}>
-                                <Table>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell align="center">Items</TableCell>
-                                            <TableCell align="center">Values</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {Arrays.map((data) => {
-                                            return (
-                                                <TableRow key={data.name} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
-                                                    <TableCell align="center">{data.name}</TableCell>
-                                                    <TableCell align="center">{data.status}</TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-
-                        </Grid>
-
-                    </Grid>
-                </Grid>
+                <Box display="flex" justifyContent="center" width="100%" paddingTop="16px" paddingX="10%">
+                    <p>Shortcuts: 0 - all off, 1 - all high (70% yaw), 2 - all vertical, 3 - all surge</p>
+                </Box>
             </Grid>
-            <Box display="flex" justifyContent="center" width="100%" paddingTop="16px" paddingX="10%">
-                <p>0 - all off, 1 - all high (70% yaw), 2 - all vertical, 3 - all surge</p>
-            </Box>
-        </Box>
+            <Grid item xs="auto">
+                <TableContainer component={Paper}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell align="center">Service</TableCell>
+                                <TableCell align="center">Status</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {status.map((data) => {
+                                return (
+                                    <TableRow key={data.name} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                                        <TableCell align="center">{data.name}</TableCell>
+                                        <TableCell align="center"><StatusIndicator statement={data.status} /></TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                            <TableRow>
+                                <TableCell align="left">
+                                    Keyboard Mode {keyboardMode ? "on" : "off"}
+                                    <Switch
+                                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => { setKeyboardMode(event.target.checked); }}
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Grid>
+            <Grid item xs={8}>
+
+                <TableContainer component={Paper}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell align="center">Items</TableCell>
+                                <TableCell align="center">Values</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {Arrays.map((data) => {
+                                return (
+                                    <TableRow key={data.name} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                                        <TableCell align="center">{data.name}</TableCell>
+                                        <TableCell align="center">{data.status}</TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+
+            </Grid>
+            <Grid item xs='auto'>
+                <TableContainer component={Paper}>
+
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell align="center">
+                                    User Information
+                                </TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            <TableRow>
+                                <TableCell align="left">
+                                    Current Profile: {currentProfile}
+                                </TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell align="left">
+                                    Controller 1: {controller1Name}
+                                </TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell align="left">
+                                    Controller 2: {controller2Name}
+                                </TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell align="left">
+                                    {autonomousModeStatus}
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+
+                </TableContainer>
+
+            </Grid>
+        </Grid>
     );
 }
