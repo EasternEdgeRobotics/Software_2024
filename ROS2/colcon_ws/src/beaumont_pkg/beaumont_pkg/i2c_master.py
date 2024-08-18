@@ -295,7 +295,6 @@ class I2CMaster(Node):
         Every time a piece of data is accessed, that is an i2c read transation. These transactions finish by the time 
         the value is returned. See (https://github.com/adafruit/Adafruit_CircuitPython_BNO055/blob/main/adafruit_bno055.py).
         '''
-
         diagnostics_data.temperature = self.imu_sensor.temperature
 
         # This code below was recommended by Adafruit (https://learn.adafruit.com/adafruit-bno055-absolute-orientation-sensor/python-circuitpython)
@@ -553,19 +552,17 @@ class I2CMaster(Node):
                     except OSError:
                         self.get_logger().error(f"COULD NOT PERFORM ACTION WITH ACTION ADDRESS {(led_address,self.headlight_led_brightness)}")
             
+            diagnostics_data = DiagnosticsData()            
+
+            if self.imu_detected:
+                diagnostics_data = self.obtain_imu_data(diagnostics_data)
+
             outside_temperature_probe_register = 0x30
             
             if controller_inputs.read_outside_temperature_probe:
 
-                diagnostics_data = DiagnosticsData()
-
                 diagnostics_data = self.obtain_adc_data(diagnostics_data) 
                 diagnostics_data = self.obtain_temp_sensor_data(diagnostics_data)
-
-                if self.imu_detected:
-                    diagnostics_data = self.obtain_imu_data(diagnostics_data)
-
-                self.diagnostics_data_publisher.publish(diagnostics_data)
                     
                 outside_temp_probe_data = OutsideTempProbeData()
                 
@@ -595,6 +592,10 @@ class I2CMaster(Node):
                 outside_temp_probe_data.temperature = (float(((readMSBs<<8)|readLSBs) & 0b0000011111111111)/16) * (-1 if readMSBs >= 16 else 1) 
 
                 self.outside_temperature_probe_data_publisher.publish(outside_temp_probe_data)
+
+
+
+            self.diagnostics_data_publisher.publish(diagnostics_data)
 
                 
                 

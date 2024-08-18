@@ -3,7 +3,8 @@ import ROSLIB, { Ros } from "roslib";
 import {
     IsROSConnected, ROSIP, CameraURLs, ThrusterMultipliers, RequestingConfig,
     RequestingProfilesList, Mappings, ProfilesList, CurrentProfile, ControllerInput,
-    RequestingCameraURLs, ADCArray, TemperatureArray, AutonomousModeStatus, OutsideTemperatureProbe
+    RequestingCameraURLs, ADCArray, TemperatureArray, AutonomousModeStatus, OutsideTemperatureProbe,
+    IMUArray
 } from "./Atoms";
 import React from "react";
 
@@ -56,6 +57,7 @@ export function InitROS() {
     // ADC and TEMP data
     const [, setADCArray] = useAtom(ADCArray);
     const [, setTemperatureArray] = useAtom(TemperatureArray);
+    const [, setIMUArray] = useAtom(IMUArray);
 
     // React.useEffect(() => { // Constantly run the input listener 
     //     setInterval(() => {
@@ -100,7 +102,6 @@ export function InitROS() {
 
     // Publish the new controller input whenever it changes (10 Hz)
     React.useEffect(() => {
-        console.log(controllerInput)
         const controllerInputVals = new ROSLIB.Message({
             surge: controllerInput[0],
             sway: controllerInput[1],
@@ -278,6 +279,15 @@ export function InitROS() {
                     power_board_u11: (message as any).power_board_u11,
                     mega_board_ic1: (message as any).mega_board_ic1
                 });
+
+            setIMUArray(
+                {
+                    temperature: (message as any).temperature, 
+                    acceleration: (message as any).acceleration, 
+                    magnetic: (message as any).magnetic, 
+                    euler: (message as any).euler, 
+                    linear_acceleration: (message as any).linear_acceleration
+                });
         })
 
         const AutonomousModeStatusListener = new ROSLIB.Topic({
@@ -299,14 +309,6 @@ export function InitROS() {
         OutsideTemperatureProbeListener.subscribe(function (message) {
             setOutsideTemperatureProbe((message as any).temperature);
         })
-
-        // const ImuDataListener = new ROSLIB.Topic({ros:ros,
-        //     name:"/imu",
-        //     messageType: "std_msgs/String"});
-
-        // ImuDataListener.subscribe(function(message) {
-        //     console.log(message);
-        // });
 
         initial_page_load = false
     }
