@@ -25,7 +25,9 @@ import {
     TemperatureArray,
     KeyboardInputMap,
     AutonomousModeStatus,
-    OutsideTemperatureProbe
+    OutsideTemperatureProbe,
+    IMUArray,
+    KeyboardMode
 } from "../api/Atoms";
 import { useState, useEffect } from "react";
 
@@ -49,7 +51,7 @@ export function BotTab() {
     const [, setControllerInput] = useAtom(ControllerInput);
     const [controller1Detected, setController1Detected] = useState(false);
     const [controller2Detected, setController2Detected] = useState(false);
-    const [keyboardMode, setKeyboardMode] = useState(false);
+    const [keyboardMode, setKeyboardMode] = useAtom(KeyboardMode);
 
     const [controller1Name, setController1Name] = useState("Not Assigned");
     const [controller2Name, setController2Name] = useState("Not Assigned");
@@ -57,6 +59,7 @@ export function BotTab() {
     // ADC and TEMP data
     const [read_ADCArray] = useAtom(ADCArray);
     const [read_TemperatureArray] = useAtom(TemperatureArray);
+    const [read_IMUArray] = useAtom(IMUArray);
     const [outsideTemperatureProbe] = useAtom(OutsideTemperatureProbe);
 
     let initialPageLoad = true;
@@ -79,7 +82,13 @@ export function BotTab() {
                 ", Power u11: " + read_TemperatureArray.power_board_u11 +
                 ", Mega ic1: " + read_TemperatureArray.mega_board_ic1
         },
-        { "name": "OUTSIDE TEMPERATURE PROBE", "status": outsideTemperatureProbe }
+        { "name": "OUTSIDE TEMPERATURE PROBE", "status": outsideTemperatureProbe },
+        {"name": "IMU", "status": "Temperature: " + read_IMUArray.temperature +
+                ", Acceleration: " + "[" + read_IMUArray.acceleration[0] + ", " + read_IMUArray.acceleration[1] + ", " + read_IMUArray.acceleration[2] + "]" +
+                ", Magnetic: " + "[" + read_IMUArray.magnetic[0] + ", " + read_IMUArray.magnetic[1] + ", " + read_IMUArray.magnetic[2] + "]" +
+                ", Euler: " + "[" + read_IMUArray.euler[0] + ", " + read_IMUArray.euler[1] + ", " + read_IMUArray.euler[2] + "]" +
+                ", Lin. Acceleration: " + "[" + read_IMUArray.linear_acceleration[0] + ", " + read_IMUArray.linear_acceleration[1] + ", " + read_IMUArray.linear_acceleration[2] + "]"
+        }
     ];
 
     const [, reloadComponent] = useState<number>(0);
@@ -192,7 +201,6 @@ export function BotTab() {
                 }
             }
         }
-
         setControllerInput(controllerInput);
     };
 
@@ -258,7 +266,7 @@ export function BotTab() {
             input_listener();
         }, 100); // 100 ms or 10Hz
         return () => clearInterval(interval); // Stop listening for input when we click off the BotTab
-    }, [currentProfile]);
+    }, [keyboardMode, currentProfile]);
 
     const textStyle = { fontSize: "1.3rem" } // This makes it so that values stay on one line for thruster multipliers
 

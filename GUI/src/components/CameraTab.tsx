@@ -19,7 +19,8 @@ import {
     CurrentProfile,
     Mappings,
     ControllerInput,
-    AutonomousModeStatus
+    AutonomousModeStatus,
+    KeyboardMode
 } from "../api/Atoms";
 import { useState, useEffect } from "react";
 import React from "react";
@@ -59,7 +60,7 @@ export default function CameraTab() {
     const [, setController1Detected] = useState(false);
     const [, setController2Detected] = useState(false);
     const [, setControllerInput] = useAtom(ControllerInput);
-    const [keyboardMode, setKeyboardMode] = useState(false);
+    const [keyboardMode, setKeyboardMode] = useAtom(KeyboardMode);
 
     const [controller1Name, setController1Name] = useState("Not Assigned");
     const [controller2Name, setController2Name] = useState("Not Assigned");
@@ -264,7 +265,7 @@ export default function CameraTab() {
             input_listener();
         }, 100); // 100 ms or 10Hz
         return () => clearInterval(interval); // Stop listening for input when we click off the BotTab
-    }, [keyboardMode]);
+    }, [keyboardMode, currentProfile]);
 
     // Create a listener to update width on window resize
     React.useEffect(() => { window.addEventListener("resize", () => { setWidth(window.innerWidth); }); }, []);

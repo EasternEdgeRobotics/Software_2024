@@ -16,6 +16,7 @@ export const IsROSConnected = atom<boolean>(false);
 export const ImuData = atom<string>("");
 
 export const Mappings = atom<{ [controller: number]: { [type: string]: { [index: number]: string } } }>({ 0: {}, 1: {} }); // Current controller mappings
+export const KeyboardMode = atom<boolean>(false);
 
 export const ThrusterMultipliers = atom<number[]>([20, 0, 0, 0, 0, 0]); // Power:0, Surge:1, Sway:2, Heave:3, Pitch:4, Yaw:5
 export const ControllerInput = atom<(number | undefined)[]>([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]); // Current controller input from pilot
@@ -78,6 +79,10 @@ export const TemperatureArray = atom<{
   power_board_u8: 0, power_board_u9: 0, power_board_u10: 0,
   mega_board_ic2: 0, power_board_u11: 0, mega_board_ic1: 0
 }); // TEMP DATA
+export const IMUArray = atom<{ temperature: number, acceleration: number[], magnetic: number[], 
+  euler: number[], linear_acceleration: number[]}>({
+    temperature: 0, acceleration: [0,0,0], 
+    magnetic: [0,0,0], euler: [0,0,0], linear_acceleration: [0,0,0]}); // IMU DATA 
 
 export const OutsideTemperatureProbe = atom<number>(0);
-export const AutonomousModeStatus = atom<string>("Autonomous Mode Off"); // ADC DATA
+export const AutonomousModeStatus = atom<string>("Autonomous Mode Off"); 
