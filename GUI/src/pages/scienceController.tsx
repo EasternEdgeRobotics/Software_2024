@@ -9,7 +9,6 @@ import "@fontsource/roboto/700.css";
 import { useEffect, useState } from "react";
 
 import { Sidebar, Menu, MenuItem } from "react-pro-sidebar";
-import { Home } from "@mui/icons-material";
 import { Col, Row } from "react-bootstrap";
 import taskJSON from "./tasks.json";
 import { Task } from "../types/Task";
@@ -166,18 +165,18 @@ function HSVForm({ ros }: { ros: ROSLIB.Ros }) {
       upper_hsv: [upperHSV.h, upperHSV.s, upperHSV.v],
     });
 
-    
-      colorsClient.callService(request, function (result) {
-          // console.log(result)
-          if (!result.success) {
-            console.log(result);
-          } else {
-            alert("HSV values submitted successfully. \n" + "Lower: " + JSON.stringify(lowerHSV) + "\nUpper: " + JSON.stringify(upperHSV));
-          }
-      });
-    
-  
-    
+
+    colorsClient.callService(request, function (result) {
+      // console.log(result)
+      if (!result.success) {
+        console.log(result);
+      } else {
+        alert("HSV values submitted successfully. \n" + "Lower: " + JSON.stringify(lowerHSV) + "\nUpper: " + JSON.stringify(upperHSV));
+      }
+    });
+
+
+
   };
 
   return (
@@ -244,20 +243,14 @@ function isValidHSV({ h, s, v }: { h: number; s: number; v: number }) {
   return h >= 0 && h <= 180 && s >= 0 && s <= 255 && v >= 0 && v <= 255;
 }
 
-function SideBar() {
+function SideBar({ ros }: { ros: ROSLIB.Ros }) {
   //[To-do] acoount for mobile view
   const [collapsed, setCollapsed] = useState(false);
   const [RosIP] = useAtom(ROSIP);
-  const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
+  // const [ros,] = React.useState<Ros>(new ROSLIB.Ros({}));
   const [saved_tasks, setTasks] = useState<{ [key: string]: boolean }>({});
   const [, setTaskPublisher] = useAtom(taskPublisherAtom);
   const [score, setScore] = useState<number>(0);
-
-  useEffect(() => {
-    const rosInstance = new ROSLIB.Ros({});
-    rosInstance.connect(`ws://${RosIP}:9090`);
-    setRos(rosInstance);
-  }, [RosIP]);
 
   const taskClient = new ROSLIB.Service({
     ros: ros,
@@ -300,14 +293,12 @@ function SideBar() {
     setTaskPublisher(task_publisher);
   }, [ros, collapsed]);
 
-    useEffect(() => {
-      setScore(
-        calculateAchivedScore(
-          saved_tasks)
-      );
-    }, [saved_tasks]);
-
-  ros.on("connection", () => console.log("Connected to ROS"));
+  useEffect(() => {
+    setScore(
+      calculateAchivedScore(
+        saved_tasks)
+    );
+  }, [saved_tasks]);
 
   const handleToggleSidebar = () => {
     setCollapsed(!collapsed);
@@ -419,17 +410,10 @@ function SideBar() {
   );
 }
 
-function SideBar2() {
+function SideBar2({ ros }: { ros: ROSLIB.Ros }) {
   //[To-do] acoount for mobile view
   const [collapsed, setCollapsed] = useState(true);
   const [RosIP] = useAtom(ROSIP);
-  const [ros, setRos] = React.useState<Ros>(new ROSLIB.Ros({}));
-
-  useEffect(() => {
-    const rosInstance = new ROSLIB.Ros({});
-    rosInstance.connect(`ws://${RosIP}:9090`);
-    setRos(rosInstance);
-  }, [RosIP]);
 
   const handleToggleSidebar = () => {
     setCollapsed(!collapsed);
@@ -501,7 +485,7 @@ function SideBar2() {
               marginLeft: "30px",
             }}
           >
-            <HSVForm ros={ros}/>
+            <HSVForm ros={ros} />
           </Box>
         </Menu>
       </Sidebar>
@@ -556,10 +540,10 @@ function SubList(props: {
       calculateAchivedScore(
         props.saved,
         props.name.split(":")[0].trim().replace(" ", "_") as
-          | "TASK_1"
-          | "TASK_2"
-          | "TASK_3"
-          | "TASK_4"
+        | "TASK_1"
+        | "TASK_2"
+        | "TASK_3"
+        | "TASK_4"
       )
     );
   }, [props.saved]);
@@ -882,7 +866,7 @@ export function ControllerApp() {
   const [rosConnected, setRosConnected] = React.useState(true);
 
   ros.on("error", () => {
-   setRosConnected(false);
+    setRosConnected(false);
   }); // to prevent page breaking
 
   React.useEffect(() => {
@@ -925,8 +909,6 @@ export function ControllerApp() {
     });
   }
 
-  console.log("URLS", urls);
-
   const styles = {
     contentDiv: {
       display: "flex",
@@ -959,8 +941,8 @@ export function ControllerApp() {
           zIndex: 1000,
         }}
       >
-        <SideBar />
-        <SideBar2 />
+        <SideBar ros={ros} />
+        <SideBar2 ros={ros} />
       </div>
       <Row className="justify-content-center">
         <Col lg={3}>

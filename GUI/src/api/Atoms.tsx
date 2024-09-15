@@ -15,10 +15,11 @@ export const IsROSConnected = atom<boolean>(false);
 
 export const ImuData = atom<string>("");
 
-export const Mappings = atom<{[controller: number]: {[type: string]: {[index: number]: string}}}>({0: {}, 1: {}}); // Current controller mappings
+export const Mappings = atom<{ [controller: number]: { [type: string]: { [index: number]: string } } }>({ 0: {}, 1: {} }); // Current controller mappings
+export const KeyboardMode = atom<boolean>(false);
 
-export const ThrusterMultipliers = atom<number[]>([20,0,0,0,0,0]); // Power:0, Surge:1, Sway:2, Heave:3, Pitch:4, Yaw:5
-export const ControllerInput = atom<(number|undefined)[]>([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]); // Current controller input from pilot
+export const ThrusterMultipliers = atom<number[]>([20, 0, 0, 0, 0, 0]); // Power:0, Surge:1, Sway:2, Heave:3, Pitch:4, Yaw:5
+export const ControllerInput = atom<(number | undefined)[]>([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]); // Current controller input from pilot
 export const PilotActions = atom<string[]>([ // Possible pilot inputs
   "None",
   "surge",
@@ -40,40 +41,48 @@ export const PilotActions = atom<string[]>([ // Possible pilot inputs
   "enter_auto_mode"
 ])
 
-export const KeyboardInputMap = atom<(string|number)[][]>([ // Possible pilot inputs
-  ["w","surge",100],
-  ["a","sway",-100],
-  ["s","surge",-100],
-  ["d","sway",100],
-  ["q","yaw",-100],
-  ["e","yaw",100],
-  ["w","surge",100],
-  ["r","heave",100],
-  ["f","heave",-100],
-  ["t","pitch",100],
-  ["g","pitch",-100],
-  ["z","open_claw",1],
-  ["x","close_claw",1],
-  ["c","brighten_led",1],
-  ["v","dim_led",1],
-  ["b","turn_stepper_cw",1],
-  ["n","turn_stepper_ccw",1],
-  ["m","read_outside_temperature_probe",1],
-  [",","enter_auto_mode",1],
+export const KeyboardInputMap = atom<(string | number)[][]>([ // Possible pilot inputs
+  ["w", "surge", 100],
+  ["a", "sway", -100],
+  ["s", "surge", -100],
+  ["d", "sway", 100],
+  ["q", "yaw", -100],
+  ["e", "yaw", 100],
+  ["w", "surge", 100],
+  ["r", "heave", 100],
+  ["f", "heave", -100],
+  ["t", "pitch", 100],
+  ["g", "pitch", -100],
+  ["z", "open_claw", 1],
+  ["x", "close_claw", 1],
+  ["c", "brighten_led", 1],
+  ["v", "dim_led", 1],
+  ["b", "turn_stepper_cw", 1],
+  ["n", "turn_stepper_ccw", 1],
+  ["m", "read_outside_temperature_probe", 1],
+  [",", "enter_auto_mode", 1],
 ])
 
 export const CurrentProfile = atom<string>("Not Assigned"); // Current pilot profile
-export const ProfilesList = atom<[{id: number, name: string, controller1: string, controller2: string}]>([{id:0, name:"default",controller1:"null",controller2:"null"}]); // List of known pilot profiles
+export const ProfilesList = atom<[{ id: number, name: string, controller1: string, controller2: string }]>([{ id: 0, name: "default", controller1: "null", controller2: "null" }]); // List of known pilot profiles
 
-export const RequestingConfig = atom<{state:number, profileName: string, controller1: string, controller2: string}>({state:2, profileName:"default", controller1: "null", controller2: "null"}); // Used for requesting mappings from OR loading mappings into the Database
+export const RequestingConfig = atom<{ state: number, profileName: string, controller1: string, controller2: string }>({ state: 2, profileName: "default", controller1: "null", controller2: "null" }); // Used for requesting mappings from OR loading mappings into the Database
 export const RequestingProfilesList = atom<number>(2); // Used for deleting a certain profile in the database or requesting a list of profiles.
 export const RequestingCameraURLs = atom<number>(2); // Used for requesting/saving camera URLs from/to the database.
 // See the ROS.tsx script for how the above three Atom states are used
 
-export const ADCArray = atom<{adc_48v_bus:number,adc_12v_bus:number,adc_5v_bus:number}>({adc_48v_bus:0,adc_12v_bus:0,adc_5v_bus:0}); // ADC DATA
-export const TemperatureArray = atom<{power_board_u8:number,power_board_u9:number,power_board_u10:number,
-  mega_board_ic2:number,power_board_u11:number,mega_board_ic1:number}>({power_board_u8:0,power_board_u9:0,power_board_u10:0,
-    mega_board_ic2:0,power_board_u11:0,mega_board_ic1:0}); // TEMP DATA
+export const ADCArray = atom<{ adc_48v_bus: number, adc_12v_bus: number, adc_5v_bus: number }>({ adc_48v_bus: 0, adc_12v_bus: 0, adc_5v_bus: 0 }); // ADC DATA
+export const TemperatureArray = atom<{
+  power_board_u8: number, power_board_u9: number, power_board_u10: number,
+  mega_board_ic2: number, power_board_u11: number, mega_board_ic1: number
+}>({
+  power_board_u8: 0, power_board_u9: 0, power_board_u10: 0,
+  mega_board_ic2: 0, power_board_u11: 0, mega_board_ic1: 0
+}); // TEMP DATA
+export const IMUArray = atom<{ temperature: number, acceleration: number[], magnetic: number[], 
+  euler: number[], linear_acceleration: number[]}>({
+    temperature: 0, acceleration: [0,0,0], 
+    magnetic: [0,0,0], euler: [0,0,0], linear_acceleration: [0,0,0]}); // IMU DATA 
 
-export const OutsideTemperatureProbe = atom<number>(0);     
-export const AutonomousModeStatus = atom<string>("Autonomous Mode Off"); // ADC DATA
+export const OutsideTemperatureProbe = atom<number>(0);
+export const AutonomousModeStatus = atom<string>("Autonomous Mode Off"); 
