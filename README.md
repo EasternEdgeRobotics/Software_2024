@@ -21,17 +21,17 @@ The workspace uses the ROS2 Humble distribution. The development and production 
 
 ### Camera Streamer
 
-In production, camera feed from the main enclosure Raspberry Pi 4 as well as the 3 mini-enclosure Raspberry Pi Zero 2Ws is streamed over TCP/IP using MJPEG (motion jpeg). This is done using a Github project called [Spyglass](https://github.com/roamingthings/spyglass). To install the streamer on a Raspberry Pi, all that simply has to be done is copy over the Cameras directory and running the install.sh script inside.
+In production, camera feed from the main enclosure Raspberry Pi 4 as well as the 3 mini-enclosure Raspberry Pi Zero 2Ws is streamed over TCP/IP using MJPEG (motion jpeg). This is done using a Github project called [Spyglass](https://github.com/roamingthings/spyglass). To install the streamer on a Raspberry Pi, copy over the /Cameras directory and run the install.sh script inside.
 ```
 . install.sh
 ```
 This will configure everything and turn the camera streamer into a daemon service running in the background. To access the camera stream, the following can be typed in a browser: 
 ```
-http://<Raspberry Pi ip>:<Port specified in the spyglass.conf file (defualt 8080)>/stream
+http://<Raspberry Pi ip>:<Port specified in the spyglass.conf file (default 8080)>/stream
 ```
 ### Simulator
 
-The simulator is not part of the production environment is is meant to completely replace the physical bot while retaining all elements of the frontend and the majority of elements from the backend (minus i2c board communications for the actual bot). Navigate to the Simulation section below to learn more. 
+The simulator is not part of the production environment. Is is meant to completely replace the physical ROV while retaining all elements of the frontend and the majority of elements from the backend (minus i2c board communications for the actual ROV). Navigate to the Simulation section below to learn more. 
 
 # Production Installation Guides
 
@@ -40,13 +40,13 @@ The simulator is not part of the production environment is is meant to completel
 This guide will allow you to run the backend and frontend application on a Raspberry Pi or any computer running Debian or Ubuntu (as well as likely other Linux flavours).
 
 ### Step 1
-If you are intending to run docker on a Raspberry Pi running Raspberry Pi OS (tested with Bookworm), copy over the Software 2024 directory using scp to the  type the following into the terminal.
+If you are intending to run docker on a Raspberry Pi running Raspberry Pi OS (tested with Bookworm), copy over the Software 2024 directory (can use scp over the network). Navigate to the Software 2024 directory on the Raspberry Pi and type the following into the terminal.
 ```
 . all_in_one_pi4_installer.sh
 ```
-Installation is done, including backend, frontend, and the camera streamer. If this is a Raspberry Pi, it should now be ready to drive the bot provided access to an i2c bus with the correct components. 
+Installation is done, including backend, frontend, and the camera streamer. The Raspberry Pi, should now be ready to drive the bot provided access to an i2c bus with the correct components. 
 
-## Software 2024 Docker Installation for Windows or Mac (Recommended for backend development on a non-linux machine)
+## Software 2024 Docker Installation for Windows, Mac, or other desktop OS (Recommended for Development)
 
 ### Step 1
 
@@ -54,7 +54,7 @@ Installation is done, including backend, frontend, and the camera streamer. If t
 
 ### Step 2
 
-Ensure the docker daemon is running. This may require having docker desktop running on windows.
+Ensure the docker daemon is running. This may require having docker desktop running on Windows.
 
 To check if the daemon is running, type the following into a terminal:
 ```
@@ -76,17 +76,18 @@ Run the following in a terminal window:
 ```
 docker compose up 
 ```
+You can use ```-d``` to make running the containers a background process (you will regain access to your terminal once the container is done loading). You can also add ```--build backend``` if you made modifications to the code and therefore have to recompile the backend.  
 
 ### General Info Regarding Docker
 
 If you would like a rundown of how to use docker including the definition of containers and images, how docker compose files and Dockerfiles work, how to manage containers, images, volumes, and more, look at the following:
 
 - [This really good and comprehensive guide](https://docker-curriculum.com/)
-- Tutorials provided by docker desktop upon install
+- Tutorials provided by Docker Desktop upon install
 
 ## Host-Side Installation
 
-This guide will allow you to install the entire software package to production-level ***without docker***. This tutorial is intended for Ubuntu Linux, but may be modified for other Operating Systems. However, in theory, the backend should be able to run host-side on Windows, MacOS, and many linux distros. Refer to the documentation referenced in Step 2.
+This guide will allow you to install the entire software package to production-level ***without docker***. This tutorial is intended for Ubuntu Linux 22.04, but may be modified for other Operating Systems. This is generally not required. 
 
 ### Step 1
 
@@ -107,7 +108,7 @@ colcon build
 ```
 Sourcing the ROS2 workspace allows your terminal instance to know that you have ROS2 installed, and that it is an executable. 
 
-After a successful build, you should see no error messages and three new folders in colcon_ws (build, install, and log).
+After a successful build, you should see three new folders in colcon_ws (build, install, and log).
 
 ### Step 3
 
@@ -137,7 +138,7 @@ This will run all required nodes. The backend is now fully running and ready to 
 
 ### Step 6
 
-To run the frontend, refer to the quick development environment installation guide in the Introduction. There is no need to run a production build of the frontend any place other than a docker container.
+To run the frontend, refer to the quick development environment installation guide in the Introduction. There is no need to run a production build of the frontend in any place other than a docker container.
 
 ### Step 7
 
@@ -145,11 +146,11 @@ When you run the open the frontend in a browser window, ensure to put in the IP 
 
 # Simulation Environment
 
-The simulation environment is mainly for use in developing and testing code for any autonomus tasks (science tasks) in the [MATE competition](https://20693798.fs1.hubspotusercontent-na1.net/hubfs/20693798/2024%20EXPLORER%20Manual%20FINAL_1_16_2024_with_Cover.pdf). It may also be used for testing features in the GUI or demo run practice.
+The simulation environment is mainly for use in developing and testing code for any autonomous tasks (science tasks) in the [MATE competition](https://20693798.fs1.hubspotusercontent-na1.net/hubfs/20693798/2024%20EXPLORER%20Manual%20FINAL_1_16_2024_with_Cover.pdf). It may also be used for testing features in the GUI or demo run practice.
 
 ## Explanation
 
-The Open Source Robotics Foundation (osrf) resposible for writing ROS also created a simulation software called Gazebo. The version used for this simulation is Gazebo Classic (which has an end of life at 2025). It is to be superceeded by Modern Gazebo (used to be called called Ignition).
+The Open Source Robotics Foundation (osrf) resposible for writing ROS also created a simulation software called Gazebo. The version used for this simulation is Gazebo Classic (which has an end of life at 2025). 
 
 Gazebo allows for creating robot models with visuals, collision, physics, plugins, and sensors. 
 
